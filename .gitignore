@@ -1,0 +1,7 @@
+#Builds
+dist/
+Electron/dist/
+
+#Installations
+*.msi
+*.exe
