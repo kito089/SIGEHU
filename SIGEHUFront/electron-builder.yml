@@ -1,0 +1,20 @@
+appId: com.sigehu.app
+
+productName: SIGEHU
+
+directories:
+  output: release
+
+files:
+  - dist/**
+  - electron/**
+
+extraResources:
+  - from: ../SIGEHUBack/build/sigehu-back.exe
+    to: backend/sigehu-back.exe
+  - from: ../SIGEHUBack/database
+    to: database
+
+win:
+  target:
+    - nsis
