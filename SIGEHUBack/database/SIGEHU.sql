@@ -1219,6 +1219,8 @@ ACTIVE AFTER UPDATE
 POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vIdAuditoria INTEGER;
+    DECLARE VARIABLE vRes INTEGER;
 BEGIN
     IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
 
@@ -1231,6 +1233,13 @@ BEGIN
         'UPDATE',
         'Se actualizó el cliente: ' || NEW.NombreCompleto || '.',
         NEW.idCliente
+    )
+    RETURNING idAuditoria INTO :vIdAuditoria;
+
+    vRes = RDB$SET_CONTEXT(
+        'USER_SESSION',
+        'LAST_AUDIT_ID',
+        CAST(vIdAuditoria AS VARCHAR(20))
     );
 END^
 
@@ -1266,6 +1275,8 @@ POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
     DECLARE VARIABLE vNombreCliente VARCHAR(100);
+    DECLARE VARIABLE vIdAuditoria INTEGER;
+    DECLARE VARIABLE vRes INTEGER;
 BEGIN
     IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
 
@@ -1282,6 +1293,13 @@ BEGIN
         'UPDATE',
         'Se actualizó la obra: ' || NEW.Nombre || ' (cliente: ' || :vNombreCliente || ').',
         NEW.idObra
+    )
+    RETURNING idAuditoria INTO :vIdAuditoria;
+
+    vRes = RDB$SET_CONTEXT(
+        'USER_SESSION',
+        'LAST_AUDIT_ID',
+        CAST(vIdAuditoria AS VARCHAR(20))
     );
 END^
 
@@ -1321,6 +1339,8 @@ ACTIVE AFTER UPDATE
 POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vIdAuditoria INTEGER;
+    DECLARE VARIABLE vRes INTEGER;
 BEGIN
     IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
 
@@ -1333,6 +1353,13 @@ BEGIN
         'UPDATE',
         'Se actualizó el material: ' || NEW.Nombre || '.',
         NEW.idMaterial
+    )
+    RETURNING idAuditoria INTO :vIdAuditoria;
+
+    vRes = RDB$SET_CONTEXT(
+        'USER_SESSION',
+        'LAST_AUDIT_ID',
+        CAST(vIdAuditoria AS VARCHAR(20))
     );
 END^
 
@@ -1367,6 +1394,8 @@ ACTIVE AFTER UPDATE
 POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vIdAuditoria INTEGER;
+    DECLARE VARIABLE vRes INTEGER;
 BEGIN
     IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
 
@@ -1379,6 +1408,13 @@ BEGIN
         'UPDATE',
         'Se actualizó el proveedor: ' || NEW.Nombre || '.',
         NEW.idProveedor
+    )
+    RETURNING idAuditoria INTO :vIdAuditoria;
+
+    vRes = RDB$SET_CONTEXT(
+        'USER_SESSION',
+        'LAST_AUDIT_ID',
+        CAST(vIdAuditoria AS VARCHAR(20))
     );
 END^
 
@@ -1414,6 +1450,8 @@ POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
     DECLARE VARIABLE vUsuarioT VARCHAR(50);
+    DECLARE VARIABLE vIdAuditoria INTEGER;
+    DECLARE VARIABLE vRes INTEGER;
 BEGIN
     IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
 
@@ -1430,6 +1468,13 @@ BEGIN
         'UPDATE',
         'Se actualizó la compra del trabajador: ' || :vUsuarioT || '.',
         NEW.idCompra
+    )
+    RETURNING idAuditoria INTO :vIdAuditoria;
+
+    vRes = RDB$SET_CONTEXT(
+        'USER_SESSION',
+        'LAST_AUDIT_ID',
+        CAST(vIdAuditoria AS VARCHAR(20))
     );
 END^
 
@@ -1471,6 +1516,8 @@ AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
     DECLARE VARIABLE vNombreObra VARCHAR(100);
     DECLARE VARIABLE vNombreCliente VARCHAR(100);
+    DECLARE VARIABLE vIdAuditoria INTEGER;
+    DECLARE VARIABLE vRes INTEGER;
 BEGIN
     IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
 
@@ -1489,6 +1536,13 @@ BEGIN
         'UPDATE',
         'Se actualizó la garantía de la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
         NEW.idGarantia
+    )
+    RETURNING idAuditoria INTO :vIdAuditoria;
+
+    vRes = RDB$SET_CONTEXT(
+        'USER_SESSION',
+        'LAST_AUDIT_ID',
+        CAST(vIdAuditoria AS VARCHAR(20))
     );
 END^
 
@@ -1729,6 +1783,8 @@ AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
     DECLARE VARIABLE vNombreProveedor VARCHAR(100);
     DECLARE VARIABLE vNombreMaterial VARCHAR(150);
+    DECLARE VARIABLE vIdAuditoria INTEGER;
+    DECLARE VARIABLE vRes INTEGER;
 BEGIN
     vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
 
@@ -1747,6 +1803,13 @@ BEGIN
         'UPDATE',
         'Se actualizó el material: ' || :vNombreMaterial || ' del proveedor: ' || :vNombreProveedor || ' en una compra.',
         NEW.idDetalleCompra
+    )
+    RETURNING idAuditoria INTO :vIdAuditoria;
+
+    vRes = RDB$SET_CONTEXT(
+        'USER_SESSION',
+        'LAST_AUDIT_ID',
+        CAST(vIdAuditoria AS VARCHAR(20))
     );
 END^
 
