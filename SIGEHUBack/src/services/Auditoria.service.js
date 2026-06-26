@@ -11,7 +11,7 @@ const createAuditoria = async ({ pIdTrabajador, pTabla, pAccion, pDescripcion, p
     try {
         const rows = await txAudit.query(
             `SELECT * FROM SP_INSERTAR_AUDITORIA (?, ?, ?, ?, ?)`,
-            [pIdTrabajador, pTabla, pAccion, descripcionBuffer, String(pRegistroAfectado)]
+            [pIdTrabajador, pTabla, pAccion, descripcionBuffer, pRegistroAfectado]
         );
 
         await txAudit.commit();

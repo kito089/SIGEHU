@@ -47,6 +47,10 @@ const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo }) => 
     let nuevoId;
     console.log("Datos recibidos 2: ",{ Usuario, Contra, Nombre, Telefono, Tipo });
     try {
+        await txInsert.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
         const rows = await txInsert.query(
             `SELECT * FROM SP_INSERTAR_TRABAJADOR (?, ?, ?, ?, ?)`,
             [Usuario, Contra, Nombre, Telefono ?? null, Tipo]
@@ -60,14 +64,6 @@ const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo }) => 
         await txInsert.rollback();
         throw err;
     }
-
-    const idAuditoria = await audit.createAuditoria({
-        pIdTrabajador: 1, 
-        pTabla: "Trabajadores", 
-        pAccion: "INSERT", 
-        pDescripcion: `Se agregó el trabajador ${Usuario}`, 
-        pRegistroAfectado: nuevoId
-    });
 
     return nuevoId;
 };
@@ -98,10 +94,13 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
         throw err;
     }
 
-    // ── 2. Ejecutar el UPDATE ────────────────────────────────────────────────
     const txUpdate = await db.transaction();
 
     try {
+        await txUpdate.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
         await txUpdate.execute(
             `UPDATE Trabajadores
              SET NombreUsuario = ?,
@@ -119,8 +118,26 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
         await txUpdate.rollback();
         throw err;
     }
+    const txAudit = await db.transaction();
+    let idAudit;
 
-    // ── 3. Determinar qué cambió ─────────────────────────────────────────────
+    try {
+        const rows = await db.query(`
+            SELECT
+                RDB$GET_CONTEXT(
+                    'USER_SESSION',
+                    'LAST_AUDIT_ID'
+                ) AS ID
+            FROM RDB$DATABASE
+        `);
+
+        idAudit = rows[0].ID;
+        console.log("id: ", idAudit);
+        await txAudit.commit();
+    } catch (err) {
+        await txAudit.rollback();
+        throw err;
+    } 
     const comparacion = [
         { campo: 'NombreUsuario', anterior: anterior.NOMBREUSUARIO, nuevo: Usuario },
         { campo: 'NombreCompleto', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre },
@@ -132,25 +149,14 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
         ({ anterior, nuevo }) => String(anterior ?? '') !== String(nuevo ?? '')
     );
 
-    // ── 4. Registrar auditoría solo si hubo cambios ──────────────────────────
     if (cambios.length > 0) {
-        const idAuditoria = await audit.createAuditoria({
-            pIdTrabajador: 1,
-            pTabla: 'Trabajadores',
-            pAccion: 'UPDATE',
-            pDescripcion: `Se actualizó el trabajador ${Usuario}`,
-            pRegistroAfectado: id
-        });
-
-        if (idAuditoria) {
-            for (const { campo, anterior: ant, nuevo } of cambios) {
-                await audit.createAuditoriaDetalle({
-                    pIdAuditoria: idAuditoria,
-                    pCampo: campo,
-                    pValorAnterior: String(ant ?? ''),
-                    pValorNuevo: String(nuevo ?? '')
-                });
-            }
+        for (const { campo, anterior: ant, nuevo } of cambios) {
+            await audit.createAuditoriaDetalle({
+                pIdAuditoria: idAudit,
+                pCampo: campo,
+                pValorAnterior: String(ant ?? ''),
+                pValorNuevo: String(nuevo ?? '')
+            });
         }
     }
 
@@ -164,6 +170,10 @@ const deleteTrabajador = async (id) => {
 
     try {
         await transaction.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
+        await transaction.execute(
             "UPDATE Trabajadores SET Activo = FALSE WHERE IdTrabajador = ?",
             [id]
         );
@@ -174,33 +184,6 @@ const deleteTrabajador = async (id) => {
         await transaction.rollback();
         throw err;
     }
-
-    const txRead = await db.transaction();
-    let Usuario;
-    try {
-        const rows = await txRead.query(
-            `SELECT NombreUsuario FROM Trabajadores WHERE idTrabajador = ?`,
-            [id]
-        );
-
-        if (!rows || rows.length === 0) return null; // no existe
-        console.log("Usuario desactivado: ", rows)
-        Usuario = rows[0].NOMBREUSUARIO;
-        console.log(Usuario)
-
-        await txRead.commit();
-    } catch (err) {
-        await txRead.rollback();
-        throw err;
-    }
-
-    const idAuditoria = await audit.createAuditoria({
-        pIdTrabajador: 1, 
-        pTabla: "Trabajadores", 
-        pAccion: "DELETE", 
-        pDescripcion: `Se eliminó el trabajador ${Usuario}`, 
-        pRegistroAfectado: id
-    });
 
     return true;
 };

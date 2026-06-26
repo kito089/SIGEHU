@@ -15,12 +15,8 @@ CREATE TABLE TiposUsuarios (
     PRIMARY KEY (idTipoUsuario)
 );
 
-COMMIT;
-
 INSERT INTO TiposUsuarios (Nombre) VALUES ('Propietario');
 INSERT INTO TiposUsuarios (Nombre) VALUES ('Trabajador');
-
-COMMIT;
 
 -- -----------------------------------------------------
 -- RegimenesFiscales
@@ -32,11 +28,7 @@ CREATE TABLE RegimenesFiscales (
     CONSTRAINT PK_RegimenesFiscales PRIMARY KEY (idRegimenFiscal)
 );
 
-COMMIT;
-
 CREATE UNIQUE INDEX Codigo_UNIQUE ON RegimenesFiscales(Codigo);
-
-COMMIT;
 
 INSERT INTO RegimenesFiscales (Codigo, Descripcion) VALUES
 ('601', 'REGIMEN GENERAL DE LEY PERSONAS MORALES');
@@ -91,8 +83,6 @@ INSERT INTO RegimenesFiscales (Codigo, Descripcion) VALUES
 INSERT INTO RegimenesFiscales (Codigo, Descripcion) VALUES
 ('626', 'RÉGIMEN SIMPLIFICADO DE CONFIANZA');
 
-COMMIT;
-
 -- -----------------------------------------------------
 -- UsosCFDI
 -- -----------------------------------------------------
@@ -103,11 +93,11 @@ CREATE TABLE UsosCFDI (
     CONSTRAINT PK_UsosCFDI PRIMARY KEY (idUsoCFDI)
 );
 
-COMMIT;
+
 
 CREATE UNIQUE INDEX UsoCFDI_UNIQUE ON UsosCFDI(UsoCFDI);
 
-COMMIT;
+
 
 INSERT INTO UsosCFDI (UsoCFDI, Descripcion) VALUES 
 ('G01', 'ADQUISICIÓN DE MERCANCÍAS');
@@ -158,7 +148,7 @@ INSERT INTO UsosCFDI (UsoCFDI, Descripcion) VALUES
 INSERT INTO UsosCFDI (UsoCFDI, Descripcion) VALUES 
 ('CN01', 'NÓMINA');
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- EstadosObra
@@ -170,7 +160,7 @@ CREATE TABLE EstadosObra (
     PRIMARY KEY (idEstadoObra)
 );
 
-COMMIT;
+
 
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Solicitud recibida', 1);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Levantamiento pendiente', 2);
@@ -180,7 +170,7 @@ INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Instalado', 5);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Garantia', 6);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Finalizado', 7);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Materiales
@@ -194,7 +184,7 @@ CREATE TABLE Materiales (
     PRIMARY KEY (idMaterial)
 );
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- TiposPago
@@ -205,12 +195,12 @@ CREATE TABLE TiposPago (
     PRIMARY KEY (idTipoPago)
 );
 
-COMMIT;
+
 
 INSERT INTO TiposPago (Nombre) VALUES ('Efectivo');
 INSERT INTO TiposPago (Nombre) VALUES ('Transferencia');
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- FormasPago
@@ -221,13 +211,13 @@ CREATE TABLE FormasPago (
     PRIMARY KEY (idFormaPago)
 );
 
-COMMIT;
+
 
 INSERT INTO FormasPago (Nombre) VALUES ('Anticipo');
 INSERT INTO FormasPago (Nombre) VALUES ('Parcial');
 INSERT INTO FormasPago (Nombre) VALUES ('Liquidación');
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- CamposPermiso
@@ -239,7 +229,7 @@ CREATE TABLE CamposPermiso (
     PRIMARY KEY (idCampoPermiso)
 );
 
-COMMIT;
+
 
 INSERT INTO CamposPermiso (NombreCampo, Descripcion) VALUES
 ('direccion_instalacion', 'Direccion de instalacion de la obra');
@@ -258,7 +248,7 @@ INSERT INTO CamposPermiso (NombreCampo, Descripcion) VALUES
 INSERT INTO CamposPermiso (NombreCampo, Descripcion) VALUES
 ('confirmar_actividad', 'Permiso para confirmar la etapa asignada');
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- EstadosGarantia
@@ -270,13 +260,13 @@ CREATE TABLE EstadosGarantia (
     PRIMARY KEY (idEstadoGarantia)
 );
 
-COMMIT;
+
 
 INSERT INTO EstadosGarantia (Nombre, Orden) VALUES ('Reportada', 1);
 INSERT INTO EstadosGarantia (Nombre, Orden) VALUES ('En atencion', 2);
 INSERT INTO EstadosGarantia (Nombre, Orden) VALUES ('Resuelta', 3);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Proveedores -- Recordar Permisos Granulares Proveedores
@@ -292,11 +282,11 @@ CREATE TABLE Proveedores (
     PRIMARY KEY (idProveedor)
 );
 
-COMMIT;
+
 
 CREATE INDEX IDX_Proveedores_Nombre ON Proveedores (Nombre);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- TABLAS PRINCIPALES
@@ -320,11 +310,11 @@ CREATE TABLE Trabajadores (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Trabajadores_TiposUsuarios1_idx ON Trabajadores(TiposUsuarios_idTipoUsuario);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Clientes
@@ -353,13 +343,13 @@ CREATE TABLE Clientes (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Clientes_RegimenesFiscales1_idx ON Clientes(RegimenesFiscales_idRegimenFiscal);
 CREATE INDEX fk_Clientes_UsosCFDI1_idx ON Clientes(UsosCFDI_idUsoCFDI);
 CREATE INDEX IDX_Clientes_Nombre ON Clientes (NombreCompleto);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Obras
@@ -373,8 +363,8 @@ CREATE TABLE Obras (
     Alto DECIMAL(10,2),
     Profundidad DECIMAL(10,2),
     EstadosObra_idEstadoObra INTEGER NOT NULL,
-    FechaCreacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FechaUltimaActualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FechaUltimaActualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     Activo BOOLEAN DEFAULT TRUE NOT NULL,
     PRIMARY KEY (idObra),
     CONSTRAINT fk_Obras_Clientes
@@ -387,14 +377,14 @@ CREATE TABLE Obras (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Obras_Clientes_idx ON Obras(Clientes_idCliente);
 CREATE INDEX fk_Obras_EstadosObra1_idx ON Obras(EstadosObra_idEstadoObra);
 CREATE INDEX IDX_Obras_Nombre ON Obras (Nombre);
 CREATE INDEX IDX_Obras_Estado_Activo ON Obras (EstadosObra_idEstadoObra, Activo);
 
-COMMIT;
+
 
 SET TERM ^;
 CREATE TRIGGER TR_OBRAS_BU
@@ -406,7 +396,7 @@ BEGIN
 END^
 SET TERM ;^
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- FotosObras
@@ -417,7 +407,7 @@ CREATE TABLE FotosObras (
     EstadosObra_idEstadoObra INTEGER NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
     RutaArchivo VARCHAR(300) NOT NULL,
-    FechaCreacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (idFotoObra),
     CONSTRAINT fk_Fotos_Obras1
         FOREIGN KEY (Obras_idObra)
@@ -433,13 +423,13 @@ CREATE TABLE FotosObras (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Fotos_Obras1_idx ON FotosObras(Obras_idObra);
 CREATE INDEX fk_Fotos_EstadosObra1_idx ON FotosObras(EstadosObra_idEstadoObra);
 CREATE INDEX fk_Fotos_Trabajadores1_idx ON FotosObras(Trabajadores_idTrabajador);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Notas
@@ -450,7 +440,7 @@ CREATE TABLE NotasObras (
     EstadosObra_idEstadoObra INTEGER NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
     Nota BLOB SUB_TYPE TEXT NOT NULL,
-    FechaCreacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (idNotaObra),
         CONSTRAINT fk_Notas_Obras1
         FOREIGN KEY (Obras_idObra)
@@ -466,13 +456,13 @@ CREATE TABLE NotasObras (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Notas_Obras1_idx ON NotasObras(Obras_idObra);
 CREATE INDEX fk_Notas_EstadosObra1_idx ON NotasObras(EstadosObra_idEstadoObra);
 CREATE INDEX fk_Notas_Trabajadores1_idx ON NotasObras(Trabajadores_idTrabajador);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Obras_has_Materiales -> Materiales para la fabricacion de la obra
@@ -494,12 +484,12 @@ CREATE TABLE Obras_has_Materiales (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Obras_has_Materiales_Materiales1_idx ON Obras_has_Materiales(Materiales_idMaterial);
 CREATE INDEX fk_Obras_has_Materiales_Obras1_idx ON Obras_has_Materiales(Obras_idObra);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Obras_has_Trabajadores -> Asignacion de trabajadores a cada estado de obra con fecha
@@ -509,7 +499,7 @@ CREATE TABLE Obras_has_Trabajadores (
     Obras_idObra INTEGER NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
     EstadosObra_idEstadoObra INTEGER NOT NULL,
-    FechaAsignacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaAsignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (idDetalleAsignacion),
     CONSTRAINT fk_Obras_has_Trabajadores_Obras1
         FOREIGN KEY (Obras_idObra)
@@ -525,13 +515,13 @@ CREATE TABLE Obras_has_Trabajadores (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Obras_has_Trabajadores_Obras1_idx ON Obras_has_Trabajadores(Obras_idObra);
 CREATE INDEX fk_Obras_has_Trabajadores_Trabajadores1_idx ON Obras_has_Trabajadores(Trabajadores_idTrabajador);
 CREATE INDEX fk_Obras_has_Trabajadores_EstadosObra1_idx ON Obras_has_Trabajadores(EstadosObra_idEstadoObra);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- DetallesPagos -> Permite registrar el tipo de pago, si fue anticipo, parcial o final, y el trabajador que lo registro
@@ -544,7 +534,7 @@ CREATE TABLE DetallesPagos (
     EstadosObra_idEstadoObra INTEGER NOT NULL,
     Monto DECIMAL(10,2) NOT NULL,
     FormasPago_idFormaPago INTEGER NOT NULL,
-    FechaRegistro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaRegistro TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (idDetallePago),
     CONSTRAINT fk_DetallesPagos_Obras1
         FOREIGN KEY (Obras_idObra)
@@ -568,7 +558,7 @@ CREATE TABLE DetallesPagos (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_DetallesPagos_TiposPago1_idx ON DetallesPagos(TiposPago_idTipoPago);
 CREATE INDEX fk_DetallesPagos_Obras1_idx ON DetallesPagos(Obras_idObra);
@@ -576,7 +566,7 @@ CREATE INDEX fk_DetallesPagos_Trabajadores1_idx ON DetallesPagos(Trabajadores_id
 CREATE INDEX fk_DetallesPagos_EstadosObra1_idx ON DetallesPagos(EstadosObra_idEstadoObra);
 CREATE INDEX fk_DetallesPagos_FormasPago1_idx ON DetallesPagos(FormasPago_idFormaPago);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- PermisosGranulares
@@ -602,13 +592,13 @@ CREATE TABLE PermisosGranularesObras (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_PermisosGranularesObras_CamposPermiso1_idx ON PermisosGranularesObras(CamposPermiso_idCampoPermiso);
 CREATE INDEX fk_PermisosGranularesObras_Obras1_idx ON PermisosGranularesObras(Obras_idObra);
 CREATE INDEX fk_PermisosGranularesObras_Trabajadores1_idx ON PermisosGranularesObras(Trabajadores_idTrabajador);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Proveedores_has_Materiales -> Materiales que provee un proveedor
@@ -629,12 +619,12 @@ CREATE TABLE Proveedores_has_Materiales (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Proveedores_has_Materiales_Materiales1_idx ON Proveedores_has_Materiales(Materiales_idMaterial);
 CREATE INDEX fk_Proveedores_has_Materiales_Proveedores1_idx ON Proveedores_has_Materiales(Proveedores_idProveedor);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Compras
@@ -642,7 +632,7 @@ COMMIT;
 CREATE TABLE Compras (
     idCompra INTEGER GENERATED BY DEFAULT AS IDENTITY,
     Trabajadores_idTrabajador INTEGER NOT NULL,
-    FechaCompra TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaCompra TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     Notas BLOB SUB_TYPE TEXT,
     Activo BOOLEAN DEFAULT TRUE NOT NULL,
     PRIMARY KEY (idCompra),
@@ -652,11 +642,11 @@ CREATE TABLE Compras (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Compras_Trabajadores1_idx ON Compras(Trabajadores_idTrabajador);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- DetallesCompras -> Relaciona las compras con los proveedores y materiales que se compraron
@@ -679,12 +669,12 @@ CREATE TABLE DetallesCompras (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_DetallesCompras_Proveedores_has_Materiales1_idx ON DetallesCompras(Proveedores_has_Materiales_Proveedores_idProveedor, Proveedores_has_Materiales_Materiales_idMaterial);
 CREATE INDEX fk_DetallesCompras_Compras1_idx ON DetallesCompras(Compras_idCompra);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Garantias Creo que tambien ocupa sus propias notas
@@ -693,10 +683,10 @@ CREATE TABLE Garantias (
     idGarantia INTEGER GENERATED BY DEFAULT AS IDENTITY,
     Obras_idObra INTEGER NOT NULL,
     Descripcion BLOB SUB_TYPE TEXT,
-    FechaCreacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
     EstadosGarantia_idEstadoGarantia INTEGER NOT NULL,
-    FechaUltimaActualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaUltimaActualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     DescripcionResolucion BLOB SUB_TYPE TEXT,
     Activo BOOLEAN DEFAULT TRUE NOT NULL,
     PRIMARY KEY (idGarantia),
@@ -714,13 +704,13 @@ CREATE TABLE Garantias (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_Garantias_EstadosGarantia1_idx ON Garantias(EstadosGarantia_idEstadoGarantia);
 CREATE INDEX fk_Garantias_Obras1_idx ON Garantias(Obras_idObra);
 CREATE INDEX fk_Garantias_Trabajadores1_idx ON Garantias(Trabajadores_idTrabajador);
 
-COMMIT;
+
 
 SET TERM ^;
 CREATE TRIGGER TR_GARANTIAS_BU
@@ -732,7 +722,7 @@ BEGIN
 END^
 SET TERM ;^
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- FotosGarantias
@@ -743,7 +733,7 @@ CREATE TABLE FotosGarantias (
     EstadosGarantia_idEstadoGarantia INTEGER NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
     RutaArchivo VARCHAR(300) NOT NULL,
-    FechaCreacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (idFotoGarantia),
     CONSTRAINT fk_FotosGarantias_Garantias1
         FOREIGN KEY (Garantias_idGarantia)
@@ -759,13 +749,13 @@ CREATE TABLE FotosGarantias (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_FotosGarantias_Garantias1_idx ON FotosGarantias(Garantias_idGarantia);
 CREATE INDEX fk_FotosGarantias_EstadosGarantia1_idx ON FotosGarantias(EstadosGarantia_idEstadoGarantia);
 CREATE INDEX fk_FotosGarantias_Trabajadores1_idx ON FotosGarantias(Trabajadores_idTrabajador);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- NotasGarantias
@@ -776,7 +766,7 @@ CREATE TABLE NotasGarantias (
     EstadosGarantia_idEstadoGarantia INTEGER NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
     Nota BLOB SUB_TYPE TEXT NOT NULL,
-    FechaCreacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (idNotaGarantia),
     CONSTRAINT fk_NotasGarantias_Garantias1
         FOREIGN KEY (Garantias_idGarantia)
@@ -792,13 +782,13 @@ CREATE TABLE NotasGarantias (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_NotasGarantias_Garantias1_idx ON NotasGarantias(Garantias_idGarantia);
 CREATE INDEX fk_NotasGarantias_EstadosGarantia1_idx ON NotasGarantias(EstadosGarantia_idEstadoGarantia);
 CREATE INDEX fk_NotasGarantias_Trabajadores1_idx ON NotasGarantias(Trabajadores_idTrabajador);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- PermisosGranularesGarantias
@@ -823,13 +813,13 @@ CREATE TABLE PermisosGranularesGarantias (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 CREATE INDEX fk_PermisosGranularesGarantias_CamposPermiso1_idx ON PermisosGranularesGarantias(CamposPermiso_idCampoPermiso);
 CREATE INDEX fk_PermisosGranularesGarantias_Garantias1_idx ON PermisosGranularesGarantias(Garantias_idGarantia);
 CREATE INDEX fk_PermisosGranularesGarantias_Trabajadores1_idx ON PermisosGranularesGarantias(Trabajadores_idTrabajador);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Auditorias
@@ -837,11 +827,11 @@ COMMIT;
 CREATE TABLE Auditorias (
     idAuditoria INTEGER GENERATED BY DEFAULT AS IDENTITY,
     Trabajadores_idTrabajador INTEGER NOT NULL,
-    Fecha TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     Tabla VARCHAR(50) NOT NULL,
     Accion VARCHAR(20) NOT NULL,
     Descripcion BLOB SUB_TYPE TEXT,
-    RegistroAfectado VARCHAR(50) NOT NULL,
+    RegistroAfectado INTEGER NOT NULL,
     CONSTRAINT fk_Auditorias_Trabajadores1
         FOREIGN KEY (Trabajadores_idTrabajador)
         REFERENCES Trabajadores (idTrabajador)
@@ -849,12 +839,12 @@ CREATE TABLE Auditorias (
     PRIMARY KEY (idAuditoria)
 );
 
-COMMIT;
+
 
 CREATE INDEX IDX_Auditorias_Fecha ON Auditorias (Fecha);
 CREATE INDEX IDX_Auditorias_Tabla_Accion ON Auditorias (Tabla, Accion);
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- AuditoriasDetalles -> Aplica para actualizaciones
@@ -872,13 +862,13 @@ CREATE TABLE AuditoriasDetalles (
             ON DELETE NO ACTION
 );
 
-COMMIT;
+
 
 -- -----------------------------------------------------
 -- Triggers para auditorias
 -- -----------------------------------------------------
 
-SET TERM ^;
+SET TERM ^ ;
 
 -- Trabajadores - INSERT
 CREATE OR ALTER TRIGGER TR_Auditorias_Trabajadores_AI
@@ -889,21 +879,22 @@ AS
     DECLARE VARIABLE vidAuditoria INTEGER;
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
 BEGIN
-    -- Leer el idTrabajador que el backend guardó en el contexto de sesión.
-    -- El backend debe llamar: SELECT RDB$SET_CONTEXT('USER_SESSION','CURRENT_USER_ID', :id) FROM RDB$DATABASE
-    -- antes de cualquier INSERT/UPDATE.
     vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
 
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
         'Trabajadores',
         'INSERT',
         'Se creó el trabajador: ' || NEW.NombreUsuario || '.',
-        CAST(NEW.idTrabajador AS VARCHAR(50))
+        NEW.idTrabajador
     )
     RETURNING idAuditoria INTO :vidAuditoria;
 END^
+
+SET TERM ; ^
+
+SET TERM ^ ;
 
 -- Clientes - INSERT
 CREATE OR ALTER TRIGGER TR_Auditorias_Clientes_AI
@@ -918,13 +909,17 @@ BEGIN
 
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
         'Clientes',
         'INSERT',
         'Se creó el cliente: ' || NEW.NombreCompleto || '.',
-        CAST(NEW.idCliente AS VARCHAR(50))
+        NEW.idCliente
     );
 END^
+
+SET TERM ; ^
+
+SET TERM ^ ;
 
 -- Obras - INSERT
 CREATE OR ALTER TRIGGER TR_Auditorias_Obras_AI
@@ -933,18 +928,28 @@ ACTIVE AFTER INSERT
 POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
 BEGIN
     vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
 
+    SELECT c.NombreCompleto
+    FROM Clientes c
+    WHERE c.idCliente = NEW.Clientes_idCliente
+    INTO :vNombreCliente;
+
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
         'Obras',
         'INSERT',
-        'Se creó la obra: ' || NEW.Nombre || '.',
-        CAST(NEW.idObra AS VARCHAR(50))
+        'Se creó la obra: ' || NEW.Nombre || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.idObra
     );
 END^
+
+SET TERM ; ^
+
+SET TERM ^ ;
 
 -- Proveedores - INSERT
 CREATE OR ALTER TRIGGER TR_Auditorias_Proveedores_AI
@@ -958,13 +963,17 @@ BEGIN
 
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
         'Proveedores',
         'INSERT',
         'Se creó el proveedor: ' || NEW.Nombre || '.',
-        CAST(NEW.idProveedor AS VARCHAR(50))
+        NEW.idProveedor
     );
 END^
+
+SET TERM ; ^
+
+SET TERM ^ ;
 
 -- Materiales - INSERT
 CREATE OR ALTER TRIGGER TR_Auditorias_Materiales_AI
@@ -978,12 +987,17 @@ BEGIN
 
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
-        'Materiales', 'INSERT',
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Materiales',
+        'INSERT',
         'Se creó el material: ' || NEW.Nombre || '.',
-        CAST(NEW.idMaterial AS VARCHAR(50))
+        NEW.idMaterial
     );
 END^
+
+SET TERM ; ^
+
+SET TERM ^ ;
 
 -- Garantias - INSERT
 CREATE OR ALTER TRIGGER TR_Auditorias_Garantias_AI
@@ -992,17 +1006,30 @@ ACTIVE AFTER INSERT
 POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
 BEGIN
     vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
 
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = NEW.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
+
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
-        'Garantias', 'INSERT',
-        'Se abrió garantía para la obra id: ' || CAST(NEW.Obras_idObra AS VARCHAR(10)) || '.',
-        CAST(NEW.idGarantia AS VARCHAR(50))
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Garantias',
+        'INSERT',
+        'Se abrió garantía para la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.idGarantia
     );
 END^
+
+SET TERM ; ^
+
+SET TERM ^ ;
 
 -- Compras - INSERT
 CREATE OR ALTER TRIGGER TR_Auditorias_Compras_AI
@@ -1011,19 +1038,30 @@ ACTIVE AFTER INSERT
 POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
 BEGIN
     vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
 
+    SELECT NombreUsuario
+    FROM Trabajadores
+    WHERE idTrabajador = NEW.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
-        'Compras', 'INSERT',
-        'Se registró una compra por el trabajador id: ' || CAST(NEW.Trabajadores_idTrabajador AS VARCHAR(10)) || '.',
-        CAST(NEW.idCompra AS VARCHAR(50))
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Compras',
+        'INSERT',
+        'Se asignó una compra al trabajador: ' || :vUsuarioT || '.',
+        NEW.idCompra
     );
 END^
 
--- PermisosGranularesObras - INSERT (para auditar asignaciones de permisos)
+SET TERM ; ^
+
+SET TERM ^ ;
+
+-- PermisosGranularesObras - INSERT
 CREATE OR ALTER TRIGGER TR_Auditorias_PermisosObras_AI
 FOR PermisosGranularesObras
 ACTIVE AFTER INSERT
@@ -1031,24 +1069,47 @@ POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
     DECLARE VARIABLE vCampo VARCHAR(50);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
 BEGIN
     vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
 
-    SELECT NombreCampo FROM CamposPermiso WHERE idCampoPermiso = NEW.CamposPermiso_idCampoPermiso
+    SELECT NombreCampo
+    FROM CamposPermiso
+    WHERE idCampoPermiso = NEW.CamposPermiso_idCampoPermiso
     INTO :vCampo;
+
+    SELECT NombreUsuario
+    FROM Trabajadores
+    WHERE idTrabajador = NEW.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = NEW.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
 
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
-        'PermisosGranularesObras', 'INSERT',
-        'Se otorgó permiso "' || vCampo || '" al trabajador id: '
-            || CAST(NEW.Trabajadores_idTrabajador AS VARCHAR(10))
-            || ' en obra id: ' || CAST(NEW.Obras_idObra AS VARCHAR(10)) || '.',
-        CAST(NEW.idPermisoGranularObra AS VARCHAR(50))
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'PermisosGranularesObras',
+        'INSERT',
+        'Se otorgó permiso "' || :vCampo || '" al trabajador: ' || :vUsuarioT
+            || ' en la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.idPermisoGranularObra
     );
 END^
 
--- PermisosGranularesObras - DELETE (para auditar revocación de permisos)
+SET TERM ; ^
+
+SET TERM ^ ;
+
+-- PermisosGranularesObras - DELETE
+SET TERM ^ ;
+
+-- PermisosGranularesObras - DELETE
 CREATE OR ALTER TRIGGER TR_Auditorias_PermisosObras_AD
 FOR PermisosGranularesObras
 ACTIVE AFTER DELETE
@@ -1056,25 +1117,813 @@ POSITION 0
 AS
     DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
     DECLARE VARIABLE vCampo VARCHAR(50);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
 BEGIN
     vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
 
-    SELECT NombreCampo FROM CamposPermiso WHERE idCampoPermiso = OLD.CamposPermiso_idCampoPermiso
+    SELECT NombreCampo
+    FROM CamposPermiso
+    WHERE idCampoPermiso = OLD.CamposPermiso_idCampoPermiso
     INTO :vCampo;
+
+    SELECT NombreUsuario
+    FROM Trabajadores
+    WHERE idTrabajador = OLD.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = OLD.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
 
     INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
     VALUES (
-        COALESCE(CAST(vUsuarioCtx AS INTEGER), 1),
-        'PermisosGranularesObras', 'DELETE',
-        'Se revocó permiso "' || vCampo || '" al trabajador id: '
-            || CAST(OLD.Trabajadores_idTrabajador AS VARCHAR(10))
-            || ' en obra id: ' || CAST(OLD.Obras_idObra AS VARCHAR(10)) || '.',
-        CAST(OLD.idPermisoGranularObra AS VARCHAR(50))
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'PermisosGranularesObras',
+        'DELETE',
+        'Se revocó permiso "' || :vCampo || '" al trabajador: ' || :vUsuarioT
+            || ' en la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        OLD.idPermisoGranularObra
     );
 END^
 
-SET TERM ;^
+SET TERM ; ^
 
+SET TERM ^ ;
+
+-- =====================================================
+-- TRABAJADORES
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Trabajadores_AU
+FOR Trabajadores
+ACTIVE AFTER UPDATE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vIdAuditoria INTEGER;
+    DECLARE VARIABLE vRes INTEGER;
+BEGIN
+    IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Trabajadores',
+        'UPDATE',
+        'Se actualizó el trabajador: ' || NEW.NombreUsuario || '.',
+        NEW.idTrabajador
+    )
+    RETURNING idAuditoria INTO :vIdAuditoria;
+
+    vRes = RDB$SET_CONTEXT(
+        'USER_SESSION',
+        'LAST_AUDIT_ID',
+        CAST(vIdAuditoria AS VARCHAR(20))
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Trabajadores_AD
+FOR Trabajadores
+ACTIVE AFTER UPDATE
+POSITION 1
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+BEGIN
+    IF (OLD.Activo = FALSE OR NEW.Activo = TRUE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Trabajadores',
+        'DELETE',
+        'Se eliminó el trabajador: ' || OLD.NombreUsuario || '.',
+        OLD.idTrabajador
+    );
+END^
+
+-- =====================================================
+-- CLIENTES
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Clientes_AU
+FOR Clientes
+ACTIVE AFTER UPDATE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+BEGIN
+    IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Clientes',
+        'UPDATE',
+        'Se actualizó el cliente: ' || NEW.NombreCompleto || '.',
+        NEW.idCliente
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Clientes_AD
+FOR Clientes
+ACTIVE AFTER UPDATE
+POSITION 1
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+BEGIN
+    IF (OLD.Activo = FALSE OR NEW.Activo = TRUE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Clientes',
+        'DELETE',
+        'Se eliminó el cliente: ' || OLD.NombreCompleto || '.',
+        OLD.idCliente
+    );
+END^
+
+-- =====================================================
+-- OBRAS
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Obras_AU
+FOR Obras
+ACTIVE AFTER UPDATE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+BEGIN
+    IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT NombreCompleto FROM Clientes
+    WHERE idCliente = NEW.Clientes_idCliente
+    INTO :vNombreCliente;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Obras',
+        'UPDATE',
+        'Se actualizó la obra: ' || NEW.Nombre || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.idObra
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Obras_AD
+FOR Obras
+ACTIVE AFTER UPDATE
+POSITION 1
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+BEGIN
+    IF (OLD.Activo = FALSE OR NEW.Activo = TRUE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT NombreCompleto FROM Clientes
+    WHERE idCliente = OLD.Clientes_idCliente
+    INTO :vNombreCliente;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Obras',
+        'DELETE',
+        'Se eliminó la obra: ' || OLD.Nombre || ' (cliente: ' || :vNombreCliente || ').',
+        OLD.idObra
+    );
+END^
+
+-- =====================================================
+-- MATERIALES
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Materiales_AU
+FOR Materiales
+ACTIVE AFTER UPDATE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+BEGIN
+    IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Materiales',
+        'UPDATE',
+        'Se actualizó el material: ' || NEW.Nombre || '.',
+        NEW.idMaterial
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Materiales_AD
+FOR Materiales
+ACTIVE AFTER UPDATE
+POSITION 1
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+BEGIN
+    IF (OLD.Activo = FALSE OR NEW.Activo = TRUE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Materiales',
+        'DELETE',
+        'Se eliminó el material: ' || OLD.Nombre || '.',
+        OLD.idMaterial
+    );
+END^
+
+-- =====================================================
+-- PROVEEDORES
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Proveedores_AU
+FOR Proveedores
+ACTIVE AFTER UPDATE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+BEGIN
+    IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Proveedores',
+        'UPDATE',
+        'Se actualizó el proveedor: ' || NEW.Nombre || '.',
+        NEW.idProveedor
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Proveedores_AD
+FOR Proveedores
+ACTIVE AFTER UPDATE
+POSITION 1
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+BEGIN
+    IF (OLD.Activo = FALSE OR NEW.Activo = TRUE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Proveedores',
+        'DELETE',
+        'Se eliminó el proveedor: ' || OLD.Nombre || '.',
+        OLD.idProveedor
+    );
+END^
+
+-- =====================================================
+-- COMPRAS
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Compras_AU
+FOR Compras
+ACTIVE AFTER UPDATE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
+BEGIN
+    IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT NombreUsuario FROM Trabajadores
+    WHERE idTrabajador = NEW.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Compras',
+        'UPDATE',
+        'Se actualizó la compra del trabajador: ' || :vUsuarioT || '.',
+        NEW.idCompra
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Compras_AD
+FOR Compras
+ACTIVE AFTER UPDATE
+POSITION 1
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
+BEGIN
+    IF (OLD.Activo = FALSE OR NEW.Activo = TRUE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT NombreUsuario FROM Trabajadores
+    WHERE idTrabajador = OLD.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Compras',
+        'DELETE',
+        'Se eliminó la compra del trabajador: ' || :vUsuarioT || '.',
+        OLD.idCompra
+    );
+END^
+
+-- =====================================================
+-- GARANTIAS
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Garantias_AU
+FOR Garantias
+ACTIVE AFTER UPDATE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+BEGIN
+    IF (OLD.Activo = TRUE AND NEW.Activo = FALSE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = NEW.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Garantias',
+        'UPDATE',
+        'Se actualizó la garantía de la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.idGarantia
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_Garantias_AD
+FOR Garantias
+ACTIVE AFTER UPDATE
+POSITION 1
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+BEGIN
+    IF (OLD.Activo = FALSE OR NEW.Activo = TRUE) THEN EXIT;
+
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = OLD.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Garantias',
+        'DELETE',
+        'Se eliminó la garantía de la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        OLD.idGarantia
+    );
+END^
+
+-- =====================================================
+-- OBRAS_HAS_MATERIALES (hard delete)
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_ObrasMateriales_AI
+FOR Obras_has_Materiales
+ACTIVE AFTER INSERT
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+    DECLARE VARIABLE vNombreMaterial VARCHAR(150);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = NEW.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
+
+    SELECT Nombre FROM Materiales
+    WHERE idMaterial = NEW.Materiales_idMaterial
+    INTO :vNombreMaterial;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Obras_has_Materiales',
+        'INSERT',
+        'Se agregó el material: ' || :vNombreMaterial || ' a la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.Obras_idObra
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_ObrasMateriales_AD
+FOR Obras_has_Materiales
+ACTIVE AFTER DELETE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+    DECLARE VARIABLE vNombreMaterial VARCHAR(150);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = OLD.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
+
+    SELECT Nombre FROM Materiales
+    WHERE idMaterial = OLD.Materiales_idMaterial
+    INTO :vNombreMaterial;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Obras_has_Materiales',
+        'DELETE',
+        'Se eliminó el material: ' || :vNombreMaterial || ' de la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        OLD.Obras_idObra
+    );
+END^
+
+-- =====================================================
+-- OBRAS_HAS_TRABAJADORES (hard delete)
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_ObrasTrabajadores_AI
+FOR Obras_has_Trabajadores
+ACTIVE AFTER INSERT
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = NEW.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
+
+    SELECT NombreUsuario FROM Trabajadores
+    WHERE idTrabajador = NEW.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Obras_has_Trabajadores',
+        'INSERT',
+        'Se asignó el trabajador: ' || :vUsuarioT || ' a la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.idDetalleAsignacion
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_ObrasTrabajadores_AD
+FOR Obras_has_Trabajadores
+ACTIVE AFTER DELETE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = OLD.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
+
+    SELECT NombreUsuario FROM Trabajadores
+    WHERE idTrabajador = OLD.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Obras_has_Trabajadores',
+        'DELETE',
+        'Se eliminó el trabajador: ' || :vUsuarioT || ' de la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        OLD.idDetalleAsignacion
+    );
+END^
+
+-- =====================================================
+-- DETALLESPAGOS (solo insert, hard)
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_DetallesPagos_AI
+FOR DetallesPagos
+ACTIVE AFTER INSERT
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Obras o
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE o.idObra = NEW.Obras_idObra
+    INTO :vNombreObra, :vNombreCliente;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'DetallesPagos',
+        'INSERT',
+        'Se registró un pago para la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.idDetallePago
+    );
+END^
+
+-- =====================================================
+-- DETALLESCOMPRAS (insert, update, hard delete)
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_DetallesCompras_AI
+FOR DetallesCompras
+ACTIVE AFTER INSERT
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreProveedor VARCHAR(100);
+    DECLARE VARIABLE vNombreMaterial VARCHAR(150);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT p.Nombre, m.Nombre
+    FROM Proveedores p
+    JOIN Proveedores_has_Materiales pm ON pm.Proveedores_idProveedor = p.idProveedor
+    JOIN Materiales m ON m.idMaterial = pm.Materiales_idMaterial
+    WHERE pm.Proveedores_idProveedor = NEW.Proveedores_has_Materiales_Proveedores_idProveedor
+      AND pm.Materiales_idMaterial   = NEW.Proveedores_has_Materiales_Materiales_idMaterial
+    INTO :vNombreProveedor, :vNombreMaterial;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'DetallesCompras',
+        'INSERT',
+        'Se agregó el material: ' || :vNombreMaterial || ' del proveedor: ' || :vNombreProveedor || ' a una compra.',
+        NEW.idDetalleCompra
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_DetallesCompras_AU
+FOR DetallesCompras
+ACTIVE AFTER UPDATE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreProveedor VARCHAR(100);
+    DECLARE VARIABLE vNombreMaterial VARCHAR(150);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT p.Nombre, m.Nombre
+    FROM Proveedores p
+    JOIN Proveedores_has_Materiales pm ON pm.Proveedores_idProveedor = p.idProveedor
+    JOIN Materiales m ON m.idMaterial = pm.Materiales_idMaterial
+    WHERE pm.Proveedores_idProveedor = NEW.Proveedores_has_Materiales_Proveedores_idProveedor
+      AND pm.Materiales_idMaterial   = NEW.Proveedores_has_Materiales_Materiales_idMaterial
+    INTO :vNombreProveedor, :vNombreMaterial;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'DetallesCompras',
+        'UPDATE',
+        'Se actualizó el material: ' || :vNombreMaterial || ' del proveedor: ' || :vNombreProveedor || ' en una compra.',
+        NEW.idDetalleCompra
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_DetallesCompras_AD
+FOR DetallesCompras
+ACTIVE AFTER DELETE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreProveedor VARCHAR(100);
+    DECLARE VARIABLE vNombreMaterial VARCHAR(150);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT p.Nombre, m.Nombre
+    FROM Proveedores p
+    JOIN Proveedores_has_Materiales pm ON pm.Proveedores_idProveedor = p.idProveedor
+    JOIN Materiales m ON m.idMaterial = pm.Materiales_idMaterial
+    WHERE pm.Proveedores_idProveedor = OLD.Proveedores_has_Materiales_Proveedores_idProveedor
+      AND pm.Materiales_idMaterial   = OLD.Proveedores_has_Materiales_Materiales_idMaterial
+    INTO :vNombreProveedor, :vNombreMaterial;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'DetallesCompras',
+        'DELETE',
+        'Se eliminó el material: ' || :vNombreMaterial || ' del proveedor: ' || :vNombreProveedor || ' de una compra.',
+        OLD.idDetalleCompra
+    );
+END^
+
+-- =====================================================
+-- PROVEEDORES_HAS_MATERIALES (insert, hard delete)
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_ProveedoresMateriales_AI
+FOR Proveedores_has_Materiales
+ACTIVE AFTER INSERT
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreProveedor VARCHAR(100);
+    DECLARE VARIABLE vNombreMaterial VARCHAR(150);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT Nombre FROM Proveedores
+    WHERE idProveedor = NEW.Proveedores_idProveedor
+    INTO :vNombreProveedor;
+
+    SELECT Nombre FROM Materiales
+    WHERE idMaterial = NEW.Materiales_idMaterial
+    INTO :vNombreMaterial;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Proveedores_has_Materiales',
+        'INSERT',
+        'Se vinculó el material: ' || :vNombreMaterial || ' al proveedor: ' || :vNombreProveedor || '.',
+        NEW.Proveedores_idProveedor
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_ProveedoresMateriales_AD
+FOR Proveedores_has_Materiales
+ACTIVE AFTER DELETE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vNombreProveedor VARCHAR(100);
+    DECLARE VARIABLE vNombreMaterial VARCHAR(150);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT Nombre FROM Proveedores
+    WHERE idProveedor = OLD.Proveedores_idProveedor
+    INTO :vNombreProveedor;
+
+    SELECT Nombre FROM Materiales
+    WHERE idMaterial = OLD.Materiales_idMaterial
+    INTO :vNombreMaterial;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'Proveedores_has_Materiales',
+        'DELETE',
+        'Se desvinculó el material: ' || :vNombreMaterial || ' del proveedor: ' || :vNombreProveedor || '.',
+        OLD.Proveedores_idProveedor
+    );
+END^
+
+-- =====================================================
+-- PERMISOSGRANULARESENTIAS (insert, hard delete)
+-- =====================================================
+
+CREATE OR ALTER TRIGGER TR_Auditorias_PermisosGarantias_AI
+FOR PermisosGranularesGarantias
+ACTIVE AFTER INSERT
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vCampo VARCHAR(50);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT NombreCampo FROM CamposPermiso
+    WHERE idCampoPermiso = NEW.CamposPermiso_idCampoPermiso
+    INTO :vCampo;
+
+    SELECT NombreUsuario FROM Trabajadores
+    WHERE idTrabajador = NEW.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Garantias g
+    JOIN Obras o ON o.idObra = g.Obras_idObra
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE g.idGarantia = NEW.Garantias_idGarantia
+    INTO :vNombreObra, :vNombreCliente;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'PermisosGranularesGarantias',
+        'INSERT',
+        'Se otorgó permiso "' || :vCampo || '" al trabajador: ' || :vUsuarioT
+            || ' en la garantía de la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        NEW.idPermisoGranularGarantia
+    );
+END^
+
+CREATE OR ALTER TRIGGER TR_Auditorias_PermisosGarantias_AD
+FOR PermisosGranularesGarantias
+ACTIVE AFTER DELETE
+POSITION 0
+AS
+    DECLARE VARIABLE vUsuarioCtx VARCHAR(10);
+    DECLARE VARIABLE vCampo VARCHAR(50);
+    DECLARE VARIABLE vUsuarioT VARCHAR(50);
+    DECLARE VARIABLE vNombreObra VARCHAR(100);
+    DECLARE VARIABLE vNombreCliente VARCHAR(100);
+BEGIN
+    vUsuarioCtx = CAST(RDB$GET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID') AS VARCHAR(10));
+
+    SELECT NombreCampo FROM CamposPermiso
+    WHERE idCampoPermiso = OLD.CamposPermiso_idCampoPermiso
+    INTO :vCampo;
+
+    SELECT NombreUsuario FROM Trabajadores
+    WHERE idTrabajador = OLD.Trabajadores_idTrabajador
+    INTO :vUsuarioT;
+
+    SELECT o.Nombre, c.NombreCompleto
+    FROM Garantias g
+    JOIN Obras o ON o.idObra = g.Obras_idObra
+    JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+    WHERE g.idGarantia = OLD.Garantias_idGarantia
+    INTO :vNombreObra, :vNombreCliente;
+
+    INSERT INTO Auditorias (Trabajadores_idTrabajador, Tabla, Accion, Descripcion, RegistroAfectado)
+    VALUES (
+        COALESCE(CAST(:vUsuarioCtx AS INTEGER), 1),
+        'PermisosGranularesGarantias',
+        'DELETE',
+        'Se revocó permiso "' || :vCampo || '" al trabajador: ' || :vUsuarioT
+            || ' en la garantía de la obra: ' || :vNombreObra || ' (cliente: ' || :vNombreCliente || ').',
+        OLD.idPermisoGranularGarantia
+    );
+END^
+
+SET TERM ; ^
 
 -- =============================================================================
 -- SECCIÓN 4: PROCEDIMIENTOS ALMACENADOS
@@ -1544,7 +2393,7 @@ CREATE OR ALTER PROCEDURE SP_INSERTAR_AUDITORIA (
     pTabla           VARCHAR(50),
     pAccion          VARCHAR(20),
     pDescripcion     BLOB SUB_TYPE TEXT,
-    pRegistroAfectado VARCHAR(50)
+    pRegistroAfectado INTEGER
 )
 RETURNS (
     oIdAuditoria INTEGER
