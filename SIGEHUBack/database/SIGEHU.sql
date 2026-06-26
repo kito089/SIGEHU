@@ -1093,6 +1093,29 @@ SET TERM ^;
 --   2. Loop en Node: EXECUTE PROCEDURE SP_VINCULAR_MATERIAL_PROVEEDOR(id, idMat, precio, notas)
 -- -----------------------------------------------------------------------------
 
+--ALTER TABLE AUDITORIAS 
+--ALTER idAuditoria
+--RESTART WITH 2;
+
+CREATE OR ALTER PROCEDURE SP_INSERTAR_TRABAJADOR (
+    tUsuario VARCHAR(50),
+    tContra VARCHAR(100),
+    tNombre VARCHAR(100),
+    tTelefono VARCHAR(15),
+    tTipo INTEGER
+)
+RETURNS (
+    oIdTrabajador INTEGER
+)
+AS
+BEGIN
+    INSERT INTO Trabajadores (NombreUsuario, Contra, NombreCompleto, Telefono, TiposUsuarios_idTipoUsuario)
+    VALUES (:tUsuario, :tContra, :tNombre, :tTelefono, :tTipo)
+    RETURNING idTrabajador INTO :oIdTrabajador;
+
+    SUSPEND;
+END^
+
 CREATE OR ALTER PROCEDURE SP_INSERTAR_PROVEEDOR (
     pNombre     VARCHAR(100),
     pDireccion  BLOB SUB_TYPE TEXT,

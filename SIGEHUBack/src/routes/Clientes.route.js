@@ -1,5 +1,5 @@
-const Router = require('express');
-const ctrl = require('../controllers/Clientes.controller.js');
+import Router from 'express';
+import ctrl from '../controllers/Clientes.controller.js';
 
 const router = Router();
 

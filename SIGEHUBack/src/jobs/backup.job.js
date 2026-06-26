@@ -1,6 +1,6 @@
-const fs     = require('fs');
-const path   = require('path');
-const crypto = require('crypto');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 
 const DB_PATH    = path.resolve(__dirname, 'SIGEHU.fdb');
 const BACKUP_DIR = path.resolve(__dirname, 'backup');
