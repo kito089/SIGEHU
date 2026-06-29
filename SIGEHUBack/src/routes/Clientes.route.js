@@ -3,11 +3,10 @@ import ctrl from '../controllers/Clientes.controller.js';
 
 const router = Router();
 
-// Rutas estáticas primero
-router.get('/structure', ctrl.getStructure);
-
-router.get('/', ctrl.getAll);
-router.get('/:id', ctrl.getById);
+router.get('/', ctrl.findClientes);
+router.get('/RegimenesFiscales', ctrl.findRegimenesFiscales)
+router.get('/UsosCFDI', ctrl.findUsosCFDI)
+router.get('/:id', ctrl.findById);
 
 router.post('/', ctrl.create);
 router.put('/:id', ctrl.update);

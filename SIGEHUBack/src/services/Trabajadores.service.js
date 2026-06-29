@@ -148,7 +148,12 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
     const cambios = comparacion.filter(
         ({ anterior, nuevo }) => String(anterior ?? '') !== String(nuevo ?? '')
     );
-
+    if (Contra){      
+        await audit.createAuditoriaDetalle({
+            pIdAuditoria: idAudit,
+            pCampo: "Contra",
+        })
+    }
     if (cambios.length > 0) {
         for (const { campo, anterior: ant, nuevo } of cambios) {
             await audit.createAuditoriaDetalle({

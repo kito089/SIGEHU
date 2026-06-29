@@ -1,4 +1,5 @@
 import { getConnection } from "../config/db.js";
+import audit from "./Auditoria.service.js";
 
 // ─── GET todos los materiales ───────────────────────────────────────────────
 const getMateriales = async () => {
@@ -12,8 +13,8 @@ const getMateriales = async () => {
     return result;
 };
 
-// ─── GET trabajador por ID ────────────────────────────────────────────────────
-const getTrabajadorById = async (id) => {
+// ─── GET Material por ID ────────────────────────────────────────────────────
+const getMaterialById = async (id) => {
     const db = await getConnection();
 
     const result = await db.query(
@@ -25,41 +26,37 @@ const getTrabajadorById = async (id) => {
 };
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
-const createMaterial = async ({ Nombre, UnidadMedida, Descripcion}) => {
+const createMaterial = async ({ Nombre, UnidadMedida, Descripcion }) => {
     const db = await getConnection();
 
-    // ── Transacción 1: insertar trabajador ──────────────────────────────────
+    // ── Transacción 1: insertar Material ──────────────────────────────────
     const txInsert = await db.transaction();
 
     let nuevoId;
     try {
+        await txInsert.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
         const rows = await txInsert.query(
-            `SELECT * FROM SP_INSERTAR_MATERIAL (?, ?, ?, ?, ?)`,
-            [Usuario, Contra, Nombre, Telefono ?? null, Tipo]
+            `SELECT * FROM SP_INSERTAR_MATERIAL (?, ?, ?)`,
+            [Nombre, UnidadMedida, Descripcion ?? null]
         );
 
         await txInsert.commit();
         console.log("nuevoId: ", rows)
-        nuevoId = rows[0].OIDTRABAJADOR; // nombre en mayúsculas, Firebird normaliza
+        nuevoId = rows[0].OIDMaterial; // nombre en mayúsculas, Firebird normaliza
 
     } catch (err) {
         await txInsert.rollback();
         throw err;
     }
 
-    const idAuditoria = await audit.createAuditoria({
-        pIdTrabajador: 1, 
-        pTabla: "Trabajadores", 
-        pAccion: "INSERT", 
-        pDescripcion: `Se agregó el trabajador ${Usuario}`, 
-        pRegistroAfectado: nuevoId
-    });
-
     return nuevoId;
 };
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
-const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo }) => {
+const updateMaterial = async (id, { Nombre, UnidadMedida, Descripcion }) => {
     const db = await getConnection();
 
     // ── 1. Leer el registro actual ANTES de modificar ───────────────────────
@@ -68,8 +65,8 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
 
     try {
         const rows = await txRead.query(
-            `SELECT NombreUsuario, NombreCompleto, Telefono, TiposUsuarios_idTipoUsuario
-             FROM Trabajadores WHERE IdTrabajador = ?`,
+            `SELECT Nombre, UnidadMedida, Descripcion
+             FROM Materiales WHERE IdMaterial = ?`,
             [id]
         );
 
@@ -84,19 +81,20 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
         throw err;
     }
 
-    // ── 2. Ejecutar el UPDATE ────────────────────────────────────────────────
     const txUpdate = await db.transaction();
 
     try {
         await txUpdate.execute(
-            `UPDATE Trabajadores
-             SET NombreUsuario = ?,
-                 Contra = COALESCE(?, Contra),
-                 NombreCompleto = ?,
-                 Telefono = ?,
-                 TiposUsuarios_idTipoUsuario = ?
-             WHERE IdTrabajador  = ?`,
-            [Usuario, Contra ?? null, Nombre, Telefono ?? null, Tipo, id]
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
+        await txUpdate.execute(
+            `UPDATE Materiales
+             SET Nombre = ?,
+                 UnidadMedida = ?,
+                 Descripcion = ?,
+             WHERE IdMaterial  = ?`,
+            [Nombre, UnidadMedida, Descripcion ?? null, id]
         );
 
         await txUpdate.commit();
@@ -105,38 +103,44 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
         await txUpdate.rollback();
         throw err;
     }
+    const txAudit = await db.transaction();
+    let idAudit;
 
-    // ── 3. Determinar qué cambió ─────────────────────────────────────────────
+    try {
+        const rows = await db.query(`
+            SELECT
+                RDB$GET_CONTEXT(
+                    'USER_SESSION',
+                    'LAST_AUDIT_ID'
+                ) AS ID
+            FROM RDB$DATABASE
+        `);
+
+        idAudit = rows[0].ID;
+        console.log("id: ", idAudit);
+        await txAudit.commit();
+    } catch (err) {
+        await txAudit.rollback();
+        throw err;
+    } 
     const comparacion = [
-        { campo: 'NombreUsuario', anterior: anterior.NOMBREUSUARIO, nuevo: Usuario },
-        { campo: 'NombreCompleto', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre },
-        { campo: 'Telefono', anterior: anterior.TELEFONO, nuevo: Telefono ?? null },
-        { campo: 'Tipo', anterior: anterior.TIPOSUSUARIOS_IDTIPOUSUARIO, nuevo: Tipo },
+        { campo: 'Nombre', anterior: anterior.NOMBRE, nuevo: Nombre },
+        { campo: 'UnidadMedida', anterior: anterior.UNIDADMEDIDA, nuevo: UnidadMedida },
+        { campo: 'Descripcion', anterior: anterior.DESCRIPCION, nuevo: Descripcion ?? null },
     ];
 
     const cambios = comparacion.filter(
         ({ anterior, nuevo }) => String(anterior ?? '') !== String(nuevo ?? '')
     );
 
-    // ── 4. Registrar auditoría solo si hubo cambios ──────────────────────────
     if (cambios.length > 0) {
-        const idAuditoria = await audit.createAuditoria({
-            pIdTrabajador: 1,
-            pTabla: 'Trabajadores',
-            pAccion: 'UPDATE',
-            pDescripcion: `Se actualizó el trabajador ${Usuario}`,
-            pRegistroAfectado: id
-        });
-
-        if (idAuditoria) {
-            for (const { campo, anterior: ant, nuevo } of cambios) {
-                await audit.createAuditoriaDetalle({
-                    pIdAuditoria: idAuditoria,
-                    pCampo: campo,
-                    pValorAnterior: String(ant ?? ''),
-                    pValorNuevo: String(nuevo ?? '')
-                });
-            }
+        for (const { campo, anterior: ant, nuevo } of cambios) {
+            await audit.createAuditoriaDetalle({
+                pIdAuditoria: idAudit,
+                pCampo: campo,
+                pValorAnterior: String(ant ?? ''),
+                pValorNuevo: String(nuevo ?? '')
+            });
         }
     }
 
@@ -144,13 +148,17 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
 };
 
 // ─── DELETE (soft) ────────────────────────────────────────────────────────────
-const deleteTrabajador = async (id) => {
+const deleteMaterial = async (id) => {
     const db = await getConnection();
     const transaction = await db.transaction();
 
     try {
         await transaction.execute(
-            "UPDATE Trabajadores SET Activo = FALSE WHERE IdTrabajador = ?",
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
+        await transaction.execute(
+            "UPDATE Materiales SET Activo = FALSE WHERE IdMaterial = ?",
             [id]
         );
 
@@ -161,41 +169,13 @@ const deleteTrabajador = async (id) => {
         throw err;
     }
 
-    const txRead = await db.transaction();
-    let Usuario;
-    try {
-        const rows = await txRead.query(
-            `SELECT NombreUsuario FROM Trabajadores WHERE idTrabajador = ?`,
-            [id]
-        );
-
-        if (!rows || rows.length === 0) return null; // no existe
-        console.log("Usuario desactivado: ", rows)
-        Usuario = rows[0].NOMBREUSUARIO;
-        console.log(Usuario)
-
-        await txRead.commit();
-    } catch (err) {
-        await txRead.rollback();
-        throw err;
-    }
-
-    const idAuditoria = await audit.createAuditoria({
-        pIdTrabajador: 1, 
-        pTabla: "Trabajadores", 
-        pAccion: "DELETE", 
-        pDescripcion: `Se eliminó el trabajador ${Usuario}`, 
-        pRegistroAfectado: id
-    });
-
     return true;
 };
 
 export default {
-    getTiposUsuarios,
-    getTrabajadores,
-    getTrabajadorById,
-    createTrabajador,
-    updateTrabajador,
-    deleteTrabajador,
+    getMateriales,
+    getMaterialById,
+    createMaterial,
+    updateMaterial,
+    deleteMaterial,
 };

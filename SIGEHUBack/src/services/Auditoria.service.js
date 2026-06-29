@@ -40,7 +40,7 @@ const createAuditoriaDetalle = async ({ pIdAuditoria, pCampo, pValorAnterior, pV
     try {
         await txDetalle.procedure(
             `EXECUTE PROCEDURE SP_INSERTAR_AUDITORIA_DETALLE (?, ?, ?, ?)`,
-            [pIdAuditoria, pCampo, ValorAnterior, ValorNuevo]
+            [pIdAuditoria, pCampo, ValorAnterior ?? null, ValorNuevo ?? null]
         );
 
         await txDetalle.commit();

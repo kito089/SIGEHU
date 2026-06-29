@@ -1,143 +1,228 @@
-import { getConnection, sql } from '../config/connection.js';
+import { getConnection } from "../config/db.js";
+import audit from "./Auditoria.service.js";
 
-// GET todos los platillos
-const getPlatillos = async () => {
-    const pool = await getConnection();
-    const result = await pool.request()
-        .query(`SELECT * FROM vw_MenuDetallado`);
-    return result.recordset;
-};
+// ─── GET todos los Regimentes Fiscales ───────────────────────────────────────────────
+const getRegimenesFiscales = async () => {
+    const db = await getConnection();
+    const result = await db.query(
+        "SELECT * FROM RegimenesFiscales",
+        []
+    );
 
-// GET todos los platillos activos con informacion completa
-const getPlatillosCompletos = async () => {
-    const pool = await getConnection();
-    const result = await pool.request()
-        .execute(`sp_GetAllPlatillos`);
-
-    const raw = result.recordset[0][Object.keys(result.recordset[0])[0]];
-    const data = JSON.parse(raw);
-
-    const parsedData = data.map(item => ({
-        ...item,
-        Categoria: item.Categoria ? JSON.parse(item.Categoria) : null
-    }));
-
-    return parsedData;
+    return result;
 }
 
-// GET platillo por ID
-const getPlatilloById = async (id) => {
-    const pool = await getConnection();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query(`SELECT * FROM vw_MenuDetallado WHERE idPlatillo = @id`);
-    return result.recordset[0] || null;
+// ─── GET todos los Usos del CFDI ───────────────────────────────────────────────
+const getUsosCFDI = async () => {
+    const db = await getConnection();
+    const result = await db.query(
+        "SElECT * FROM UsosCFDI",
+        []
+    );
+
+    return result;
+}
+
+// ─── GET todos los Clientes ───────────────────────────────────────────────
+const getClientes = async () => {
+    const db = await getConnection();
+    const result = await db.query(
+        `VIEW VW_CLIENTES_CON_OBRAS`, // clientes con su contador de obras
+        []
+    );
+
+    return result;
 };
 
-// GET estructura
-const getStructure = async () => {
-    const pool = await getConnection();
-    const result = await pool.request()
-        .execute('sp_GetPlatillosEstructura');
+// ─── GET Cliente por ID ────────────────────────────────────────────────────
+const getClienteById = async (id) => {
+    const db = await getConnection();
 
-    const raw = result.recordset[0][Object.keys(result.recordset[0])[0]];
-    return JSON.parse(raw);
+    const Clientes = await db.query(
+        "SELECT * FROM Clientes WHERE idCliente = ?",
+        [id]
+    );
+
+    const Obras = await db.query(
+        "SELECT * FROM Obras WHERE Clientes_idCliente = ?",
+        [id]
+    )
+
+    return {
+        ...clientes[0],
+        Obras: Obras
+    };
 };
 
-// INSERT
-const createPlatillo = async ({ Nombre, Descripcion, Precio, idCategoria }) => {
-    const pool = await getConnection();
+// ─── INSERT ───────────────────────────────────────────────────────────────────
+const createCliente = async ({ 
+    NombreCompleto, Telefono, Correo, 
+    Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+    idUsoCFDI, Observaciones
+}) => {
+    const db = await getConnection();
 
-    const result = await pool.request()
-        .input('Nombre', Nombre)
-        .input('Descripcion', Descripcion)
-        .input('Precio', Precio)
-        .input('Categoria', idCategoria)
-        .query(`
-            INSERT INTO Platillos (Nombre, Descripcion, Precio, CategoriasPlatillos_idCategoriasPlatillos)
-            VALUES (@Nombre, @Descripcion, @Precio, @Categoria);
+    // ── Transacción 1: insertar Cliente ──────────────────────────────────
+    const txInsert = await db.transaction();
 
-            SELECT SCOPE_IDENTITY() AS idPlatillo;
+    let nuevoId;
+    try {
+        await txInsert.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
+        await txInsert.execute(
+            `INSERT INTO Clientes ()
+            VALUES (?)`,
+            [NombreCompleto, Telefono, Correo ?? null, 
+            Direccion ?? null, RFC ?? null, idRegimenFiscal ?? null, 
+            CodigoPostal ?? null, idUsoCFDI ?? null, Observaciones ?? null]
+        );
+
+        await txInsert.commit();
+    } catch (err) {
+        await txInsert.rollback();
+        throw err;
+    }
+
+    return nuevoId;
+};
+
+// ─── UPDATE ──────────────────────────────────────────────────────────────────
+const updateCliente = async (id, { NombreCompleto, Telefono, Correo, 
+                                    Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+                                    idUsoCFDI, Observaciones }) => {
+    const db = await getConnection();
+
+    // ── 1. Leer el registro actual ANTES de modificar ───────────────────────
+    const txRead = await db.transaction();
+    let anterior;
+
+    try {
+        const rows = await txRead.query(
+            `SELECT NombreCompleto, Telefono, Correo, 
+                    Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+                    idUsoCFDI, Observaciones
+             FROM Clientes WHERE IdCliente = ?`,
+            [id]
+        );
+
+        await txRead.commit();
+
+        if (!rows || rows.length === 0) return null; // no existe
+
+        anterior = rows[0];
+
+    } catch (err) {
+        await txRead.rollback();
+        throw err;
+    }
+
+    const txUpdate = await db.transaction();
+
+    try {
+        await txUpdate.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
+        await txUpdate.execute(
+            `UPDATE Clientes
+             SET NombreCompleto = ?, Telefono = ?, Correo = ?, 
+                Direccion = ?, RFC = ?, idRegimenFiscal = ?, CodigoPostal = ?, 
+                idUsoCFDI = ?, Observaciones = ?
+             WHERE IdCliente = ?`,
+            [NombreCompleto, Telefono, Correo ?? null, 
+            Direccion ?? null, RFC ?? null, idRegimenFiscal ?? null, 
+            CodigoPostal ?? null, idUsoCFDI ?? null, Observaciones ?? null, id]
+        );
+
+        await txUpdate.commit();
+
+    } catch (err) {
+        await txUpdate.rollback();
+        throw err;
+    }
+    const txAudit = await db.transaction();
+    let idAudit;
+
+    try {
+        const rows = await db.query(`
+            SELECT
+                RDB$GET_CONTEXT(
+                    'USER_SESSION',
+                    'LAST_AUDIT_ID'
+                ) AS ID
+            FROM RDB$DATABASE
         `);
 
-    return result.recordset[0].idPlatillo;
+        idAudit = rows[0].ID;
+        console.log("id: ", idAudit);
+        await txAudit.commit();
+    } catch (err) {
+        await txAudit.rollback();
+        throw err;
+    } 
+    const comparacion = [
+        { campo: 'NombreCompleto', anterior: anterior.NOMBRECOMPLETO, nuevo: NombreCompleto },
+        { campo: 'Telefono', anterior: anterior.TELEFONO, nuevo: Telefono },
+        { campo: 'Correo', anterior: anterior.CORREO, nuevo: Correo ?? null },
+        { campo: 'Direccion', anterior: anterior.DIRECCION, nuevo: Direccion ?? null },
+        { campo: 'RFC', anterior: anterior.RFC, nuevo: RFC ?? null },
+        { campo: 'RegimenesFiscales_idRegimenFiscal', anterior: anterior.REGIMENESFISCALES_IDREGIMENFISCAL, nuevo: idRegimenFiscal ?? null },
+        { campo: 'CodigoPostal', anterior: anterior.CODIGOPOSTAL, nuevo: CodigoPostal ?? null },
+        { campo: 'UsosCFDI_idUsoCFDI', anterior: anterior.USOSCFDI_IDUSOCFDI, nuevo: idUsoCFDI ?? null },
+        { campo: 'Observaciones', anterior: anterior.OBSERVACIONES, nuevo: Observaciones ?? null },
+    ];
+
+    const cambios = comparacion.filter(
+        ({ anterior, nuevo }) => String(anterior ?? '') !== String(nuevo ?? '')
+    );
+
+    if (cambios.length > 0) {
+        for (const { campo, anterior: ant, nuevo } of cambios) {
+            await audit.createAuditoriaDetalle({
+                pIdAuditoria: idAudit,
+                pCampo: campo,
+                pValorAnterior: String(ant ?? ''),
+                pValorNuevo: String(nuevo ?? '')
+            });
+        }
+    }
+
+    return true;
 };
 
+// ─── DELETE (soft) ────────────────────────────────────────────────────────────
+const deleteCliente = async (id) => {
+    const db = await getConnection();
+    const transaction = await db.transaction();
 
-// UPDATE
-const updatePlatillo = async (id, { Nombre, Descripcion, Precio, idCategoria }) => {
-    const pool = await getConnection();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .input('Nombre', sql.VarChar(45), Nombre)
-        .input('Descripcion', sql.VarChar(45), Descripcion || null)
-        .input('Precio', sql.Decimal(10, 2), Precio)
-        .input('idCategoria', sql.Int, idCategoria)
-        .query(`
-            UPDATE Platillos
-            SET Nombre = @Nombre,
-                Descripcion = @Descripcion,
-                Precio = @Precio,
-                CategoriasPlatillos_idCategoriasPlatillos = @idCategoria
-            WHERE idPlatillo = @id
-        `);
+    try {
+        await transaction.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            ["1"]
+        );
+        await transaction.execute(
+            "UPDATE Clientes SET Activo = FALSE WHERE IdCliente = ?",
+            [id]
+        );
 
-    return result.rowsAffected[0] > 0;
-};
+        await transaction.commit();
 
-// Actualiza solo la columna Imagen — llamado después de guardar el archivo con multer
-const updateImagen = async (id, filename) => {
-    const pool = await getConnection();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .input('Imagen', sql.VarChar(100), filename)
-        .query(`
-            UPDATE Platillos
-            SET Imagen = @Imagen
-            WHERE idPlatillo = @id
-        `);
+    } catch (err) {
+        await transaction.rollback();
+        throw err;
+    }
 
-    return result.rowsAffected[0] > 0;
-};
-
-
-// DELETE (soft)
-const deletePlatillo = async (id) => {
-    const pool = await getConnection();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query(`UPDATE Platillos SET Activo = 0 WHERE idPlatillo = @id`);
-
-    return result.rowsAffected[0] > 0;
-};
-
-// Menú digital
-const getMenuDigital = async () => {
-    const platillos = await getPlatillos();
-
-    return platillos.reduce((menu, p) => {
-        const cat = p.Categoria;
-
-        if (!menu[cat]) menu[cat] = [];
-
-        menu[cat].push({
-            id: p.idPlatillo,
-            nombre: p.Platillo,
-            precio: p.Precio
-        });
-
-        return menu;
-    }, {});
+    return true;
 };
 
 export default {
-    getPlatillos,
-    getPlatillosCompletos,
-    getPlatilloById,
-    getStructure,
-    createPlatillo,
-    updatePlatillo,
-    updateImagen,
-    deletePlatillo,
-    getMenuDigital
+    getRegimenesFiscales,
+    getUsosCFDI,
+    getClientes,
+    getClienteById,
+    createCliente,
+    updateCliente,
+    deleteCliente,
 };
