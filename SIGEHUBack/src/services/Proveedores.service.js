@@ -1,6 +1,6 @@
 import { getConnection } from "../config/db.js";
 import audit from "./Auditoria.service.js";
-import materiales from "./Materiales.service.js"
+import materiales from "./Materiales.service.js";
 
 // ─── GET todos los Proveedores ───────────────────────────────────────────────
 const getProveedores = async () => {
@@ -43,11 +43,11 @@ const createProveedor = async ({ Nombre, Direccion, Telefono, Correo, Notas }) =
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             ["1"]
         );
-        await txInsert.query(
+        const rows = await txInsert.query(
             `SELECT * FROM SP_INSERTAR_PROVEEDOR (?, ?, ?, ?, ?)`,
             [Nombre, Direccion ?? null, Telefono ?? null, Correo ?? null, Notas ?? null]
         );
-
+        nuevoId = rows[0].OIDPROVEEDOR;
         await txInsert.commit();
     } catch (err) {
         await txInsert.rollback();

@@ -55,11 +55,10 @@ const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo }) => 
             `SELECT * FROM SP_INSERTAR_TRABAJADOR (?, ?, ?, ?, ?)`,
             [Usuario, Contra, Nombre, Telefono ?? null, Tipo]
         );
-
-        await txInsert.commit();
         console.log("nuevoId: ", rows)
         nuevoId = rows[0].OIDTRABAJADOR; // nombre en mayúsculas, Firebird normaliza
-
+        await txInsert.commit();
+        
     } catch (err) {
         await txInsert.rollback();
         throw err;

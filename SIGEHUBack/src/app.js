@@ -9,6 +9,10 @@ import ClientesRoutes from './routes/Clientes.route.js';
 import MaterialesRoutes from './routes/Materiales.route.js';
 import ProveedoresRoutes from './routes/Proveedores.route.js';
 import ObrasRoutes from './routes/Obras.route.js';
+import FotosObras from './routes/FotosObras.route.js';
+import NotasObras from './routes/NotasObras.route.js';
+import ObrasMateriales from './routes/ObrasMateriales.route.js'
+import ObrasTrabajadores from './routes/ObrasTrabajadores.route.js'
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -23,6 +27,10 @@ app.use('/Clientes', ClientesRoutes);
 app.use('/Materiales', MaterialesRoutes);
 app.use('/Proveedores', ProveedoresRoutes);
 app.use('/Obras', ObrasRoutes);
+app.use('/Obras', FotosObras)
+app.use('/Obras', NotasObras)
+app.use('/Obras', ObrasMateriales)
+app.use('/Obras', ObrasTrabajadores)
 
 await getConnection();
 console.log("BD conectada")

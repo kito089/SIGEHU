@@ -72,11 +72,29 @@ const createCliente = async ({
             ["1"]
         );
         await txInsert.execute(
-            `INSERT INTO Clientes ()
-            VALUES (?)`,
-            [NombreCompleto, Telefono, Correo ?? null, 
-            Direccion ?? null, RFC ?? null, idRegimenFiscal ?? null, 
-            CodigoPostal ?? null, idUsoCFDI ?? null, Observaciones ?? null]
+            `INSERT INTO Clientes (
+                NombreCompleto,
+                Telefono,
+                Correo,
+                Direccion,
+                RFC,
+                RegimenesFiscales_idRegimenFiscal,
+                CodigoPostal,
+                UsosCFDI_idUsoCFDI,
+                Observaciones
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                NombreCompleto,
+                Telefono,
+                Correo ?? null,
+                Direccion ?? null,
+                RFC ?? null,
+                idRegimenFiscal ?? null,
+                CodigoPostal ?? null,
+                idUsoCFDI ?? null,
+                Observaciones ?? null
+            ]
         );
 
         await txInsert.commit();
