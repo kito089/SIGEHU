@@ -75,7 +75,7 @@ function guardarStatus(ok, mensaje, archivo = null) {
 
 // ─── ¿Corresponde hacer respaldo ahora? ──────────────────────────
 
-function deberiаRespaldаr() {
+function deberiaRespaldar() {
   const status = leerStatus();
 
   // Nunca se ha respaldado → sí
