@@ -44,7 +44,7 @@ echo.
 
 echo Copiando Frontend a Release...
 cd ..
-xcopy SIGEHUFront\dist-electron\win-unpacked Release /E /I /Y
+xcopy SIGEHUFront\release\win-unpacked Release /E /I /Y
 echo.
 
 echo 4. Generando instalador...

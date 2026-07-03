@@ -24,9 +24,7 @@ Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; Group
 
 [Files]
 
-Source: "..\Release\*";
-DestDir: "{app}";
-Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "..\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
 

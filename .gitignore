@@ -1,6 +1,7 @@
 #Builds
 dist/
 Electron/dist/
+Release/
 
 #Installations
 *.msi
