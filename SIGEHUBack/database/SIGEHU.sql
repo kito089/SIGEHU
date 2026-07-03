@@ -2175,7 +2175,7 @@ BEGIN
         EXIT;
     END
 
-    -- Validar transiciones permitidas (según Apéndice B del SRS)
+    -- Validar transiciones permitidas
     -- Estado 1=Solicitud recibida, 2=Levantamiento pendiente, 3=En fabricacion,
     -- 4=Instalacion programada, 5=Instalado, 6=Garantia, 7=Finalizado
     vTransicionValida = 0;
@@ -2187,6 +2187,15 @@ BEGIN
     IF (vEstadoActual = 5 AND pNuevoEstado = 6) THEN vTransicionValida = 1;
     IF (vEstadoActual = 5 AND pNuevoEstado = 7) THEN vTransicionValida = 1;
     IF (vEstadoActual = 6 AND pNuevoEstado = 7) THEN vTransicionValida = 1;
+
+    /* ========= REGRESAR ========= */
+    -- Una obra finalizada no se puede regresar a ningún estado anterior.  Solo se permite regresar de 6->5, 5->4, 4->3, 3->2, 2->1
+
+    IF (vEstadoActual = 2 AND pNuevoEstado = 1) THEN vTransicionValida = 1;
+    IF (vEstadoActual = 3 AND pNuevoEstado = 2) THEN vTransicionValida = 1;
+    IF (vEstadoActual = 4 AND pNuevoEstado = 3) THEN vTransicionValida = 1;
+    IF (vEstadoActual = 5 AND pNuevoEstado = 4) THEN vTransicionValida = 1;
+    IF (vEstadoActual = 6 AND pNuevoEstado = 5) THEN vTransicionValida = 1;
 
     IF (vTransicionValida = 0) THEN
     BEGIN
