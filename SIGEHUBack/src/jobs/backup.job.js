@@ -2,10 +2,22 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-const DB_PATH    = path.resolve(__dirname, 'SIGEHU.fdb');
-const BACKUP_DIR = path.resolve(__dirname, 'backup');
-const LOG_PATH   = path.join(BACKUP_DIR, 'backup.log');
+function getRootPath() {
+    return process.env.NODE_ENV === 'production'
+        ? path.dirname(process.execPath)
+        : process.cwd();
+}
+
+const ROOT_PATH = getRootPath();
+
+const DATABASE_DIR = path.join(ROOT_PATH, 'database');
+
+const DB_PATH = path.join(DATABASE_DIR, 'SIGEHU.FDB');
+const BACKUP_DIR = path.join(DATABASE_DIR, 'backups');
+
+const LOG_PATH = path.join(BACKUP_DIR, 'backup.log');
 const STATUS_PATH = path.join(BACKUP_DIR, 'backup_status.json');
+
 const MAX_BACKUPS = 3;
 const HORAS_ENTRE_RESPALDOS = 24;
 
@@ -149,4 +161,9 @@ function verificarYRespaldarAlArrancar() {
   }, 5000);
 }
 
-module.exports = { hacerRespaldo, leerStatus, guardarStatus, verificarYRespaldarAlArrancar };
+export default { 
+  hacerRespaldo, 
+  leerStatus, 
+  guardarStatus, 
+  verificarYRespaldarAlArrancar 
+};

@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
-//import backup from './database/Backup';
+import backup from './jobs/backup.job.js';
 import { getConnection } from './config/db.js';
 
 import TrabajadoresRoutes from './routes/Trabajadores.route.js';
@@ -37,5 +37,5 @@ console.log("BD conectada")
 
 app.listen(PORT, () => {
     console.log(`Servidor escuchando en http://localhost:${PORT}`);
-    //backup.verificarYRespaldarAlArrancar();
+    backup.verificarYRespaldarAlArrancar();
 });
