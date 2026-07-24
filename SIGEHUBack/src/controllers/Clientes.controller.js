@@ -55,27 +55,11 @@ const create = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
         }
 
-        const { NombreCompleto, Telefono, Correo, 
-                Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+        const { Direccion, RFC, idRegimenFiscal, CodigoPostal, 
                 idUsoCFDI, Observaciones } = req.body;
-
-        const datos = { NombreCompleto, Telefono };
-        const opcionales = [ 'Correo', 'Direccion', 'RFC', 'idRegimenFiscal', 
-                            'CodigoPostal', 'idUsoCFDI', 'Observaciones'];
-
-        const faltantes = Object.entries(datos)
-            .filter(([clave, valor]) => !opcionales.includes(clave) && (valor == null || valor === ''))
-            .map(([clave]) => clave);
-
-        if (faltantes.length > 0) {
-            return res.status(400).json({
-                error: `Faltan campos requeridos: ${faltantes.join(', ')}`
-            });
-        }
         
-        await service.createCliente({ NombreCompleto, Telefono, Correo: Correo ?? null, Direccion: Direccion ?? null, 
-                                    RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, CodigoPostal: CodigoPostal ?? null, 
-                                    idUsoCFDI: idUsoCFDI ?? null, Observaciones: Observaciones ?? null });
+        await service.createCliente({ Direccion: Direccion ?? null, RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, 
+                                    CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null, Observaciones: Observaciones ?? null });
 
         res.status(201).json({ message: 'Cliente creado' });
 
@@ -92,30 +76,14 @@ const update = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
         }
 
-        const { NombreCompleto, Telefono, Correo, 
-                Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+        const { Direccion, RFC, idRegimenFiscal, CodigoPostal, 
                 idUsoCFDI, Observaciones } = req.body;
-
-        const datos = { NombreCompleto, Telefono };
-        const opcionales = [ 'Correo', 'Direccion', 'RFC', 'idRegimenFiscal', 
-                            'CodigoPostal', 'idUsoCFDI', 'Observaciones'];
-
-        const faltantes = Object.entries(datos)
-            .filter(([clave, valor]) => !opcionales.includes(clave) && (valor == null || valor === ''))
-            .map(([clave]) => clave);
-
-        if (faltantes.length > 0) {
-            return res.status(400).json({
-                error: `Faltan campos requeridos: ${faltantes.join(', ')}`
-            });
-        }
         
         const affected = await service.updateCliente(
             req.params.id,
             {
-                NombreCompleto, Telefono, Correo: Correo ?? null, Direccion: Direccion ?? null, 
-                RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, CodigoPostal: CodigoPostal ?? null, 
-                idUsoCFDI: idUsoCFDI ?? null, Observaciones: Observaciones ?? null
+                Direccion: Direccion ?? null, RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, 
+                CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null, Observaciones: Observaciones ?? null
             }
         );
 

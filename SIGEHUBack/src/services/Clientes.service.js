@@ -55,8 +55,7 @@ const getClienteById = async (id) => {
 };
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
-const createCliente = async ({ 
-    NombreCompleto, Telefono, Correo, 
+const createCliente = async ({  
     Direccion, RFC, idRegimenFiscal, CodigoPostal, 
     idUsoCFDI, Observaciones
 }) => {
@@ -65,7 +64,6 @@ const createCliente = async ({
     // ── Transacción 1: insertar Cliente ──────────────────────────────────
     const txInsert = await db.transaction();
 
-    let nuevoId;
     try {
         await txInsert.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
@@ -73,9 +71,6 @@ const createCliente = async ({
         );
         await txInsert.execute(
             `INSERT INTO Clientes (
-                NombreCompleto,
-                Telefono,
-                Correo,
                 Direccion,
                 RFC,
                 RegimenesFiscales_idRegimenFiscal,
@@ -85,9 +80,6 @@ const createCliente = async ({
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                NombreCompleto,
-                Telefono,
-                Correo ?? null,
                 Direccion ?? null,
                 RFC ?? null,
                 idRegimenFiscal ?? null,
@@ -103,12 +95,11 @@ const createCliente = async ({
         throw err;
     }
 
-    return nuevoId;
+    return true;
 };
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
-const updateCliente = async (id, { NombreCompleto, Telefono, Correo, 
-                                    Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+const updateCliente = async (id, { Direccion, RFC, idRegimenFiscal, CodigoPostal, 
                                     idUsoCFDI, Observaciones }) => {
     const db = await getConnection();
 
@@ -118,8 +109,7 @@ const updateCliente = async (id, { NombreCompleto, Telefono, Correo,
 
     try {
         const rows = await txRead.query(
-            `SELECT NombreCompleto, Telefono, Correo, 
-                    Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+            `SELECT Direccion, RFC, idRegimenFiscal, CodigoPostal, 
                     idUsoCFDI, Observaciones
              FROM Clientes WHERE IdCliente = ?`,
             [id]
@@ -145,12 +135,10 @@ const updateCliente = async (id, { NombreCompleto, Telefono, Correo,
         );
         await txUpdate.execute(
             `UPDATE Clientes
-             SET NombreCompleto = ?, Telefono = ?, Correo = ?, 
-                Direccion = ?, RFC = ?, idRegimenFiscal = ?, CodigoPostal = ?, 
+             SET Direccion = ?, RFC = ?, idRegimenFiscal = ?, CodigoPostal = ?, 
                 idUsoCFDI = ?, Observaciones = ?
              WHERE IdCliente = ?`,
-            [NombreCompleto, Telefono, Correo ?? null, 
-            Direccion ?? null, RFC ?? null, idRegimenFiscal ?? null, 
+            [Direccion ?? null, RFC ?? null, idRegimenFiscal ?? null, 
             CodigoPostal ?? null, idUsoCFDI ?? null, Observaciones ?? null, id]
         );
 
