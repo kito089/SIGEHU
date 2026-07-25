@@ -1,3 +1,6 @@
+;Leer variables de entorno
+#define ZROK_TOKEN GetEnv("ZROK_TOKEN")
+
 [Setup]
 AppName=SIGEHU
 AppVersion=1.0.0
@@ -31,3 +34,6 @@ Source: "..\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 Name: "{group}\SIGEHU"; Filename: "{app}\SIGEHU.exe"
 
 Name: "{autodesktop}\SIGEHU"; Filename: "{app}\SIGEHU.exe"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\SIGEHUBack\zrok2.exe"; Parameters: "enable {#ZROK_TOKEN}"; Flags:runhidden

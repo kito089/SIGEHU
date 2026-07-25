@@ -1,3 +1,9 @@
+# Variables de entorno
+.env
+SIGEHUBack/config.json
+SIGEGUFront/src/environments/environment.ts
+SIGEHUFront/src/environments/environment.prod.ts
+
 #Builds
 dist/
 Electron/dist/

@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 echo ==============================
 echo BUILD COMPLETO SIGEHU
@@ -17,7 +17,31 @@ mkdir Release
 mkdir Release\SIGEHUBack
 
 echo.
-echo 1. Construyendo Backend...
+echo ==============================
+echo CARGA DE VARIABLES DE ENTORNO
+echo ==============================
+if not exist .env (
+    echo ERROR: No se encontró el archivo .env
+    exit /b 1
+)
+for /f "usebackq tokens=1,* delims==" %%A in (".env") do ( 
+    set "%%A=%%B" 
+    echo Variable de entorno cargada: %%A=%%B
+)
+
+echo.
+echo ==============================
+echo CARGA DE VARIABLES DE ENTORNO EN ARCHIVOS DE CONFIGURACION
+echo ==============================
+node apply-env.js || exit /b
+
+echo.
+echo 1. Copiando dependencias...
+copy Dependences\zrok2.exe Release\SIGEHUBack\
+echo.
+
+echo.
+echo 2. Construyendo Backend...
 cd SIGEHUBack || exit /b
 call npm install || exit /b
 call node --experimental-sea-config sea-config.json || exit /b
@@ -32,13 +56,13 @@ xcopy SIGEHUBack\database Release\SIGEHUBack\database /E /I /Y
 xcopy SIGEHUBack\firebird Release\SIGEHUBack\firebird /E /I /Y
 
 echo.
-echo 2. Construyendo Angular...
+echo 3. Construyendo Angular...
 cd SIGEHUFront || exit /b
 call npm install || exit /b
 call ionic build --prod || exit /b
 echo.
 
-echo 3. Construyendo Electron...
+echo 4. Construyendo Electron...
 call npm run dist || exit /b
 echo.
 
@@ -47,7 +71,7 @@ cd ..
 xcopy SIGEHUFront\release\win-unpacked Release /E /I /Y
 echo.
 
-echo 4. Generando instalador...
+echo 5. Generando instalador...
 cd Installer || exit /b
 set INNO="C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 %INNO% setup.iss || exit /b

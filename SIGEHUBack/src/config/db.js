@@ -1,4 +1,5 @@
 import path from "node:path";
+import config from '../../config.json' with { type: 'json' };
 import { createNativeClient } from "node-firebird-driver-native";
 
 let client = null;
@@ -40,8 +41,8 @@ async function ensureConnection() {
     attachment = await client.connect(
         dbPath,
         {
-            username: "SYSDBA",
-            password: "masterkey"
+            username: `${config.dbUsername}`,
+            password: `${config.dbPassword}`
         }
     );
 

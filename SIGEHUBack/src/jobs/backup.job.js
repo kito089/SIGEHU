@@ -140,7 +140,7 @@ async function hacerRespaldo() {
 // Corre en segundo plano (sin await) para no retrasar el inicio.
 
 function verificarYRespaldarAlArrancar() {
-  if (!deberiаRespaldаr()) {
+  if (!deberiaRespaldar()) {
     const status = leerStatus();
     escribirLog('INFO',
       `Respaldo omitido — el último fue hace menos de ${HORAS_ENTRE_RESPALDOS}h `

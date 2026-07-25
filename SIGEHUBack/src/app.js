@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import config from '../config.json' with { type: 'json' };
 import express from 'express';
 import cors from 'cors';
 import backup from './jobs/backup.job.js';
@@ -14,10 +14,9 @@ import NotasObras from './routes/NotasObras.route.js';
 import ObrasMateriales from './routes/ObrasMateriales.route.js'
 import ObrasTrabajadores from './routes/ObrasTrabajadores.route.js'
 
-const PORT = process.env.PORT || 3000;
+const PORT = config.apiPort || 3000;
 const app = express();
 
-dotenv.config();
 app.use(cors());
 app.use(express.json());
 
@@ -31,6 +30,11 @@ app.use('/Obras', FotosObras)
 app.use('/Obras', NotasObras)
 app.use('/Obras', ObrasMateriales)
 app.use('/Obras', ObrasTrabajadores)
+
+// prueba de conexion
+app.get('/', (req, res) => {
+  res.json({ "Servidor": "Activo" });
+});
 
 await getConnection();
 console.log("BD conectada")
