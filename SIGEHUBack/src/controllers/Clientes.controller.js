@@ -55,10 +55,10 @@ const create = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
         }
 
-        const { Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+        const { Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
                 idUsoCFDI, Observaciones } = req.body;
         
-        await service.createCliente({ Direccion: Direccion ?? null, RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, 
+        await service.createCliente({ Nombre: Nombre ?? null, Direccion: Direccion ?? null, RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, 
                                     CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null, Observaciones: Observaciones ?? null });
 
         res.status(201).json({ message: 'Cliente creado' });
@@ -76,12 +76,13 @@ const update = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
         }
 
-        const { Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+        const { Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
                 idUsoCFDI, Observaciones } = req.body;
         
         const affected = await service.updateCliente(
             req.params.id,
             {
+                Nombre: Nombre ?? null,
                 Direccion: Direccion ?? null, RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, 
                 CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null, Observaciones: Observaciones ?? null
             }

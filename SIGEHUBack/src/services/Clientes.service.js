@@ -56,7 +56,7 @@ const getClienteById = async (id) => {
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
 const createCliente = async ({  
-    Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+    Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
     idUsoCFDI, Observaciones
 }) => {
     const db = await getConnection();
@@ -71,6 +71,7 @@ const createCliente = async ({
         );
         await txInsert.execute(
             `INSERT INTO Clientes (
+                Nombre,
                 Direccion,
                 RFC,
                 RegimenesFiscales_idRegimenFiscal,
@@ -78,8 +79,9 @@ const createCliente = async ({
                 UsosCFDI_idUsoCFDI,
                 Observaciones
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
+                Nombre ?? null,
                 Direccion ?? null,
                 RFC ?? null,
                 idRegimenFiscal ?? null,
@@ -99,7 +101,7 @@ const createCliente = async ({
 };
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
-const updateCliente = async (id, { Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+const updateCliente = async (id, { Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
                                     idUsoCFDI, Observaciones }) => {
     const db = await getConnection();
 
@@ -109,7 +111,7 @@ const updateCliente = async (id, { Direccion, RFC, idRegimenFiscal, CodigoPostal
 
     try {
         const rows = await txRead.query(
-            `SELECT Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+            `SELECT Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
                     idUsoCFDI, Observaciones
              FROM Clientes WHERE IdCliente = ?`,
             [id]
@@ -135,10 +137,10 @@ const updateCliente = async (id, { Direccion, RFC, idRegimenFiscal, CodigoPostal
         );
         await txUpdate.execute(
             `UPDATE Clientes
-             SET Direccion = ?, RFC = ?, idRegimenFiscal = ?, CodigoPostal = ?, 
+             SET Nombre = ?, Direccion = ?, RFC = ?, idRegimenFiscal = ?, CodigoPostal = ?, 
                 idUsoCFDI = ?, Observaciones = ?
              WHERE IdCliente = ?`,
-            [Direccion ?? null, RFC ?? null, idRegimenFiscal ?? null, 
+            [Nombre ?? null, Direccion ?? null, RFC ?? null, idRegimenFiscal ?? null, 
             CodigoPostal ?? null, idUsoCFDI ?? null, Observaciones ?? null, id]
         );
 
@@ -169,9 +171,7 @@ const updateCliente = async (id, { Direccion, RFC, idRegimenFiscal, CodigoPostal
         throw err;
     } 
     const comparacion = [
-        { campo: 'NombreCompleto', anterior: anterior.NOMBRECOMPLETO, nuevo: NombreCompleto },
-        { campo: 'Telefono', anterior: anterior.TELEFONO, nuevo: Telefono },
-        { campo: 'Correo', anterior: anterior.CORREO, nuevo: Correo ?? null },
+        { campo: 'Nombre', anterior: anterior.NOMBRE, nuevo: Nombre ?? null },
         { campo: 'Direccion', anterior: anterior.DIRECCION, nuevo: Direccion ?? null },
         { campo: 'RFC', anterior: anterior.RFC, nuevo: RFC ?? null },
         { campo: 'RegimenesFiscales_idRegimenFiscal', anterior: anterior.REGIMENESFISCALES_IDREGIMENFISCAL, nuevo: idRegimenFiscal ?? null },
