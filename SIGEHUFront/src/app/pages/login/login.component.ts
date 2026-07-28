@@ -14,8 +14,12 @@ export class LoginComponent {
 
   constructor(private router: Router) {}
 
-  onSubmit(event: Event) {
+  onLogin(event: Event) {
     event.preventDefault();
-    this.router.navigate(['/home']);
+    this.router.navigate(['/dashboard']);
+  }
+
+  forgotPasswordMessage() {
+    alert("Comunicarse con el administrador para cambiar la contraseña");
   }
 }
