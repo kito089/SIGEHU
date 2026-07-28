@@ -1,0 +1,51 @@
+<div class="login-container">
+  <div class="login-box">
+    <div class="login-icon">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/>
+        <path d="M5 21V7l7-4 7 4v14"/>
+        <path d="M9 21v-6h6v6"/>
+      </svg>
+    </div>
+
+    <h2>SIGEHU</h2>
+    <p class="subtitulo">Sistema Integral de Gestión – Herrería Utrilla</p>
+
+    <form (submit)="onSubmit($event)">
+      <div class="form-group">
+        <label for="usuario">Usuario</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input id="usuario" type="text" name="usuario" [(ngModel)]="login.usuario" placeholder="Ingrese su usuario" required />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="contrasena">Contraseña</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input id="contrasena" type="password" name="contrasena" [(ngModel)]="login.contrasena" placeholder="Ingrese su contraseña" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="checkbox-group">
+          <input id="recordarSesion" type="checkbox" name="recordarSesion" [(ngModel)]="login.recordarSesion" />
+          <label for="recordarSesion">Recordar sesión</label>
+        </div>
+        <a class="link-olvido" href="#">¿Olvidó su contraseña?</a>
+      </div>
+
+      <button type="submit">Ingresar al Sistema</button>
+    </form>
+
+    <p class="pie">Acceso único: Administradores y Trabajadores</p>
+    <p class="pie pie-marca">Herrería Utrilla &copy; 2026</p>
+  </div>
+</div>
