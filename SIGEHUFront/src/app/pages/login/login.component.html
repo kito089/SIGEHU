@@ -1,0 +1,25 @@
+<div class="login-container">
+  <div class="login-box">
+    <h2>Inicio de Sesión</h2>
+    <p>Bienvenido al sistema SIGEHU</p>
+
+    <form (submit)="onLogin($event)">
+      <label for="usuario">Usuario</label>
+      <input id="usuario" name="usuario" [(ngModel)]="login.usuario" placeholder="Ingresa tu usuario" />
+
+      <label for="contrasena">Contraseña</label>
+      <input id="contrasena" name="contrasena" [(ngModel)]="login.contrasena" type="password" placeholder="Ingresa tu contraseña" />
+
+      <div class="remember">
+        <input type="checkbox" id="recordarSesion" [(ngModel)]="login.recordarSesion" name="recordarSesion" />
+        <label for="recordarSesion">Recordar sesión</label>
+      </div>
+
+      <button type="submit">Ingresar al Sistema</button>
+    </form>
+
+    <a href="#" (click)="forgotPasswordMessage()" class="forgot-link">¿Olvidó su contraseña?</a>
+
+    <p class="footer">Portal de Recursos Humanos del Municipio de Tepatitlán</p>
+  </div>
+</div>

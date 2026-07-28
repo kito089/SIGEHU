@@ -1,0 +1,93 @@
+/* Fondo general */
+.clientes-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background: #0d0d0d; /* negro profundo */
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #eaeaea;
+  padding-top: 40px;
+}
+
+/* Título */
+.clientes-container h2 {
+  margin-bottom: 1rem;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+/* Formulario */
+form {
+  background: #1c1c1c; /* gris oscuro */
+  padding: 2rem;
+  border-radius: 12px;
+  width: 420px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+}
+
+/* Labels */
+form label {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+/* Inputs */
+form input[type="text"],
+form input[type="email"],
+form input[type="tel"] {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+form input::placeholder {
+  color: #888888;
+}
+
+/* Checkbox */
+.checkbox {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  color: #cccccc;
+  font-size: 13px;
+}
+
+.checkbox input {
+  margin-right: 6px;
+}
+
+/* Botones */
+form button {
+  padding: 12px;
+  margin-top: 20px;
+  margin-right: 10px;
+  background: #007bff; /* azul corporativo */
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+form button:hover {
+  background: #0056b3;
+}
+
+/* Botón cancelar */
+form button[type="button"] {
+  background: #444444;
+}
+
+form button[type="button"]:hover {
+  background: #222222;
+}

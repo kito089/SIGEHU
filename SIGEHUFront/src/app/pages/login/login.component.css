@@ -1,0 +1,117 @@
+/* Fondo general oscuro */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #0d0d0d; /* negro profundo */
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* Caja central */
+.login-box {
+  background: #1c1c1c; /* gris oscuro */
+  padding: 2rem;
+  border-radius: 12px;
+  width: 380px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+  text-align: center;
+  color: #eaeaea;
+}
+
+/* Títulos */
+.login-box h2 {
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.login-box p {
+  margin-bottom: 1.5rem;
+  color: #aaaaaa;
+}
+
+/* Labels */
+.login-box label {
+  display: block;
+  text-align: left;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #cccccc;
+}
+
+/* Inputs */
+.login-box input[type="text"]{
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #ffffff;
+}
+.login-box input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+.login-box input::placeholder {
+  color: #888888;
+}
+
+/* Checkbox */
+.remember {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  color: #c4c2c2;
+  font-size: 13px;
+}
+
+.remember input {
+  margin-right: 6px;
+}
+
+/* Botón */
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 20px;
+  background: #007bff; /* azul corporativo */
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.login-box button:hover {
+  background: #0056b3;
+}
+
+/* Link de contraseña */
+.forgot-link {
+  display: block;
+  margin-top: 15px;
+  color: #00bcd4;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+/* Footer */
+.footer {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #777777;
+}

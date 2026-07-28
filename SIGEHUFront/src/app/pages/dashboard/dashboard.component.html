@@ -1,0 +1,84 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <h1>Dashboard General</h1>
+    <p>Panel operativo de administración y control de obras en tiempo real</p>
+  </header>
+
+  <!-- Contadores permitidos (Sólo 2) -->
+  <section class="metrics-row">
+    <div class="metric-card">
+      <span class="metric-title">TOTAL OBRAS ACTIVAS</span>
+      <span class="metric-value">18</span>
+    </div>
+    <div class="metric-card">
+      <span class="metric-title">FINALIZADAS (MES)</span>
+      <span class="metric-value">12</span>
+    </div>
+  </section>
+
+  <!-- Control de vistas estilo GitHub -->
+  <div class="view-toggle-bar">
+    <button class="toggle-btn active">📋 Tablero</button>
+    <button class="toggle-btn">📅 Calendario</button>
+    <button class="toggle-btn">👥 Trabajos por Usuario</button>
+  </div>
+
+  <!-- Tablero Kanban -->
+  <section class="kanban-board">
+    <!-- Columna 1 -->
+    <div class="kanban-column">
+      <div class="column-header">Solicitud Recibida <span class="badge">2</span></div>
+      <div class="card">
+        <h4>Residencial Alvento</h4>
+        <p>Cancel Principal Baño</p>
+      </div>
+    </div>
+
+    <!-- Columna 2: Renombrada a Levantamiento + Tag Pendiente/Realizado -->
+    <div class="kanban-column">
+      <div class="column-header">Levantamiento <span class="badge">1</span></div>
+      <div class="card">
+        <span class="tag tag-warning">Pendiente</span>
+        <h4>Hotel Sol Clarón</h4>
+        <p>Barandales Terraza Norte</p>
+      </div>
+    </div>
+
+    <!-- Columna 3 -->
+    <div class="kanban-column">
+      <div class="column-header">En Fabricación <span class="badge">2</span></div>
+      <div class="card">
+        <h4>Inmobiliaria Vinte</h4>
+        <p>Protecciones Ventana Mod. P12</p>
+      </div>
+    </div>
+
+    <!-- Columna 4 -->
+    <div class="kanban-column">
+      <div class="column-header">Instalación Programada <span class="badge">1</span></div>
+      <div class="card">
+        <h4>Dra. Lucía Torres</h4>
+        <p>Portón Automatizado Principal</p>
+      </div>
+    </div>
+
+    <!-- Columna 5 -->
+    <div class="kanban-column">
+      <div class="column-header">Instalado <span class="badge">1</span></div>
+      <div class="card">
+        <h4>Colegio Americano</h4>
+        <p>Reja Perimetral Sección A</p>
+      </div>
+    </div>
+
+    <!-- Columna 6: Garantías con tags (Reportada, En atención, Resuelta) -->
+    <div class="kanban-column">
+      <div class="column-header">Garantía <span class="badge">1</span></div>
+      <div class="card">
+        <span class="tag tag-danger">Reportada</span>
+        <h4>Restaurante El Asador</h4>
+        <p>Ajuste Chapa Portón Cocina</p>
+      </div>
+    </div>
+  </section>
+</div>
