@@ -5,29 +5,45 @@ import audit from "./Auditoria.service.js";
 const getObras = async () => {
     const db = await getConnection();
 
-    const Obras = await db.query("SELECT * FROM Obras");
+    try {
+        const Obras = await db.query("SELECT * FROM Obras");
 
-    const ObrasConMateriales = await Promise.all(
-        Obras.map(async (Obra) => {
-            const materiales = await db.query(
-                `SELECT m.* FROM Materiales m
-                JOIN Obras_has_Materiales pm ON pm.Materiales_idMaterial = m.idMaterial
-                WHERE pm.Obras_idObra = ?`,
-                [Obra.IDOBRA]
-            );
+        const ObrasConMateriales = await Promise.all(
+            Obras.map(async (Obra) => {
+                const materiales = await db.query(
+                    `SELECT m.* FROM Materiales m
+                    JOIN Obras_has_Materiales pm ON pm.Materiales_idMaterial = m.idMaterial
+                    WHERE pm.Obras_idObra = ?`,
+                    [Obra.IDOBRA]
+                );
 
-            return {
-                ...Obra,
-                MATERIALES: materiales
-            };
-        })
-    );
+                return {
+                    ...Obra,
+                    MATERIALES: materiales
+                };
+            })
+        );
 
-    return ObrasConMateriales;
+        return ObrasConMateriales;
+    } catch (error) {
+        console.error("Error al obtener los Obras:", error);
+        throw error;
+    }
+    return error;
 };
 
 // ─── GET Obra por ID ────────────────────────────────────────────────────
-// Pasar el objeto filtrado por id desde el front (getObras ya retorna toda la info necesaria)
+const getObraById = async (id) => {
+    const db = await getConnection();
+    try {
+        const rows = await db.query("SELECT * FROM Obras WHERE idObra = ?", [id]);
+        return rows[0] ?? null;
+    } catch (error) {
+        console.error(`Error al obtener la Obra con ID ${id}:`, error);
+        throw error;
+    }
+    return error;
+};
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
 const createObra = async ({ idCliente, Nombre, Direccion, idTrabajadorCtx = 1 }) => {
@@ -224,6 +240,7 @@ const cambiarEstado = async (idObra, idEstado, idTrabajadorCtx = 1) => {
 
 export default {
     getObras,
+    getObraById,
     createObra,
     updateObra,
     deleteObra,

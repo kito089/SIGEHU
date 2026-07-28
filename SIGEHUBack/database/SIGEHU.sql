@@ -93,11 +93,7 @@ CREATE TABLE UsosCFDI (
     CONSTRAINT PK_UsosCFDI PRIMARY KEY (idUsoCFDI)
 );
 
-
-
 CREATE UNIQUE INDEX UsoCFDI_UNIQUE ON UsosCFDI(UsoCFDI);
-
-
 
 INSERT INTO UsosCFDI (UsoCFDI, Descripcion) VALUES 
 ('G01', 'ADQUISICIÓN DE MERCANCÍAS');
@@ -148,8 +144,6 @@ INSERT INTO UsosCFDI (UsoCFDI, Descripcion) VALUES
 INSERT INTO UsosCFDI (UsoCFDI, Descripcion) VALUES 
 ('CN01', 'NÓMINA');
 
-
-
 -- -----------------------------------------------------
 -- EstadosObra
 -- -----------------------------------------------------
@@ -160,8 +154,6 @@ CREATE TABLE EstadosObra (
     PRIMARY KEY (idEstadoObra)
 );
 
-
-
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Solicitud recibida', 1);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Levantamiento pendiente', 2);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('En fabricacion', 3);
@@ -169,8 +161,6 @@ INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Instalacion programada', 4);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Instalado', 5);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Garantia', 6);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Finalizado', 7);
-
-
 
 -- -----------------------------------------------------
 -- Materiales
@@ -184,8 +174,6 @@ CREATE TABLE Materiales (
     PRIMARY KEY (idMaterial)
 );
 
-
-
 -- -----------------------------------------------------
 -- TiposPago
 -- -----------------------------------------------------
@@ -195,12 +183,8 @@ CREATE TABLE TiposPago (
     PRIMARY KEY (idTipoPago)
 );
 
-
-
 INSERT INTO TiposPago (Nombre) VALUES ('Efectivo');
 INSERT INTO TiposPago (Nombre) VALUES ('Transferencia');
-
-
 
 -- -----------------------------------------------------
 -- FormasPago
@@ -211,13 +195,9 @@ CREATE TABLE FormasPago (
     PRIMARY KEY (idFormaPago)
 );
 
-
-
 INSERT INTO FormasPago (Nombre) VALUES ('Anticipo');
 INSERT INTO FormasPago (Nombre) VALUES ('Parcial');
 INSERT INTO FormasPago (Nombre) VALUES ('Liquidación');
-
-
 
 -- -----------------------------------------------------
 -- CamposPermiso
@@ -228,8 +208,6 @@ CREATE TABLE CamposPermiso (
     Descripcion BLOB SUB_TYPE TEXT,
     PRIMARY KEY (idCampoPermiso)
 );
-
-
 
 INSERT INTO CamposPermiso (NombreCampo, Descripcion) VALUES
 ('direccion_instalacion', 'Direccion de instalacion de la obra');
@@ -248,8 +226,6 @@ INSERT INTO CamposPermiso (NombreCampo, Descripcion) VALUES
 INSERT INTO CamposPermiso (NombreCampo, Descripcion) VALUES
 ('confirmar_actividad', 'Permiso para confirmar la etapa asignada');
 
-
-
 -- -----------------------------------------------------
 -- EstadosGarantia
 -- -----------------------------------------------------
@@ -260,13 +236,9 @@ CREATE TABLE EstadosGarantia (
     PRIMARY KEY (idEstadoGarantia)
 );
 
-
-
 INSERT INTO EstadosGarantia (Nombre, Orden) VALUES ('Reportada', 1);
 INSERT INTO EstadosGarantia (Nombre, Orden) VALUES ('En atencion', 2);
 INSERT INTO EstadosGarantia (Nombre, Orden) VALUES ('Resuelta', 3);
-
-
 
 -- -----------------------------------------------------
 -- Proveedores -- Recordar Permisos Granulares Proveedores
@@ -282,11 +254,7 @@ CREATE TABLE Proveedores (
     PRIMARY KEY (idProveedor)
 );
 
-
-
 CREATE INDEX IDX_Proveedores_Nombre ON Proveedores (Nombre);
-
-
 
 -- -----------------------------------------------------
 -- TABLAS PRINCIPALES
@@ -479,12 +447,8 @@ CREATE TABLE Obras_has_Materiales (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_Obras_has_Materiales_Materiales1_idx ON Obras_has_Materiales(Materiales_idMaterial);
 CREATE INDEX fk_Obras_has_Materiales_Obras1_idx ON Obras_has_Materiales(Obras_idObra);
-
-
 
 -- -----------------------------------------------------
 -- Obras_has_Trabajadores -> Asignacion de trabajadores a cada estado de obra con fecha
@@ -510,13 +474,9 @@ CREATE TABLE Obras_has_Trabajadores (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_Obras_has_Trabajadores_Obras1_idx ON Obras_has_Trabajadores(Obras_idObra);
 CREATE INDEX fk_Obras_has_Trabajadores_Trabajadores1_idx ON Obras_has_Trabajadores(Trabajadores_idTrabajador);
 CREATE INDEX fk_Obras_has_Trabajadores_EstadosObra1_idx ON Obras_has_Trabajadores(EstadosObra_idEstadoObra);
-
-
 
 -- -----------------------------------------------------
 -- DetallesPagos -> Permite registrar el tipo de pago, si fue anticipo, parcial o final, y el trabajador que lo registro
@@ -553,15 +513,11 @@ CREATE TABLE DetallesPagos (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_DetallesPagos_TiposPago1_idx ON DetallesPagos(TiposPago_idTipoPago);
 CREATE INDEX fk_DetallesPagos_Obras1_idx ON DetallesPagos(Obras_idObra);
 CREATE INDEX fk_DetallesPagos_Trabajadores1_idx ON DetallesPagos(Trabajadores_idTrabajador);
 CREATE INDEX fk_DetallesPagos_EstadosObra1_idx ON DetallesPagos(EstadosObra_idEstadoObra);
 CREATE INDEX fk_DetallesPagos_FormasPago1_idx ON DetallesPagos(FormasPago_idFormaPago);
-
-
 
 -- -----------------------------------------------------
 -- PermisosGranulares
@@ -587,13 +543,9 @@ CREATE TABLE PermisosGranularesObras (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_PermisosGranularesObras_CamposPermiso1_idx ON PermisosGranularesObras(CamposPermiso_idCampoPermiso);
 CREATE INDEX fk_PermisosGranularesObras_Obras1_idx ON PermisosGranularesObras(Obras_idObra);
 CREATE INDEX fk_PermisosGranularesObras_Trabajadores1_idx ON PermisosGranularesObras(Trabajadores_idTrabajador);
-
-
 
 -- -----------------------------------------------------
 -- Proveedores_has_Materiales -> Materiales que provee un proveedor
@@ -614,12 +566,8 @@ CREATE TABLE Proveedores_has_Materiales (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_Proveedores_has_Materiales_Materiales1_idx ON Proveedores_has_Materiales(Materiales_idMaterial);
 CREATE INDEX fk_Proveedores_has_Materiales_Proveedores1_idx ON Proveedores_has_Materiales(Proveedores_idProveedor);
-
-
 
 -- -----------------------------------------------------
 -- Compras
@@ -637,11 +585,7 @@ CREATE TABLE Compras (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_Compras_Trabajadores1_idx ON Compras(Trabajadores_idTrabajador);
-
-
 
 -- -----------------------------------------------------
 -- DetallesCompras -> Relaciona las compras con los proveedores y materiales que se compraron
@@ -664,12 +608,8 @@ CREATE TABLE DetallesCompras (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_DetallesCompras_Proveedores_has_Materiales1_idx ON DetallesCompras(Proveedores_has_Materiales_Proveedores_idProveedor, Proveedores_has_Materiales_Materiales_idMaterial);
 CREATE INDEX fk_DetallesCompras_Compras1_idx ON DetallesCompras(Compras_idCompra);
-
-
 
 -- -----------------------------------------------------
 -- Garantias Creo que tambien ocupa sus propias notas
@@ -699,13 +639,9 @@ CREATE TABLE Garantias (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_Garantias_EstadosGarantia1_idx ON Garantias(EstadosGarantia_idEstadoGarantia);
 CREATE INDEX fk_Garantias_Obras1_idx ON Garantias(Obras_idObra);
 CREATE INDEX fk_Garantias_Trabajadores1_idx ON Garantias(Trabajadores_idTrabajador);
-
-
 
 SET TERM ^;
 CREATE TRIGGER TR_GARANTIAS_BU
@@ -716,8 +652,6 @@ BEGIN
     NEW.FechaUltimaActualizacion = CURRENT_TIMESTAMP;
 END^
 SET TERM ;^
-
-
 
 -- -----------------------------------------------------
 -- FotosGarantias
@@ -744,13 +678,9 @@ CREATE TABLE FotosGarantias (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_FotosGarantias_Garantias1_idx ON FotosGarantias(Garantias_idGarantia);
 CREATE INDEX fk_FotosGarantias_EstadosGarantia1_idx ON FotosGarantias(EstadosGarantia_idEstadoGarantia);
 CREATE INDEX fk_FotosGarantias_Trabajadores1_idx ON FotosGarantias(Trabajadores_idTrabajador);
-
-
 
 -- -----------------------------------------------------
 -- NotasGarantias
@@ -777,44 +707,31 @@ CREATE TABLE NotasGarantias (
             ON DELETE NO ACTION
 );
 
-
-
 CREATE INDEX fk_NotasGarantias_Garantias1_idx ON NotasGarantias(Garantias_idGarantia);
 CREATE INDEX fk_NotasGarantias_EstadosGarantia1_idx ON NotasGarantias(EstadosGarantia_idEstadoGarantia);
 CREATE INDEX fk_NotasGarantias_Trabajadores1_idx ON NotasGarantias(Trabajadores_idTrabajador);
 
-
-
 -- -----------------------------------------------------
--- PermisosGranularesGarantias
+-- Garantias_has_Trabajadores -> Asignacion de trabajadores a cada estado de garantia con fecha
 -- -----------------------------------------------------
-CREATE TABLE PermisosGranularesGarantias (
-    idPermisoGranularGarantia INTEGER GENERATED BY DEFAULT AS IDENTITY,
-    CamposPermiso_idCampoPermiso INTEGER NOT NULL,
+CREATE TABLE Garantias_has_Trabajadores (
+    idDetalleAsignacion INTEGER GENERATED BY DEFAULT AS IDENTITY,
     Garantias_idGarantia INTEGER NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
-    PRIMARY KEY (idPermisoGranularGarantia),
-    CONSTRAINT fk_PermisosGranularesGarantias_CamposPermiso1
-        FOREIGN KEY (CamposPermiso_idCampoPermiso)
-        REFERENCES CamposPermiso (idCampoPermiso)
-            ON DELETE NO ACTION,
-    CONSTRAINT fk_PermisosGranularesGarantias_Garantias1
+    FechaAsignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (idDetalleAsignacion),
+    CONSTRAINT fk_Garantias_has_Trabajadores_Garantias1
         FOREIGN KEY (Garantias_idGarantia)
         REFERENCES Garantias (idGarantia)
             ON DELETE NO ACTION,
-    CONSTRAINT fk_PermisosGranularesGarantias_Trabajadores1
+    CONSTRAINT fk_Garantias_has_Trabajadores_Trabajadores1
         FOREIGN KEY (Trabajadores_idTrabajador)
         REFERENCES Trabajadores (idTrabajador)
             ON DELETE NO ACTION
 );
 
-
-
-CREATE INDEX fk_PermisosGranularesGarantias_CamposPermiso1_idx ON PermisosGranularesGarantias(CamposPermiso_idCampoPermiso);
-CREATE INDEX fk_PermisosGranularesGarantias_Garantias1_idx ON PermisosGranularesGarantias(Garantias_idGarantia);
-CREATE INDEX fk_PermisosGranularesGarantias_Trabajadores1_idx ON PermisosGranularesGarantias(Trabajadores_idTrabajador);
-
-
+CREATE INDEX fk_Garantias_has_Trabajadores_Garantias1_idx ON Garantias_has_Trabajadores(Garantias_idGarantia);
+CREATE INDEX fk_Garantias_has_Trabajadores_Trabajadores1_idx ON Garantias_has_Trabajadores(Trabajadores_idTrabajador);
 
 -- -----------------------------------------------------
 -- Auditorias
@@ -834,12 +751,8 @@ CREATE TABLE Auditorias (
     PRIMARY KEY (idAuditoria)
 );
 
-
-
 CREATE INDEX IDX_Auditorias_Fecha ON Auditorias (Fecha);
 CREATE INDEX IDX_Auditorias_Tabla_Accion ON Auditorias (Tabla, Accion);
-
-
 
 -- -----------------------------------------------------
 -- AuditoriasDetalles -> Aplica para actualizaciones
@@ -856,8 +769,6 @@ CREATE TABLE AuditoriasDetalles (
         REFERENCES Auditorias (idAuditoria)
             ON DELETE NO ACTION
 );
-
-
 
 -- -----------------------------------------------------
 -- Triggers para auditorias
