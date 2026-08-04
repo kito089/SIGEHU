@@ -1,25 +1,96 @@
-<div class="login-container">
-  <div class="login-box">
-    <h2>Inicio de Sesión</h2>
-    <p>Bienvenido al sistema SIGEHU</p>
+<div class="login-page">
+  <div class="login-card">
 
-    <form (submit)="onLogin($event)">
-      <label for="usuario">Usuario</label>
-      <input id="usuario" name="usuario" [(ngModel)]="login.usuario" placeholder="Ingresa tu usuario" />
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 2v4M16 2v4M6 10h12l-1 8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2l-1-8Z"/>
+        </svg>
+      </div>
+      <h1>SIGEHU</h1>
+      <p>Sistema Integral de Gestión · Herrería Utrilla</p>
+    </div>
 
-      <label for="contrasena">Contraseña</label>
-      <input id="contrasena" name="contrasena" [(ngModel)]="login.contrasena" type="password" placeholder="Ingresa tu contraseña" />
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
-      <div class="remember">
-        <input type="checkbox" id="recordarSesion" [(ngModel)]="login.recordarSesion" name="recordarSesion" />
-        <label for="recordarSesion">Recordar sesión</label>
+      <div class="field">
+        <label for="usuario">Usuario</label>
+        <div class="input-wrap" [class.invalid]="usuarioCtrl?.touched && usuarioCtrl?.invalid">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <input
+            id="usuario"
+            type="text"
+            formControlName="usuario"
+            placeholder="Ej. carlos.utrilla"
+            autocomplete="username"
+            autocapitalize="none">
+        </div>
+        <span class="field-error" *ngIf="usuarioCtrl?.touched && usuarioCtrl?.invalid">
+          Ingresa tu usuario
+        </span>
       </div>
 
-      <button type="submit">Ingresar al Sistema</button>
+      <div class="field">
+        <label for="contrasena">Contraseña</label>
+        <div class="input-wrap" [class.invalid]="contrasenaCtrl?.touched && contrasenaCtrl?.invalid">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+          </svg>
+          <input
+            id="contrasena"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="contrasena"
+            placeholder="••••••••"
+            autocomplete="current-password">
+          <button
+            type="button"
+            class="toggle-visibility"
+            (click)="togglePassword()"
+            [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+            <svg *ngIf="!showPassword" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg *ngIf="showPassword" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/>
+            </svg>
+          </button>
+        </div>
+        <span class="field-error" *ngIf="contrasenaCtrl?.touched && contrasenaCtrl?.invalid">
+          Ingresa tu contraseña
+        </span>
+      </div>
+
+      <div class="row-between">
+        <label class="checkbox">
+          <input type="checkbox" formControlName="recordarSesion">
+          Recordar sesión
+        </label>
+        <button type="button" class="link-btn" (click)="onForgotPassword()">
+          ¿Olvidaste tu contraseña?
+        </button>
+      </div>
+
+      <div class="forgot-message" *ngIf="showForgotMessage">
+        Comunícate con el administrador para cambiar tu contraseña.
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="loading">
+        <span *ngIf="!loading">Ingresar al Sistema</span>
+        <span *ngIf="loading">Verificando…</span>
+      </button>
+
     </form>
 
-    <a href="#" (click)="forgotPasswordMessage()" class="forgot-link">¿Olvidó su contraseña?</a>
+    <div class="footer-note">
+      Panel de Acceso Único · Administrador y Trabajadores<br>
+      Herrería Utrilla © 2026
+    </div>
 
-    <p class="footer">Portal de Recursos Humanos del Municipio de Tepatitlán</p>
   </div>
 </div>

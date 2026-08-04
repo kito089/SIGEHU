@@ -1,0 +1,100 @@
+<div class="page">
+
+  <section class="panel-frame">
+
+    <div class="panel-header">
+      <div>
+        <h1>Gestión de Clientes</h1>
+        <p>Directorio maestro, historial de obras y configuraciones de facturación SAT</p>
+      </div>
+      <button class="btn-primary" (click)="nuevoCliente()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Nuevo Cliente
+      </button>
+    </div>
+
+    <div class="toolbar">
+      <label class="search-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Buscar por nombre, teléfono o RFC…">
+      </label>
+
+      <select class="filter-select" [(ngModel)]="filtro">
+        <option value="todos">Todos los clientes</option>
+        <option value="con_obras">Con obras activas</option>
+        <option value="con_sat">Con datos SAT</option>
+        <option value="sin_sat">Sin datos SAT</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre / Razón social</th>
+            <th>Teléfono</th>
+            <th>Obras activas</th>
+            <th>Datos SAT</th>
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of clientesFiltrados">
+            <td class="nombre">{{ c.nombre }}</td>
+            <td class="muted">{{ c.telefono }}</td>
+            <td>
+              <span class="tag tag-obras" [class.tag-obras-empty]="c.obrasActivas === 0">
+                {{ obrasLabel(c.obrasActivas) }}
+              </span>
+            </td>
+            <td>
+              <span class="tag" [ngClass]="c.datosSat ? 'tag-sat-ok' : 'tag-sat-empty'">
+                {{ c.datosSat ? 'Registrados' : 'No Provistos' }}
+              </span>
+            </td>
+            <td class="col-acciones">
+              <div class="acciones-group">
+                <button class="icon-btn" (click)="verCliente(c)" aria-label="Ver cliente" title="Ver">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="icon-btn" (click)="editarCliente(c)" aria-label="Editar cliente" title="Editar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <button class="icon-btn icon-btn-danger" (click)="eliminarCliente(c)" aria-label="Eliminar cliente" title="Eliminar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="clientesFiltrados.length === 0">
+            <td colspan="5" class="empty-state">No se encontraron clientes con ese criterio.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+</div>
+
+<div class="modal-overlay" [class.open]="selectedCliente" (click)="cerrarDetalle()">
+  <div class="modal" *ngIf="selectedCliente" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="cliente-tag">Cliente</div>
+        <h2>{{ selectedCliente.nombre }}</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-row"><span class="k">Teléfono</span><span class="v">{{ selectedCliente.telefono }}</span></div>
+    <div class="modal-row"><span class="k">Correo</span><span class="v">{{ selectedCliente.correo }}</span></div>
+    <div class="modal-row"><span class="k">Dirección</span><span class="v">{{ selectedCliente.direccion }}</span></div>
+    <div class="modal-row"><span class="k">RFC</span><span class="v">{{ selectedCliente.rfc }}</span></div>
+    <div class="modal-row"><span class="k">Obras activas</span><span class="v">{{ selectedCliente.obrasActivas }}</span></div>
+    <div class="modal-row"><span class="k">Datos SAT</span><span class="v">{{ selectedCliente.datosSat ? 'Registrados' : 'No Provistos' }}</span></div>
+  </div>
+</div>

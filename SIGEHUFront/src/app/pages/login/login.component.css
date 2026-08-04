@@ -1,117 +1,231 @@
-/* Fondo general oscuro */
-.login-container {
+:host{
+  --bg: #0a0e1a;
+  --panel: #141c30;
+  --panel-border: #232d47;
+  --field-bg: #1a2338;
+  --field-border: #2a3552;
+  --accent: #2f8fef;
+  --accent-soft: rgba(47,143,239,0.12);
+
+  --text-primary: #eef1f7;
+  --text-secondary: #8992a8;
+  --text-tertiary: #5c6580;
+
+  --danger: #f4574f;
+  --danger-soft: rgba(244,87,79,0.12);
+  --info-soft: rgba(47,143,239,0.10);
+
+  display: block;
+  min-height: 100vh;
+  background: var(--bg);
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+*{ box-sizing: border-box; }
+
+.login-page{
+  min-height: 100vh;
   display: flex;
+  align-items: center;
   justify-content: center;
+  padding: 24px;
+}
+
+.login-card{
+  width: 100%;
+  max-width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 30px 28px 24px;
+}
+
+/* ---------- Brand ---------- */
+.brand{
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  height: 100vh;
-  background: #0d0d0d; /* negro profundo */
-  font-family: 'Segoe UI', Arial, sans-serif;
-}
-
-/* Caja central */
-.login-box {
-  background: #1c1c1c; /* gris oscuro */
-  padding: 2rem;
-  border-radius: 12px;
-  width: 380px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
   text-align: center;
-  color: #eaeaea;
+  margin-bottom: 26px;
 }
 
-/* Títulos */
-.login-box h2 {
-  margin-bottom: 0.5rem;
-  color: #ffffff;
-  font-weight: bold;
-}
-
-.login-box p {
-  margin-bottom: 1.5rem;
-  color: #aaaaaa;
-}
-
-/* Labels */
-.login-box label {
-  display: block;
-  text-align: left;
-  margin-top: 10px;
-  font-size: 14px;
-  color: #cccccc;
-}
-
-/* Inputs */
-.login-box input[type="text"]{
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border: none;
-  border-radius: 6px;
-  background: #2a2a2a;
-  color: #ffffff;
-}
-.login-box input[type="password"] {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border: none;
-  border-radius: 6px;
-  background: #2a2a2a;
-  color: #ffffff;
-}
-
-.login-box input::placeholder {
-  color: #888888;
-}
-
-/* Checkbox */
-.remember {
+.brand-icon{
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
   display: flex;
   align-items: center;
-  margin-top: 12px;
-  color: #c4c2c2;
-  font-size: 13px;
+  justify-content: center;
+  margin-bottom: 12px;
 }
 
-.remember input {
-  margin-right: 6px;
+.brand h1{
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: var(--text-primary);
 }
 
-/* Botón */
-.login-box button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 20px;
-  background: #007bff; /* azul corporativo */
-  border: none;
-  border-radius: 6px;
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s ease;
+.brand p{
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
 }
 
-.login-box button:hover {
-  background: #0056b3;
-}
+/* ---------- Form fields ---------- */
+.field{ margin-bottom: 16px; }
 
-/* Link de contraseña */
-.forgot-link {
+.field label{
   display: block;
-  margin-top: 15px;
-  color: #00bcd4;
-  font-size: 14px;
-  text-decoration: none;
-}
-
-.forgot-link:hover {
-  text-decoration: underline;
-}
-
-/* Footer */
-.footer {
-  margin-top: 20px;
   font-size: 12px;
-  color: #777777;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.input-wrap{
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: border-color .15s ease;
+}
+
+.input-wrap:focus-within{
+  border-color: var(--accent);
+}
+
+.input-wrap.invalid{
+  border-color: var(--danger);
+}
+
+.input-wrap svg{
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.input-wrap input{
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 13.5px;
+}
+.input-wrap input::placeholder{ color: var(--text-tertiary); }
+
+.toggle-visibility{
+  background: none;
+  border: none;
+  padding: 2px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.toggle-visibility:hover{ color: var(--text-secondary); }
+
+.field-error{
+  display: block;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--danger);
+}
+
+/* ---------- Row: recordar / olvidaste ---------- */
+.row-between{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checkbox{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.checkbox input{
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.link-btn{
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+.link-btn:hover{ text-decoration: underline; }
+
+/* ---------- Mensajes ---------- */
+.forgot-message{
+  background: var(--info-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.error-message{
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+/* ---------- Submit ---------- */
+.submit-btn{
+  width: 100%;
+  background: var(--accent);
+  color: #071022;
+  border: none;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter .15s ease, opacity .15s ease;
+}
+.submit-btn:hover:not(:disabled){ filter: brightness(1.08); }
+.submit-btn:disabled{ opacity: .65; cursor: not-allowed; }
+
+/* ---------- Footer ---------- */
+.footer-note{
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--panel-border);
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 420px){
+  .login-card{ padding: 26px 20px 20px; }
 }
