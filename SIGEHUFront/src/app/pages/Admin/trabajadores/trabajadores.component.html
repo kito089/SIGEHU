@@ -1,5 +1,4 @@
 <div class="page">
-
   <section class="panel-frame">
 
     <div class="panel-header">
@@ -18,39 +17,64 @@
       <input
         type="text"
         [(ngModel)]="searchTerm"
-        placeholder="Buscar por nombre, oficio o teléfono…">
+        placeholder="Buscar por usuario, nombre o teléfono…">
     </label>
 
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
+            <th>Usuario</th>
             <th>Trabajador</th>
             <th>Teléfono</th>
             <th>Obra(s) asignada(s)</th>
-            <th class="col-acciones">Acciones</th>
+            <th class="col-acciones">IMSS</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let t of trabajadoresFiltrados">
+            <!-- Columna USUARIO (Lado Izquierdo) -->
+            <td>
+              <span class="user-badge">@{{ t.usuario }}</span>
+            </td>
+
+            <!-- Columna TRABAJADOR (Sin oficio) -->
             <td>
               <div class="nombre">{{ t.nombre }}</div>
-              <div class="oficio">{{ t.oficio }}</div>
             </td>
+
             <td class="muted">{{ t.telefono }}</td>
+
             <td>
-              <span class="tag" [ngClass]="t.obrasAsignadas.length ? 'tag-obras' : 'tag-obras-empty'">
+              <span class="tag" [ngClass]="t.obrasAsignadas?.length ? 'tag-obras' : 'tag-obras-empty'">
                 {{ obrasLabel(t.obrasAsignadas) }}
               </span>
             </td>
+
+            <!-- Columna IMSS & Acciones -->
             <td class="col-acciones">
               <div class="acciones-group">
-                <button class="icon-btn" (click)="verTrabajador(t)" aria-label="Ver trabajador" title="Ver">
+                <!-- Botón Ver Detalle -->
+                <button class="icon-btn" (click)="verTrabajador(t)" aria-label="Ver trabajador" title="Ver Detalle">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
+
+                <!-- Botón Documento IMSS (Deshabilitado si no hay URL) -->
+                <button 
+                  class="btn-imss" 
+                  [disabled]="!t.documentoImssUrl" 
+                  (click)="abrirDocumentoImss(t.documentoImssUrl)"
+                  [title]="t.documentoImssUrl ? 'Ver Documento IMSS' : 'Sin documento registrado'">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Ver IMSS
+                </button>
+
+                <!-- Botón Actualizar Datos -->
                 <button class="btn-update" (click)="actualizarDatos(t)">
                   Actualizar Datos
                 </button>
+
+                <!-- Botón Eliminar -->
                 <button class="icon-btn icon-btn-danger" (click)="eliminarTrabajador(t)" aria-label="Eliminar trabajador" title="Eliminar">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
                 </button>
@@ -59,37 +83,101 @@
           </tr>
 
           <tr *ngIf="trabajadoresFiltrados.length === 0">
-            <td colspan="4" class="empty-state">No se encontraron trabajadores con ese criterio.</td>
+            <td colspan="5" class="empty-state">No se encontraron trabajadores con ese criterio.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
   </section>
-
 </div>
 
+<!-- MODAL DETALLE DE TRABAJADOR -->
 <div class="modal-overlay" [class.open]="selectedTrabajador" (click)="cerrarDetalle()">
   <div class="modal" *ngIf="selectedTrabajador" (click)="$event.stopPropagation()">
+    
     <div class="modal-header">
       <div>
-        <div class="trabajador-tag">Trabajador</div>
+        <span class="trabajador-tag">Ficha de Trabajador</span>
         <h2>{{ selectedTrabajador.nombre }}</h2>
       </div>
       <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
     </div>
-    <div class="modal-row"><span class="k">Oficio</span><span class="v">{{ selectedTrabajador.oficio }}</span></div>
-    <div class="modal-row"><span class="k">Teléfono</span><span class="v">{{ selectedTrabajador.telefono }}</span></div>
-    <div class="modal-row"><span class="k">Correo</span><span class="v">{{ selectedTrabajador.correo }}</span></div>
 
-    <div class="modal-obras">
-      <span class="k">Obra(s) asignada(s)</span>
-      <ul *ngIf="selectedTrabajador.obrasAsignadas.length; else sinObras">
-        <li *ngFor="let obra of selectedTrabajador.obrasAsignadas">{{ obra }}</li>
-      </ul>
-      <ng-template #sinObras>
-        <p class="sin-obras">Sin obra asignada actualmente.</p>
-      </ng-template>
+    <div class="modal-body">
+      <!-- Grid de Labels Informativos (Estilo trabajadornew.component) -->
+      <div class="info-labels-grid">
+        <div class="field-label-group">
+          <label>Nombre de Usuario</label>
+          <div class="field-value">@{{ selectedTrabajador.usuario }}</div>
+        </div>
+
+        <div class="field-label-group">
+          <label>Teléfono de Contacto</label>
+          <div class="field-value">{{ selectedTrabajador.telefono || 'No registrado' }}</div>
+        </div>
+
+        <div class="field-label-group span-2">
+          <label>Correo Electrónico</label>
+          <div class="field-value">{{ selectedTrabajador.correo || 'No registrado' }}</div>
+        </div>
+      </div>
+
+      <!-- Sección Obra(s) asignada(s) -->
+      <div class="field-label-group mt-3">
+        <label>Obra(s) asignada(s)</label>
+        <div class="obras-container">
+          <ul *ngIf="selectedTrabajador.obrasAsignadas?.length; else sinObras" class="obras-list">
+            <li *ngFor="let obra of selectedTrabajador.obrasAsignadas">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              {{ obra }}
+            </li>
+          </ul>
+          <ng-template #sinObras>
+            <p class="sin-obras">Sin obra(s) asignada(s) actualmente.</p>
+          </ng-template>
+        </div>
+      </div>
+
+      <!-- Sección Subir / Gestionar Documento IMSS con Drag & Drop -->
+      <div class="field-label-group mt-3">
+        <label>Documento de Afiliación IMSS</label>
+        
+        <!-- Zona Drag & Drop / Upload -->
+        <div 
+          class="drag-drop-zone"
+          [class.drag-over]="isDragging"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)">
+          
+          <input 
+            type="file" 
+            #fileInput 
+            accept="image/*,.pdf" 
+            style="display: none" 
+            (change)="onFileSelected($event)" />
+
+          <div class="upload-content">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Arrastra y suelta aquí tu archivo (PDF o Imagen) o</p>
+            <button type="button" class="btn-upload" (click)="fileInput.click()">
+              Subir documento
+            </button>
+          </div>
+        </div>
+
+        <!-- Archivo cargado actualmente -->
+        <div *ngIf="selectedTrabajador.documentoImssUrl" class="document-preview-bar">
+          <span class="doc-name">
+            📄 Documento_IMSS_{{ selectedTrabajador.usuario }}
+          </span>
+          <button type="button" class="btn-link" (click)="abrirDocumentoImss(selectedTrabajador.documentoImssUrl)">
+            Ver archivo actual
+          </button>
+        </div>
+      </div>
     </div>
+
   </div>
 </div>
