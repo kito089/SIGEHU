@@ -1,0 +1,58 @@
+<div class="dashboard-view">
+  <header class="header">
+    <h2>Órdenes de Compra y Gastos</h2>
+    <p class="subtitle">Adquisición de materia prima y control de egresos</p>
+  </header>
+
+  <div class="grid-form-table">
+    <div class="card card-highlight-blue">
+      <h3>Registrar Adquisición</h3>
+      <form class="form">
+        <div class="form-group"><label>Proveedor</label><input type="text" /></div>
+        <div class="form-group"><label>Insumo</label><input type="text" /></div>
+        <div class="form-group"><label>Obra</label><input type="text" /></div>
+        <div class="form-group"><label>Monto</label><input type="text" /></div>
+        <div class="form-group"><label>Estado</label><input type="text" /></div>
+        <button type="button" class="btn btn-blue btn-full">Guardar Orden de Compra</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Últimos Movimientos de Almacén</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Folio</th>
+            <th>Proveedor</th>
+            <th>Descripción</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>OC-0042</td>
+            <td>Aceros</td>
+            <td>Lámina Negra</td>
+            <td>$7500</td>
+            <td class="text-green">Pagado</td>
+          </tr>
+          <tr>
+            <td>OC-0041</td>
+            <td>Herrajes</td>
+            <td>Bisagras</td>
+            <td>$1250</td>
+            <td class="text-green">Pagado</td>
+          </tr>
+          <tr>
+            <td>OC-0040</td>
+            <td>Aceros</td>
+            <td>Ángulo</td>
+            <td>$3180</td>
+            <td class="text-orange">Pendiente</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

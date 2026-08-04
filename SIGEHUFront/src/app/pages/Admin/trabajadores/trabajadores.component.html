@@ -1,19 +1,95 @@
-<div class="workers-card">
-  <div class="worker-info">
-    <div class="avatar">JM</div>
-    <div>
-      <h3>Juan Martínez</h3>
-      <p class="phone">Cel: 951-112-0346</p>
+<div class="page">
+
+  <section class="panel-frame">
+
+    <div class="panel-header">
+      <div>
+        <h1>Gestión de Trabajadores</h1>
+        <p>Directorio del personal operativo y sus obras asignadas</p>
+      </div>
+      <button class="btn-primary" (click)="nuevoTrabajador()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Nuevo Trabajador
+      </button>
     </div>
-  </div>
 
-  <div class="assigned-works">
-    <label>Obra(s) asignada(s):</label>
-    <span>Portón Gómez</span>
-  </div>
+    <label class="search-box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        placeholder="Buscar por nombre, oficio o teléfono…">
+    </label>
 
-  <div class="actions">
-    <button class="btn-secondary">Auxiliar</button>
-    <button class="btn-primary">Actualizar Datos</button>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Trabajador</th>
+            <th>Teléfono</th>
+            <th>Obra(s) asignada(s)</th>
+            <th class="col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of trabajadoresFiltrados">
+            <td>
+              <div class="nombre">{{ t.nombre }}</div>
+              <div class="oficio">{{ t.oficio }}</div>
+            </td>
+            <td class="muted">{{ t.telefono }}</td>
+            <td>
+              <span class="tag" [ngClass]="t.obrasAsignadas.length ? 'tag-obras' : 'tag-obras-empty'">
+                {{ obrasLabel(t.obrasAsignadas) }}
+              </span>
+            </td>
+            <td class="col-acciones">
+              <div class="acciones-group">
+                <button class="icon-btn" (click)="verTrabajador(t)" aria-label="Ver trabajador" title="Ver">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button class="btn-update" (click)="actualizarDatos(t)">
+                  Actualizar Datos
+                </button>
+                <button class="icon-btn icon-btn-danger" (click)="eliminarTrabajador(t)" aria-label="Eliminar trabajador" title="Eliminar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="trabajadoresFiltrados.length === 0">
+            <td colspan="4" class="empty-state">No se encontraron trabajadores con ese criterio.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+</div>
+
+<div class="modal-overlay" [class.open]="selectedTrabajador" (click)="cerrarDetalle()">
+  <div class="modal" *ngIf="selectedTrabajador" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="trabajador-tag">Trabajador</div>
+        <h2>{{ selectedTrabajador.nombre }}</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-row"><span class="k">Oficio</span><span class="v">{{ selectedTrabajador.oficio }}</span></div>
+    <div class="modal-row"><span class="k">Teléfono</span><span class="v">{{ selectedTrabajador.telefono }}</span></div>
+    <div class="modal-row"><span class="k">Correo</span><span class="v">{{ selectedTrabajador.correo }}</span></div>
+
+    <div class="modal-obras">
+      <span class="k">Obra(s) asignada(s)</span>
+      <ul *ngIf="selectedTrabajador.obrasAsignadas.length; else sinObras">
+        <li *ngFor="let obra of selectedTrabajador.obrasAsignadas">{{ obra }}</li>
+      </ul>
+      <ng-template #sinObras>
+        <p class="sin-obras">Sin obra asignada actualmente.</p>
+      </ng-template>
+    </div>
   </div>
 </div>

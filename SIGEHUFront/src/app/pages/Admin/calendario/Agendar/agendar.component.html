@@ -1,0 +1,81 @@
+<div class="page">
+  <div class="form-card">
+
+    <div class="form-header">
+      <h1>Agendar Actividad</h1>
+      <p>Programa una visita de levantamiento, un bloque de fabricación o una instalación</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <div class="field">
+        <label>Tipo de actividad</label>
+        <div class="tipo-options">
+          <label class="tipo-option" *ngFor="let t of tipos" [class.selected]="form.get('tipo')?.value === t.value">
+            <input type="radio" [value]="t.value" formControlName="tipo">
+            {{ t.label }}
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="obraId">Obra / Cliente</label>
+        <select id="obraId" formControlName="obraId">
+          <option value="" disabled>Selecciona una obra</option>
+          <option *ngFor="let o of obras" [value]="o.id">{{ o.obra }} — {{ o.cliente }}</option>
+        </select>
+        <span class="field-error" *ngIf="form.get('obraId')?.touched && form.get('obraId')?.invalid">
+          Selecciona la obra relacionada
+        </span>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="fecha">Fecha</label>
+          <input id="fecha" type="date" formControlName="fecha">
+          <span class="field-error" *ngIf="form.get('fecha')?.touched && form.get('fecha')?.invalid">
+            Selecciona una fecha
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="hora">Hora</label>
+          <input id="hora" type="time" formControlName="hora">
+          <span class="field-error" *ngIf="form.get('hora')?.touched && form.get('hora')?.invalid">
+            Selecciona una hora
+          </span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="responsableId">Responsable</label>
+        <select id="responsableId" formControlName="responsableId">
+          <option value="" disabled>Selecciona un responsable</option>
+          <option *ngFor="let t of trabajadores" [value]="t.id">{{ t.nombre }}</option>
+        </select>
+        <span class="field-error" *ngIf="form.get('responsableId')?.touched && form.get('responsableId')?.invalid">
+          Selecciona un responsable
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="notas">Notas</label>
+        <textarea
+          id="notas"
+          rows="3"
+          formControlName="notas"
+          placeholder="Indicaciones especiales, materiales a llevar, referencias de acceso, etc."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="guardando">
+          <span *ngIf="!guardando">Agendar</span>
+          <span *ngIf="guardando">Agendando…</span>
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>

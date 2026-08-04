@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-// import { Router, ActivatedRoute } from '@angular/router';
+//import { Router, ActivatedRoute } from '@angular/router';
 // import { ProveedoresService } from '../../services/proveedores.service';
 
 /* =========================================================================
@@ -15,13 +15,13 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
    ========================================================================= */
 
 @Component({
-  selector: 'app-proveedor-form',
+  selector: 'app-provedor-new',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './provedornew.component.html',
   styleUrls: ['./provedornew.component.css'],
 })
-export class ProveedorFormComponent implements OnInit {
+export class ProvedorNewComponent implements OnInit {
 
   // Si viene con id (por @Input o por parámetro de ruta), es edición.
   @Input() proveedorId: number | null = null;
@@ -91,8 +91,8 @@ export class ProveedorFormComponent implements OnInit {
   }
 
   cancelar(): void {
-    // this.router.navigate(['/proveedores']);
-    console.log('Cancelado');
+   //this.router.navigate(['/provedores']);
+  
   }
 
   // ---------------------------------------------------------------------

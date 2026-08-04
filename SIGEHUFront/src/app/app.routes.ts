@@ -7,5 +7,10 @@ export const routes: Routes = [
   { path: 'trabajadores', loadComponent: () => import('./pages/Admin/trabajadores/trabajadores.component').then(m => m.TrabajadoresComponent) },
   { path: 'clientes', loadComponent: () => import('./pages/Admin/clientes/clientes.component').then(m => m.ClientesComponent) },
   { path: 'clientes/form', loadComponent: () => import('./pages/Admin/clientes/ClientesFrom/clientesfrom.component').then(m => m.ClienteFormComponent) },
+  { path: 'trabajadores/nuevo', loadComponent: () => import('./pages/Admin/trabajadores/trabajadornew/trabajadornew.component').then(m => m.TrabajadorNewComponent) },
+  { path: 'proveedores', loadComponent: () => import('./pages/Admin/provedores/provedores.component').then(m => m.ProveedoresComponent) },
+  { path: 'proveedores/nuevo', loadComponent: () => import('./pages/Admin/provedores/provedornew/provedornew.component').then(m => m.ProvedorNewComponent) },
+  { path: 'calendario', loadComponent: () => import('./pages/Admin/calendario/calendario.component').then(m => m.CalendarioOperativoComponent) },
+  { path: 'calendario/agendar', loadComponent: () => import('./pages/Admin/calendario/Agendar/agendar.component').then(m => m.AgendarComponent) },
   { path: '', redirectTo: 'login', pathMatch: 'full' }
 ];

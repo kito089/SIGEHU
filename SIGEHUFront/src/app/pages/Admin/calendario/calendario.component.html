@@ -1,0 +1,71 @@
+<div class="page">
+
+  <section class="panel-frame">
+
+    <div class="panel-header">
+      <div>
+        <h1>Calendario Operativo</h1>
+        <p>Planificación de levantamientos, fabricación e instalaciones, en tiempo real</p>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn-nav" (click)="mesAnterior()">‹ Anterior</button>
+        <span class="month-label">{{ monthLabel }}</span>
+        <button class="btn-nav" (click)="mesSiguiente()">Siguiente ›</button>
+        <button class="btn-primary" (click)="agendar()">Agendar</button>
+      </div>
+    </div>
+
+    <div class="legend">
+      <button
+        class="legend-item"
+        *ngFor="let tipo of tipos"
+        [class.inactive]="!filtroActivo(tipo)"
+        (click)="toggleFiltro(tipo)">
+        <span class="dot" [ngClass]="'dot-' + tipo"></span>
+        {{ tipoLabel[tipo] }}
+      </button>
+    </div>
+
+    <div class="cal-grid">
+      <div class="cal-dow" *ngFor="let d of dow">{{ d }}</div>
+
+      <div
+        class="cal-day"
+        *ngFor="let cell of celdas"
+        [class.out-of-month]="!cell.enMes">
+        <div class="day-num-row">
+          <span class="today-dot" *ngIf="cell.esHoy"></span>
+          <span class="day-num" [class.today]="cell.esHoy">{{ cell.day }}</span>
+        </div>
+
+        <div
+          class="event-bar"
+          *ngFor="let e of cell.eventos"
+          [ngClass]="'event-' + e.tipo"
+          (click)="abrirEvento(e)"
+          [title]="e.obra">
+          {{ e.obra }}
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+
+<div class="modal-overlay" [class.open]="selectedEvento" (click)="cerrarDetalle()">
+  <div class="modal" *ngIf="selectedEvento" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="tipo-tag" [ngClass]="'tag-' + selectedEvento.tipo">{{ tipoLabel[selectedEvento.tipo] }}</div>
+        <h2>{{ selectedEvento.obra }}</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-row"><span class="k">Cliente</span><span class="v">{{ selectedEvento.cliente }}</span></div>
+    <div class="modal-row"><span class="k">Responsable</span><span class="v">{{ selectedEvento.responsable }}</span></div>
+    <div class="modal-row"><span class="k">Fecha</span><span class="v">{{ selectedEvento.fechaISO }}</span></div>
+    <div class="modal-row"><span class="k">Hora</span><span class="v">{{ selectedEvento.hora }}</span></div>
+  </div>
+</div>

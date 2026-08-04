@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-// import { Router } from '@angular/router';
+import { Router } from '@angular/router';
 // import { ProveedoresService } from '../../services/proveedores.service';
 
 /* =========================================================================
@@ -107,7 +107,7 @@ export class ProveedoresComponent implements OnInit {
   }
 
   nuevoProveedor(): void {
-    // this.router.navigate(['/proveedores/nuevo']);
-    alert('Aquí se abriría el formulario de "Nuevo Proveedor".');
+    //this.router.navigate(['/provedores/nuevo']);
+    
   }
 }
