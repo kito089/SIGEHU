@@ -1,13 +1,8 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { AppComponent } from './app/app.component';
-import { routes } from './app/app.routes';
-import { provideRouter } from '@angular/router';
-import { importProvidersFrom } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { appConfig } from './app/app.config';
+import { provideIonicAngular } from '@ionic/angular/standalone';
 
-bootstrapApplication(AppComponent, {
-  providers: [
-    provideRouter(routes),
-    importProvidersFrom(FormsModule)   // 👈 habilita [(ngModel)]
-  ]
-});
+const providers = [...appConfig.providers, provideIonicAngular()];
+
+bootstrapApplication(AppComponent, { providers });

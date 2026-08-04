@@ -1,31 +1,19 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-// import { Router } from '@angular/router';
-// import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
+import { LoginCredentials } from '../../models/user.model';
 
 /* =========================================================================
    SIGEHU — Login (componente Angular standalone)
    Funciona igual en web (ng serve) y empaquetado como app (Ionic/Capacitor),
    ya que solo usa HTML/Angular estándar, sin dependencias de plataforma.
 
-   Conexión al backend: reemplaza fakeLogin() por tu llamada real, p. ej.:
-
-   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {}
-
-   private loginRequest(usuario: string, contrasena: string) {
-     return firstValueFrom(this.authService.login(usuario, contrasena));
-   }
+   Conexión al backend: AuthService -> POST /Trabajadores/login
+   Ruteo basado en roles: Trabajador -> /worker, resto -> /admin/dashboard
    ========================================================================= */
-
-interface LoginResponse {
-  token: string;
-  usuario: {
-    id: number;
-    nombre: string;
-    rol: 'admin' | 'trabajador';
-  };
-}
 
 @Component({
   selector: 'app-login',
@@ -42,7 +30,12 @@ export class LoginComponent {
   errorMessage = '';
   showForgotMessage = false;
 
-  constructor(private fb: FormBuilder /*, private authService: AuthService, private router: Router */) {
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private auth: AuthService,
+    private toast: ToastService
+  ) {
     this.form = this.fb.group({
       usuario: ['', [Validators.required, Validators.minLength(3)]],
       contrasena: ['', [Validators.required, Validators.minLength(4)]],
@@ -67,6 +60,10 @@ export class LoginComponent {
     this.showForgotMessage = true;
   }
 
+  forgotPasswordMessage() {
+    alert('Comunicarse con el administrador para cambiar la contraseña');
+  }
+
   async onSubmit(): Promise<void> {
     this.errorMessage = '';
     this.showForgotMessage = false;
@@ -79,40 +76,27 @@ export class LoginComponent {
     this.loading = true;
     const { usuario, contrasena, recordarSesion } = this.form.getRawValue();
 
-    try {
-      const response = await this.fakeLogin(usuario, contrasena);
+    const credentials: LoginCredentials = {
+      Usuario: usuario,
+      Contra: contrasena,
+    };
 
-      if (recordarSesion) {
-        localStorage.setItem('sigehu_token', response.token);
-      } else {
-        sessionStorage.setItem('sigehu_token', response.token);
-      }
-
-      // this.router.navigate(['/dashboard']);
-      console.log('Login correcto', response);
-    } catch {
-      this.errorMessage = 'Usuario o contraseña incorrectos.';
-    } finally {
-      this.loading = false;
-    }
-  }
-
-  // ---------------------------------------------------------------------
-  // Mock temporal — reemplázalo por la llamada real a POST /api/auth/login
-  // Usuario de prueba: carlos.utrilla / 1234
-  // ---------------------------------------------------------------------
-  private fakeLogin(usuario: string, contrasena: string): Promise<LoginResponse> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (usuario === 'carlos.utrilla' && contrasena === '1234') {
-          resolve({
-            token: 'mock-token',
-            usuario: { id: 1, nombre: 'Carlos Utrilla', rol: 'admin' },
-          });
+    this.auth.login(credentials, recordarSesion).subscribe({
+      next: () => {
+        const user = this.auth.getUser();
+        if (user?.rol === 'Trabajador') {
+          this.router.navigate(['/worker']);
         } else {
-          reject(new Error('Credenciales inválidas'));
+          this.router.navigate(['/admin/dashboard']);
         }
-      }, 600);
+        this.loading = false;
+      },
+      error: (e) => {
+        const message = e?.error?.error || 'Usuario o contraseña incorrectos.';
+        this.errorMessage = message;
+        this.toast.error(message);
+        this.loading = false;
+      },
     });
   }
 }
