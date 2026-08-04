@@ -10,6 +10,19 @@ const getAll = async (req, res) => {
     }
 };
 
+// GET /obras/:id
+const getById = async (req, res) => {
+    try {
+        const obra = await service.getObraById(req.params.id);
+        if (!obra) {
+            return res.status(404).json({ error: "Obra no encontrada" });
+        }
+        res.json(obra);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 // POST /obras
 const create = async (req, res) => {
     try {
@@ -126,4 +139,4 @@ const cambiarEstado = async (req, res) => {
     }
 };
 
-export default { getAll, create, update, remove, cambiarEstado };
+export default { getAll, create, update, remove, cambiarEstado, getById };
