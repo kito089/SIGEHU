@@ -1,6 +1,26 @@
 import { getConnection } from "../config/db.js";
 import audit from "./Auditoria.service.js";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RFC_REGEX = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
+const PHONE_REGEX = /^\d{10,15}$/;
+
+const validateRFC = (rfc) => {
+    if (!rfc) return true;
+    return RFC_REGEX.test(rfc);
+};
+
+const validatePhone = (phone) => {
+    if (!phone) return true;
+    const digitos = String(phone).replace(/\D/g, "");
+    return PHONE_REGEX.test(digitos);
+};
+
+const validateEmail = (email) => {
+    if (!email) return true;
+    return EMAIL_REGEX.test(email);
+};
+
 // ─── GET todos los Regimentes Fiscales ───────────────────────────────────────────────
 const getRegimenesFiscales = async () => {
     const db = await getConnection();
@@ -24,14 +44,41 @@ const getUsosCFDI = async () => {
 }
 
 // ─── GET todos los Clientes ───────────────────────────────────────────────
-const getClientes = async () => {
+const getClientes = async ({ search = null, activo = null, fiscal = null } = {}) => {
     const db = await getConnection();
-    const result = await db.query(
-        `VIEW VW_CLIENTES_CON_OBRAS`, // clientes con su contador de obras
-        []
-    );
 
-    return result;
+    let sql = `SELECT idCliente, NombreCompleto AS Nombre,
+                      TelefonoPrincipal AS Telefono,
+                      CorreoPrincipal AS Correo,
+                      RFC, Activo, TieneDatosFiscales, TotalObrasActivas
+               FROM VW_CLIENTES_CON_OBRAS`;
+    const where = [];
+    const params = [];
+
+    if (search && search.trim() !== '') {
+        where.push('UPPER(NombreCompleto) LIKE ?');
+        params.push(`%${search.trim().toUpperCase()}%`);
+    }
+
+    if (activo === 'true' || activo === true) {
+        where.push('Activo = TRUE');
+    } else if (activo === 'false' || activo === false) {
+        where.push('Activo = FALSE');
+    }
+
+    if (fiscal === 'with') {
+        where.push('TieneDatosFiscales = TRUE');
+    } else if (fiscal === 'without') {
+        where.push('TieneDatosFiscales = FALSE');
+    }
+
+    if (where.length) {
+        sql += ' WHERE ' + where.join(' AND ');
+    }
+
+    sql += ' ORDER BY Nombre';
+
+    return await db.query(sql, params);
 };
 
 // ─── GET Cliente por ID ────────────────────────────────────────────────────
@@ -39,9 +86,22 @@ const getClienteById = async (id) => {
     const db = await getConnection();
 
     const Clientes = await db.query(
-        "SELECT * FROM Clientes WHERE idCliente = ?",
+        `SELECT c.idCliente, c.NombreCompleto AS Nombre, c.Direccion, c.RFC,
+                c.CodigoPostal, c.Observaciones, c.Activo,
+                c.RegimenesFiscales_idRegimenFiscal AS idRegimenFiscal,
+                c.UsosCFDI_idUsoCFDI AS idUsoCFDI,
+                (SELECT FIRST 1 cc.Telefono FROM ContactosClientes cc
+                 WHERE cc.Clientes_idCliente = c.idCliente
+                 ORDER BY cc.idContactoCliente) AS Telefono,
+                (SELECT FIRST 1 cc.Correo FROM ContactosClientes cc
+                 WHERE cc.Clientes_idCliente = c.idCliente
+                 ORDER BY cc.idContactoCliente) AS Correo
+         FROM Clientes c
+         WHERE c.idCliente = ?`,
         [id]
     );
+
+    if (!Clientes || Clientes.length === 0) return null;
 
     const Obras = await db.query(
         "SELECT * FROM Obras WHERE Clientes_idCliente = ?",
@@ -49,47 +109,95 @@ const getClienteById = async (id) => {
     )
 
     return {
-        ...clientes[0],
+        ...Clientes[0],
         Obras: Obras
     };
 };
 
-// ─── INSERT ───────────────────────────────────────────────────────────────────
-const createCliente = async ({  
-    Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
-    idUsoCFDI, Observaciones
-}) => {
+// ─── GET Obras de un Cliente ─────────────────────────────────────────────────
+const getObrasByCliente = async (idCliente) => {
     const db = await getConnection();
 
-    // ── Transacción 1: insertar Cliente ──────────────────────────────────
+    return await db.query(
+        `SELECT o.idObra, o.Nombre, o.Direccion, o.Ancho, o.Alto, o.Profundidad,
+                e.Nombre AS EstadoObra, o.FechaCreacion,
+                o.FechaUltimaActualizacion
+         FROM Obras o
+         JOIN EstadosObra e ON e.idEstadoObra = o.EstadosObra_idEstadoObra
+         WHERE o.Clientes_idCliente = ? AND o.Activo = TRUE
+         ORDER BY o.FechaUltimaActualizacion DESC`,
+        [idCliente]
+    );
+};
+
+// ─── INSERT ───────────────────────────────────────────────────────────────────
+const createCliente = async ({
+    Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal,
+    idUsoCFDI, Observaciones, contactos, Correo, Telefono, idTrabajadorCtx = 1
+}) => {
+    if (RFC && !validateRFC(RFC)) {
+        throw new Error("Formato de RFC invalido (ej. AAAA123456XXX)");
+    }
+    if (Telefono && !validatePhone(Telefono)) {
+        throw new Error("Formato de telefono invalido (10-15 digitos)");
+    }
+    if (Correo && !validateEmail(Correo)) {
+        throw new Error("Formato de correo invalido");
+    }
+
+    const db = await getConnection();
+
     const txInsert = await db.transaction();
 
     try {
         await txInsert.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
-        await txInsert.execute(
+        const dirBuffer = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
+        const obsBuffer = Observaciones != null ? Buffer.from(String(Observaciones), "utf8") : null;
+        const rows = await txInsert.executeReturning(
             `INSERT INTO Clientes (
-                Nombre,
-                Direccion,
-                RFC,
+                NombreCompleto, Direccion, RFC, CodigoPostal,
                 RegimenesFiscales_idRegimenFiscal,
-                CodigoPostal,
-                UsosCFDI_idUsoCFDI,
-                Observaciones
+                UsosCFDI_idUsoCFDI, Observaciones
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            RETURNING IdCliente`,
             [
-                Nombre ?? null,
-                Direccion ?? null,
-                RFC ?? null,
-                idRegimenFiscal ?? null,
+                Nombre ?? null, dirBuffer, RFC ?? null,
                 CodigoPostal ?? null,
-                idUsoCFDI ?? null,
-                Observaciones ?? null
+                idRegimenFiscal ?? null, idUsoCFDI ?? null,
+                obsBuffer
             ]
         );
+
+        const nuevoId = Array.isArray(rows) ? rows[0] : rows?.IDCLIENTE;
+
+        const contactosFinales =
+            contactos && contactos.length > 0
+                ? contactos
+                : (Telefono || Correo)
+                    ? [{ NombreCompleto: Nombre, Telefono, Correo, Observaciones: null }]
+                    : [];
+
+        if (contactosFinales.length > 0) {
+            for (const c of contactosFinales) {
+                if (c.Telefono && !validatePhone(c.Telefono)) {
+                    throw new Error(`Telefono invalido para contacto "${c.NombreCompleto}"`);
+                }
+                if (c.Correo && !validateEmail(c.Correo)) {
+                    throw new Error(`Correo invalido para contacto "${c.NombreCompleto}"`);
+                }
+                await txInsert.execute(
+                    `INSERT INTO ContactosClientes
+                     (Clientes_idCliente, NombreCompleto, Telefono, Correo, Observaciones)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [nuevoId, c.NombreCompleto, c.Telefono ?? null, c.Correo ?? null,
+                     c.Observaciones != null ? Buffer.from(String(c.Observaciones), "utf8") : null]
+                );
+            }
+        }
 
         await txInsert.commit();
     } catch (err) {
@@ -101,25 +209,36 @@ const createCliente = async ({
 };
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
-const updateCliente = async (id, { Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
-                                    idUsoCFDI, Observaciones }) => {
+const updateCliente = async (id, {
+    Nombre, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
+    idUsoCFDI, Observaciones, idTrabajadorCtx = 1
+}) => {
+    if (RFC && !validateRFC(RFC)) {
+        throw new Error("Formato de RFC invalido (12-13 caracteres, ej. AAAA123456XXX)");
+    }
+    if (Telefono && !validatePhone(Telefono)) {
+        throw new Error("Formato de telefono invalido (10-15 digitos)");
+    }
+    if (Correo && !validateEmail(Correo)) {
+        throw new Error("Formato de correo invalido");
+    }
+
     const db = await getConnection();
 
-    // ── 1. Leer el registro actual ANTES de modificar ───────────────────────
     const txRead = await db.transaction();
     let anterior;
 
     try {
         const rows = await txRead.query(
-            `SELECT Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
-                    idUsoCFDI, Observaciones
+            `SELECT NombreCompleto, Direccion, RFC, RegimenesFiscales_idRegimenFiscal,
+                    CodigoPostal, UsosCFDI_idUsoCFDI, Observaciones
              FROM Clientes WHERE IdCliente = ?`,
             [id]
         );
 
         await txRead.commit();
 
-        if (!rows || rows.length === 0) return null; // no existe
+        if (!rows || rows.length === 0) return null;
 
         anterior = rows[0];
 
@@ -133,16 +252,46 @@ const updateCliente = async (id, { Nombre, Direccion, RFC, idRegimenFiscal, Codi
     try {
         await txUpdate.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
+        const dirBuffer = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
+        const obsBuffer = Observaciones != null ? Buffer.from(String(Observaciones), "utf8") : null;
         await txUpdate.execute(
             `UPDATE Clientes
-             SET Nombre = ?, Direccion = ?, RFC = ?, idRegimenFiscal = ?, CodigoPostal = ?, 
-                idUsoCFDI = ?, Observaciones = ?
+             SET NombreCompleto = ?, Direccion = ?, RFC = ?,
+                 RegimenesFiscales_idRegimenFiscal = ?, CodigoPostal = ?,
+                 UsosCFDI_idUsoCFDI = ?, Observaciones = ?
              WHERE IdCliente = ?`,
-            [Nombre ?? null, Direccion ?? null, RFC ?? null, idRegimenFiscal ?? null, 
-            CodigoPostal ?? null, idUsoCFDI ?? null, Observaciones ?? null, id]
+            [
+                Nombre ?? null, dirBuffer, RFC ?? null,
+                idRegimenFiscal ?? null, CodigoPostal ?? null,
+                idUsoCFDI ?? null, obsBuffer, id
+            ]
         );
+
+        if (Telefono || Correo) {
+            const principal = await txUpdate.query(
+                `SELECT FIRST 1 IdContactoCliente FROM ContactosClientes
+                 WHERE Clientes_idCliente = ? ORDER BY IdContactoCliente`,
+                [id]
+            );
+            const idContacto = principal[0]?.IDCONTACTOCLIENTE;
+            if (idContacto) {
+                await txUpdate.execute(
+                    `UPDATE ContactosClientes
+                     SET Telefono = ?, Correo = ?
+                     WHERE IdContactoCliente = ?`,
+                    [Telefono ?? null, Correo ?? null, idContacto]
+                );
+            } else {
+                await txUpdate.execute(
+                    `INSERT INTO ContactosClientes
+                     (Clientes_idCliente, NombreCompleto, Telefono, Correo, Observaciones)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [id, Nombre ?? null, Telefono ?? null, Correo ?? null, null]
+                );
+            }
+        }
 
         await txUpdate.commit();
 
@@ -154,7 +303,7 @@ const updateCliente = async (id, { Nombre, Direccion, RFC, idRegimenFiscal, Codi
     let idAudit;
 
     try {
-        const rows = await db.query(`
+        const rows = await txAudit.query(`
             SELECT
                 RDB$GET_CONTEXT(
                     'USER_SESSION',
@@ -163,15 +312,14 @@ const updateCliente = async (id, { Nombre, Direccion, RFC, idRegimenFiscal, Codi
             FROM RDB$DATABASE
         `);
 
-        idAudit = rows[0].ID;
-        console.log("id: ", idAudit);
+        idAudit = rows[0]?.ID;
         await txAudit.commit();
     } catch (err) {
         await txAudit.rollback();
         throw err;
-    } 
+    }
     const comparacion = [
-        { campo: 'Nombre', anterior: anterior.NOMBRE, nuevo: Nombre ?? null },
+        { campo: 'Nombre', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre ?? null },
         { campo: 'Direccion', anterior: anterior.DIRECCION, nuevo: Direccion ?? null },
         { campo: 'RFC', anterior: anterior.RFC, nuevo: RFC ?? null },
         { campo: 'RegimenesFiscales_idRegimenFiscal', anterior: anterior.REGIMENESFISCALES_IDREGIMENFISCAL, nuevo: idRegimenFiscal ?? null },
@@ -184,7 +332,7 @@ const updateCliente = async (id, { Nombre, Direccion, RFC, idRegimenFiscal, Codi
         ({ anterior, nuevo }) => String(anterior ?? '') !== String(nuevo ?? '')
     );
 
-    if (cambios.length > 0) {
+    if (idAudit && cambios.length > 0) {
         for (const { campo, anterior: ant, nuevo } of cambios) {
             await audit.createAuditoriaDetalle({
                 pIdAuditoria: idAudit,
@@ -199,17 +347,64 @@ const updateCliente = async (id, { Nombre, Direccion, RFC, idRegimenFiscal, Codi
 };
 
 // ─── DELETE (soft) ────────────────────────────────────────────────────────────
-const deleteCliente = async (id) => {
+const deleteCliente = async (id, idTrabajadorCtx = 1) => {
     const db = await getConnection();
     const transaction = await db.transaction();
 
     try {
         await transaction.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
+
+        const rows = await transaction.query(
+            "SELECT idCliente FROM Clientes WHERE IdCliente = ? AND Activo = TRUE",
+            [id]
+        );
+
+        if (!rows || rows.length === 0) {
+            await transaction.rollback();
+            return null;
+        }
+
         await transaction.execute(
             "UPDATE Clientes SET Activo = FALSE WHERE IdCliente = ?",
+            [id]
+        );
+
+        await transaction.commit();
+
+    } catch (err) {
+        await transaction.rollback();
+        throw err;
+    }
+
+    return true;
+};
+
+// ─── REACTIVAR (soft) ────────────────────────────────────────────────────────
+const reactivarCliente = async (id, idTrabajadorCtx = 1) => {
+    const db = await getConnection();
+    const transaction = await db.transaction();
+
+    try {
+        await transaction.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            [String(idTrabajadorCtx)]
+        );
+
+        const rows = await transaction.query(
+            "SELECT idCliente FROM Clientes WHERE IdCliente = ? AND Activo = FALSE",
+            [id]
+        );
+
+        if (!rows || rows.length === 0) {
+            await transaction.rollback();
+            return null;
+        }
+
+        await transaction.execute(
+            "UPDATE Clientes SET Activo = TRUE WHERE IdCliente = ?",
             [id]
         );
 
@@ -228,7 +423,12 @@ export default {
     getUsosCFDI,
     getClientes,
     getClienteById,
+    getObrasByCliente,
     createCliente,
     updateCliente,
     deleteCliente,
+    reactivarCliente,
+    validateRFC,
+    validatePhone,
+    validateEmail
 };

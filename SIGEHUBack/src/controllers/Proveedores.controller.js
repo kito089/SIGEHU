@@ -1,10 +1,10 @@
-import service from '../services/Materiales.service.js';
+import service from '../services/Proveedores.service.js';
 
 // GET /Proveedores/
-// Obtiene todos los Proveedores
-const findProveedores = async (_req, res) => {
+// Obtiene todos los Proveedores (opcional: ?search=)
+const findProveedores = async (req, res) => {
     try {
-        const Proveedores = await service.getProveedores();
+        const Proveedores = await service.getProveedores(req.query.search);
         res.json(Proveedores);
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -22,10 +22,10 @@ const create = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
         }
 
-        const { Nombre, Direccion, Telefono, Correo, Notas } = req.body;
+        const { Nombre, Direccion, Telefono, Correo, GiroPrincipal, ContactoCompras, Notas, materiales } = req.body;
 
         const datos = { Nombre };
-        const opcionales = [ 'Direccion', 'Telefono', 'Correo', 'Notas'];
+        const opcionales = [ 'Direccion', 'Telefono', 'Correo', 'GiroPrincipal', 'ContactoCompras', 'Notas'];
 
         const faltantes = Object.entries(datos)
             .filter(([clave, valor]) => !opcionales.includes(clave) && (valor == null || valor === ''))
@@ -37,7 +37,16 @@ const create = async (req, res) => {
             });
         }
         
-        await service.createProveedor({ Nombre, Direccion: Direccion ?? null, Telefono: Telefono ?? null, Correo: Correo ?? null, Notas: Notas ?? null });
+        await service.createProveedor({
+            Nombre,
+            Direccion: Direccion ?? null,
+            Telefono: Telefono ?? null,
+            Correo: Correo ?? null,
+            GiroPrincipal: GiroPrincipal ?? null,
+            ContactoCompras: ContactoCompras ?? null,
+            Notas: Notas ?? null,
+            materiales: materiales ?? null
+        });
 
         res.status(201).json({ message: 'Proveedor creado' });
 
@@ -54,10 +63,10 @@ const update = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
         }
 
-        const { Nombre, Direccion, Telefono, Correo, Notas } = req.body;
+        const { Nombre, Direccion, Telefono, Correo, GiroPrincipal, ContactoCompras, Notas, materiales } = req.body;
 
         const datos = { Nombre };
-        const opcionales = [ 'Direccion', 'Telefono', 'Correo', 'Notas'];
+        const opcionales = [ 'Direccion', 'Telefono', 'Correo', 'GiroPrincipal', 'ContactoCompras', 'Notas'];
 
         const faltantes = Object.entries(datos)
             .filter(([clave, valor]) => !opcionales.includes(clave) && (valor == null || valor === ''))
@@ -72,7 +81,14 @@ const update = async (req, res) => {
         const affected = await service.updateProveedor(
             req.params.id,
             {
-                Nombre, Direccion: Direccion ?? null, Telefono: Telefono ?? null, Correo: Correo ?? null, Notas: Notas ?? null
+                Nombre,
+                Direccion: Direccion ?? null,
+                Telefono: Telefono ?? null,
+                Correo: Correo ?? null,
+                GiroPrincipal: GiroPrincipal ?? null,
+                ContactoCompras: ContactoCompras ?? null,
+                Notas: Notas ?? null,
+                materiales: materiales !== undefined ? materiales : undefined
             }
         );
 

@@ -3,7 +3,11 @@ import service from "../services/Obras.service.js";
 // GET /obras
 const getAll = async (req, res) => {
     try {
-        const obras = await service.getObras();
+        const obras = await service.getObras(
+            req.user?.rol,
+            req.user?.idTrabajador,
+            req.query.search
+        );
         res.json(obras);
     } catch (e) {
         res.status(500).json({ error: e.message });

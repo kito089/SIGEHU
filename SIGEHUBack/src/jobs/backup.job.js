@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { execSync } from 'child_process';
+import cron from 'node-cron';
 
 function getRootPath() {
     return process.env.NODE_ENV === 'production'
@@ -135,6 +137,83 @@ async function hacerRespaldo() {
   }
 }
 
+// ─── Respaldo con gbak (Firebird) ─────────────────────────────────
+
+function encontrarGbak() {
+  const posibles = [
+    path.join(ROOT_PATH, 'firebird', 'firebird', 'gbak.exe'),
+    path.join(ROOT_PATH, 'firebird', 'gbak.exe'),
+    'gbak'
+  ];
+
+  for (const p of posibles) {
+    try {
+      if (p === 'gbak') {
+        execSync('gbak -?', { stdio: 'ignore', timeout: 3000 });
+        return 'gbak';
+      }
+      if (fs.existsSync(p)) return p;
+    } catch (_) {}
+  }
+
+  return null;
+}
+
+async function _gbakRespaldar(destino) {
+  const gbak = encontrarGbak();
+  if (!gbak) throw new Error('gbak no encontrado');
+
+  const cmd = `"${gbak}" -b -v -t "${DB_PATH}" "${destino}" -user SYSDBA -pass mastorkey`;
+  execSync(cmd, { stdio: 'pipe', timeout: 60000 });
+}
+
+async function hacerRespaldoGbak() {
+  if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+  const destino = path.join(BACKUP_DIR, `SIGEHU_gbak_${timestamp()}.fbk`);
+
+  try {
+    await _gbakRespaldar(destino);
+    _limpiarRespaldosAntiguos();
+    const msg = `Respaldo gbak exitoso: ${path.basename(destino)}`;
+    escribirLog('OK', msg);
+    guardarStatus(true, msg, path.basename(destino));
+    return { ok: true, archivo: destino };
+  } catch (err) {
+    escribirLog('INFO', 'gbak no disponible, usando copia directa en su lugar.');
+
+    try {
+      return await hacerRespaldo();
+    } catch (err2) {
+      const msg = `Respaldo fallido: ${err2.message}`;
+      escribirLog('ERROR', msg);
+      guardarStatus(false, msg);
+      throw err2;
+    }
+  }
+}
+
+// ─── Programación diaria ─────────────────────────────────────────
+
+let cronJob = null;
+
+function iniciarProgramacion() {
+  if (cronJob) return;
+
+  cronJob = cron.schedule('0 0 2 * * *', async () => {
+    escribirLog('INFO', 'Iniciando respaldo diario programado...');
+
+    try {
+      await hacerRespaldoGbak();
+    } catch (err) {}
+  }, {
+    scheduled: true,
+    timezone: 'America/Mexico_City'
+  });
+
+  escribirLog('INFO', 'Respaldo diario programado (2:00 AM CMT)');
+}
+
 // ─── Disparo automático al arrancar el backend ───────────────────
 // Se llama una sola vez desde app.js después de que Express ya escucha.
 // Corre en segundo plano (sin await) para no retrasar el inicio.
@@ -162,8 +241,10 @@ function verificarYRespaldarAlArrancar() {
 }
 
 export default { 
-  hacerRespaldo, 
-  leerStatus, 
-  guardarStatus, 
-  verificarYRespaldarAlArrancar 
+  hacerRespaldo,
+  hacerRespaldoGbak,
+  leerStatus,
+  guardarStatus,
+  verificarYRespaldarAlArrancar,
+  iniciarProgramacion
 };

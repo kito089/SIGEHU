@@ -51,7 +51,33 @@ const createAuditoriaDetalle = async ({ pIdAuditoria, pCampo, pValorAnterior, pV
     }
 };
 
+// ─── HISTORIAL POR CLIENTE ───────────────────────────────────────────────────
+const getAuditoriaByCliente = async (idCliente, limit = 50) => {
+    const db = await getConnection();
+
+    return await db.query(
+        `SELECT a.idAuditoria AS ID_AUDITORIA, a.Fecha AS FECHA,
+                a.Tabla AS ENTIDAD, a.Accion AS ACCION, a.Descripcion,
+                a.RegistroAfectado AS ID_ENTIDAD,
+                t.NombreCompleto AS USUARIO,
+                (SELECT LIST(Campo || ': ' ||
+                    COALESCE(ValorAnterior, '(nuevo)') || ' -> ' ||
+                    COALESCE(ValorNuevo, '(' || a.Accion || ')')
+                ) FROM AuditoriasDetalles ad
+                WHERE ad.Auditorias_idAuditoria = a.idAuditoria
+                ) AS DETALLES_CAMBIOS
+         FROM Auditorias a
+         JOIN Trabajadores t ON t.idTrabajador = a.Trabajadores_idTrabajador
+         WHERE UPPER(a.Tabla) = 'CLIENTES'
+           AND CAST(a.RegistroAfectado AS VARCHAR(20)) = ?
+         ORDER BY a.Fecha DESC
+         ROWS ?`,
+        [String(idCliente), limit]
+    );
+};
+
 export default {
     createAuditoria,
     createAuditoriaDetalle,
+    getAuditoriaByCliente,
 }

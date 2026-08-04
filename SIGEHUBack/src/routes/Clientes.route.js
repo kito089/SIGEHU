@@ -7,9 +7,11 @@ router.get('/', ctrl.findClientes);
 router.get('/RegimenesFiscales', ctrl.findRegimenesFiscales)
 router.get('/UsosCFDI', ctrl.findUsosCFDI)
 router.get('/:id', ctrl.findById);
+router.get('/:id/obras', ctrl.findObras);
 
 router.post('/', ctrl.create);
 router.put('/:id', ctrl.update);
 router.delete('/:id', ctrl.remove);
+router.patch('/:id/estado', ctrl.cambiarEstado);
 
 export default router;

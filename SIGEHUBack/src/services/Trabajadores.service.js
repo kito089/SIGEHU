@@ -1,5 +1,27 @@
 import { getConnection } from "../config/db.js";
 import audit from "./Auditoria.service.js";
+import fs from "node:fs";
+import path from "node:path";
+
+function getRootPath() {
+    if (process.env.NODE_ENV === "production") {
+        return path.dirname(process.execPath);
+    }
+    return process.cwd();
+}
+
+function eliminarArchivoImss(rutaRelativa) {
+    if (!rutaRelativa) return;
+    const ruta = path.join(getRootPath(), rutaRelativa);
+    if (!ruta.startsWith(path.join(getRootPath(), "uploads"))) return;
+    try {
+        if (fs.existsSync(ruta)) {
+            fs.unlinkSync(ruta);
+        }
+    } catch (err) {
+        console.error("No se pudo eliminar el archivo IMSS:", ruta, err.message);
+    }
+}
 
 // ─── GET todos los Tipos de Usuarios ───────────────────────────────────────────────
 const getTiposUsuarios = async () => {
@@ -18,7 +40,7 @@ const getTrabajadores = async () => {
     const db = await getConnection();
 
     const result = await db.query(
-        "SELECT * FROM Trabajadores",
+        "SELECT * FROM Trabajadores WHERE Activo = TRUE",
         []
     );
 
@@ -30,18 +52,85 @@ const getTrabajadorById = async (id) => {
     const db = await getConnection();
 
     const result = await db.query(
-        "SELECT * FROM Trabajadores WHERE idTrabajador = ?",
+        "SELECT * FROM Trabajadores WHERE idTrabajador = ? AND Activo = TRUE",
         [id]
     );
 
     return result[0] ?? null;
 };
 
-// ─── INSERT ───────────────────────────────────────────────────────────────────
-const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo }) => {
+const getTrabajadorByUsuario = async (usuario) => {
     const db = await getConnection();
 
-    // ── Transacción 1: insertar trabajador ──────────────────────────────────
+    const result = await db.query(
+        `SELECT t.*, tu.Nombre AS TipoUsuario
+         FROM Trabajadores t
+         JOIN TiposUsuarios tu ON t.TiposUsuarios_idTipoUsuario = tu.idTipoUsuario
+         WHERE t.NombreUsuario = ? AND t.Activo = TRUE`,
+        [usuario]
+    );
+
+    return result[0] ?? null;
+};
+
+// ─── GET existe usuario (para validación de unicidad) ────────────────────────
+const checkUsername = async (usuario, idExcluir = null) => {
+    const db = await getConnection();
+
+    let result;
+    if (idExcluir) {
+        result = await db.query(
+            "SELECT idTrabajador FROM Trabajadores WHERE NombreUsuario = ? AND idTrabajador <> ?",
+            [usuario, idExcluir]
+        );
+    } else {
+        result = await db.query(
+            "SELECT idTrabajador FROM Trabajadores WHERE NombreUsuario = ?",
+            [usuario]
+        );
+    }
+
+    return (result || []).length > 0;
+};
+
+// ─── UPDATE ruta documento IMSS ───────────────────────────────────────────────
+const updateRutaImss = async (id, rutaImss, idTrabajadorCtx = 1) => {
+    const db = await getConnection();
+
+    const transaction = await db.transaction();
+
+    try {
+        const prev = await transaction.query(
+            "SELECT RutaDocumentoIMSS FROM Trabajadores WHERE idTrabajador = ?",
+            [id]
+        );
+        const rutaAnterior = prev[0]?.RUTADOCUMENTOIMSS ?? prev[0]?.rutaDocumentoIMSS ?? null;
+
+        await transaction.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            [String(idTrabajadorCtx)]
+        );
+        await transaction.execute(
+            "EXECUTE PROCEDURE SP_ACTUALIZAR_RUTA_IMSS (?, ?)",
+            [id, rutaImss]
+        );
+        await transaction.commit();
+
+        if (rutaAnterior && rutaAnterior !== rutaImss) {
+            eliminarArchivoImss(rutaAnterior);
+        }
+    } catch (err) {
+        await transaction.rollback();
+        throw err;
+    }
+
+    return true;
+};
+
+// ─── CREATE ───────────────────────────────────────────────────────────────────
+const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo, RutaDocumentoIMSS, idTrabajadorCtx = 1 }) => {
+    const db = await getConnection();
+
     const txInsert = await db.transaction();
 
     let nuevoId;
@@ -49,7 +138,7 @@ const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo }) => 
     try {
         await txInsert.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
         const rows = await txInsert.query(
             `SELECT * FROM SP_INSERTAR_TRABAJADOR (?, ?, ?, ?, ?)`,
@@ -68,7 +157,7 @@ const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo }) => 
 };
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
-const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo }) => {
+const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, RutaDocumentoIMSS, deleteImss = false, idTrabajadorCtx = 1 }) => {
     const db = await getConnection();
 
     // ── 1. Leer el registro actual ANTES de modificar ───────────────────────
@@ -77,7 +166,7 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
 
     try {
         const rows = await txRead.query(
-            `SELECT NombreUsuario, NombreCompleto, Telefono, TiposUsuarios_idTipoUsuario
+            `SELECT NombreUsuario, NombreCompleto, Telefono, TiposUsuarios_idTipoUsuario, RutaDocumentoIMSS
              FROM Trabajadores WHERE IdTrabajador = ?`,
             [id]
         );
@@ -93,12 +182,14 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
         throw err;
     }
 
+    const rutaAnterior = anterior.RUTADOCUMENTOIMSS ?? anterior.rutaDocumentoImss ?? null;
+
     const txUpdate = await db.transaction();
 
     try {
         await txUpdate.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
         await txUpdate.execute(
             `UPDATE Trabajadores
@@ -106,12 +197,26 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
                  Contra = COALESCE(?, Contra),
                  NombreCompleto = ?,
                  Telefono = ?,
+                 RutaDocumentoIMSS = COALESCE(?, RutaDocumentoIMSS),
                  TiposUsuarios_idTipoUsuario = ?
              WHERE IdTrabajador  = ?`,
-            [Usuario, Contra ?? null, Nombre, Telefono ?? null, Tipo, id]
+            [Usuario, Contra ?? null, Nombre, Telefono ?? null, RutaDocumentoIMSS ?? null, Tipo, id]
         );
 
+        if (deleteImss) {
+            await txUpdate.execute(
+                "UPDATE Trabajadores SET RutaDocumentoIMSS = NULL WHERE IdTrabajador = ?",
+                [id]
+            );
+        }
+
         await txUpdate.commit();
+
+        if (deleteImss && rutaAnterior) {
+            eliminarArchivoImss(rutaAnterior);
+        } else if (RutaDocumentoIMSS && rutaAnterior && rutaAnterior !== RutaDocumentoIMSS) {
+            eliminarArchivoImss(rutaAnterior);
+        }
 
     } catch (err) {
         await txUpdate.rollback();
@@ -168,14 +273,20 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo })
 };
 
 // ─── DELETE (soft) ────────────────────────────────────────────────────────────
-const deleteTrabajador = async (id) => {
+const deleteTrabajador = async (id, idTrabajadorCtx = 1) => {
     const db = await getConnection();
     const transaction = await db.transaction();
 
     try {
+        const rows = await transaction.query(
+            "SELECT RutaDocumentoIMSS FROM Trabajadores WHERE IdTrabajador = ?",
+            [id]
+        );
+        const rutaImss = rows[0]?.RUTADOCUMENTOIMSS ?? rows[0]?.rutaDocumentoImss ?? null;
+
         await transaction.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
         await transaction.execute(
             "UPDATE Trabajadores SET Activo = FALSE WHERE IdTrabajador = ?",
@@ -184,6 +295,33 @@ const deleteTrabajador = async (id) => {
 
         await transaction.commit();
 
+        if (rutaImss) {
+            eliminarArchivoImss(rutaImss);
+        }
+
+    } catch (err) {
+        await transaction.rollback();
+        throw err;
+    }
+
+    return true;
+};
+
+// ─── PATCH activo (toggle switch) ─────────────────────────────────────────────
+const cambiarActivo = async (id, activo, idTrabajadorCtx = 1) => {
+    const db = await getConnection();
+    const transaction = await db.transaction();
+
+    try {
+        await transaction.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            [String(idTrabajadorCtx)]
+        );
+        await transaction.execute(
+            "UPDATE Trabajadores SET Activo = ? WHERE IdTrabajador = ?",
+            [activo ? 1 : 0, id]
+        );
+        await transaction.commit();
     } catch (err) {
         await transaction.rollback();
         throw err;
@@ -196,7 +334,11 @@ export default {
     getTiposUsuarios,
     getTrabajadores,
     getTrabajadorById,
+    getTrabajadorByUsuario,
+    checkUsername,
+    updateRutaImss,
     createTrabajador,
     updateTrabajador,
     deleteTrabajador,
+    cambiarActivo,
 };

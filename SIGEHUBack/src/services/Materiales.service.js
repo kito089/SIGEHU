@@ -6,7 +6,7 @@ const getMateriales = async () => {
     const db = await getConnection();
 
     const result = await db.query(
-        "SELECT * FROM Materiales",
+        "SELECT * FROM Materiales WHERE Activo = TRUE ORDER BY Nombre",
         []
     );
 
@@ -26,7 +26,7 @@ const getMaterialById = async (id) => {
 };
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
-const createMaterial = async ({ Nombre, UnidadMedida, Descripcion }) => {
+const createMaterial = async ({ Nombre, UnidadMedida, Descripcion, idTrabajadorCtx = 1 }) => {
     const db = await getConnection();
 
     // ── Transacción 1: insertar Material ──────────────────────────────────
@@ -36,11 +36,12 @@ const createMaterial = async ({ Nombre, UnidadMedida, Descripcion }) => {
     try {
         await txInsert.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
+        const descBuffer = Descripcion != null ? Buffer.from(String(Descripcion), "utf8") : null;
         const rows = await txInsert.query(
             `SELECT * FROM SP_INSERTAR_MATERIAL (?, ?, ?)`,
-            [Nombre, UnidadMedida, Descripcion ?? null]
+            [Nombre, UnidadMedida, descBuffer]
         );
 
         await txInsert.commit();
@@ -56,7 +57,7 @@ const createMaterial = async ({ Nombre, UnidadMedida, Descripcion }) => {
 };
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
-const updateMaterial = async (id, { Nombre, UnidadMedida, Descripcion }) => {
+const updateMaterial = async (id, { Nombre, UnidadMedida, Descripcion, idTrabajadorCtx = 1 }) => {
     const db = await getConnection();
 
     // ── 1. Leer el registro actual ANTES de modificar ───────────────────────
@@ -86,15 +87,16 @@ const updateMaterial = async (id, { Nombre, UnidadMedida, Descripcion }) => {
     try {
         await txUpdate.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
+        const descBuffer = Descripcion != null ? Buffer.from(String(Descripcion), "utf8") : null;
         await txUpdate.execute(
             `UPDATE Materiales
              SET Nombre = ?,
                  UnidadMedida = ?,
-                 Descripcion = ?,
+                 Descripcion = ?
              WHERE IdMaterial  = ?`,
-            [Nombre, UnidadMedida, Descripcion ?? null, id]
+            [Nombre, UnidadMedida, descBuffer, id]
         );
 
         await txUpdate.commit();
@@ -148,14 +150,22 @@ const updateMaterial = async (id, { Nombre, UnidadMedida, Descripcion }) => {
 };
 
 // ─── DELETE (soft) ────────────────────────────────────────────────────────────
-const deleteMaterial = async (id) => {
+const deleteMaterial = async (id, idTrabajadorCtx = 1) => {
     const db = await getConnection();
+
+    const exists = await db.query(
+        "SELECT 1 AS X FROM Materiales WHERE IdMaterial = ?",
+        [id]
+    );
+
+    if (!exists || exists.length === 0) return null;
+
     const transaction = await db.transaction();
 
     try {
         await transaction.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
         await transaction.execute(
             "UPDATE Materiales SET Activo = FALSE WHERE IdMaterial = ?",

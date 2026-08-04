@@ -2,11 +2,32 @@ import { getConnection } from "../config/db.js";
 import audit from "./Auditoria.service.js";
 
 // ─── GET todos los Obras ───────────────────────────────────────────────
-const getObras = async () => {
+const getObras = async (rol = null, idTrabajador = null, search = null) => {
     const db = await getConnection();
 
     try {
-        const Obras = await db.query("SELECT * FROM Obras");
+        if (rol === 'Trabajador' && idTrabajador) {
+            let sql = 'SELECT * FROM VW_OBRAS_TRABAJADOR WHERE IdTrabajador = ?';
+            const params = [idTrabajador];
+
+            if (search && search.trim() !== '') {
+                sql += ' AND UPPER(NombreObra) LIKE ?';
+                params.push(`%${search.trim().toUpperCase()}%`);
+            }
+
+            const Obras = await db.query(sql, params);
+            return Obras;
+        }
+
+        let sql = 'SELECT * FROM Obras';
+        const params = [];
+
+        if (search && search.trim() !== '') {
+            sql += ' WHERE UPPER(Nombre) LIKE ?';
+            params.push(`%${search.trim().toUpperCase()}%`);
+        }
+
+        const Obras = await db.query(sql, params);
 
         const ObrasConMateriales = await Promise.all(
             Obras.map(async (Obra) => {
@@ -55,7 +76,7 @@ const createObra = async ({ idCliente, Nombre, Direccion, idTrabajadorCtx = 1 })
     try {
         await txInsert.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            ["1"]
+            [String(idTrabajadorCtx)]
         );
 
         const rows = await txInsert.query(
@@ -191,7 +212,7 @@ const deleteObra = async (id, idTrabajadorCtx = 1) => {
 
         if (!rows || rows.length === 0) {
             await transaction.rollback();
-            return null; // no existe o ya estaba inactiva
+            return null;
         }
 
         await transaction.execute(

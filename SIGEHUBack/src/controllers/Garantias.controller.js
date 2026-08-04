@@ -30,7 +30,7 @@ const create = async (req, res) => {
             return res.status(400).json({ error: "El cuerpo de la solicitud está vacío" });
         }
 
-        const { idObra, descripcion } = req.body;
+        const { idObra, descripcion, idTrabajador } = req.body;
 
         const datos = { idObra };
         const faltantes = Object.entries(datos)
@@ -45,7 +45,8 @@ const create = async (req, res) => {
 
         const nuevoId = await service.createGarantia({
             idObra,
-            descripcion: descripcion ?? null
+            descripcion: descripcion ?? null,
+            idTrabajador: idTrabajador ?? 1
         });
 
         res.status(201).json({ message: "Garantia creada", idGarantia: nuevoId });

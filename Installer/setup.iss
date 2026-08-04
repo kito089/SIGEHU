@@ -36,4 +36,4 @@ Name: "{group}\SIGEHU"; Filename: "{app}\SIGEHU.exe"
 Name: "{autodesktop}\SIGEHU"; Filename: "{app}\SIGEHU.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\SIGEHUBack\zrok2.exe"; Parameters: "enable {#ZROK_TOKEN}"; Flags:runhidden
+Filename: "{app}\resources\backend\zrok2.exe"; Parameters: "enable {#ZROK_TOKEN}"; Flags:runhidden

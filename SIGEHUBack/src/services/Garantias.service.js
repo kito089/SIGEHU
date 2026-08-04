@@ -5,30 +5,33 @@ import audit from './Auditoria.service.js';
 const getGarantias = async () => {
     const db = await getConnection();
     try {
-        const Garantias = await db.query('SELECT * FROM Garantias');
+        const Garantias = await db.query(
+            'SELECT * FROM VW_GARANTIAS_CON_OBRA WHERE GarantiaActiva = TRUE'
+        );
         return Garantias;
     } catch (error) {
         console.error('Error al obtener las Garantias:', error);
         throw error;
     }
-    return error;
 }
 
 // ─── GET Garantia por ID ───────────────────────────────────────────────────
 const getGarantiaById = async (id) => {
     const db = await getConnection();
     try {
-        const rows = await db.query('SELECT * FROM Garantias WHERE idGarantia = ?', [id]);
+        const rows = await db.query(
+            'SELECT * FROM VW_GARANTIAS_CON_OBRA WHERE idGarantia = ?',
+            [id]
+        );
         return rows[0] ?? null;
     } catch (error) {
         console.error(`Error al obtener la Garantia con ID ${id}:`, error);
         throw error;
     }
-    return error;
 }
 
 // ─── INSERT ────────────────────────────────────────────────────────────────
-const createGarantia = async ({ idObra, descripcion}) => {
+const createGarantia = async ({ idObra, descripcion, idTrabajador }) => {
     const db = await getConnection();
     const txInsert = await db.transaction();
     let nuevoId;
@@ -39,8 +42,8 @@ const createGarantia = async ({ idObra, descripcion}) => {
         );
         
         const rows = await txInsert.query(
-            `SELECT * FROM SP_ABRIR_GARANTIA (?, ?)`,
-            [idObra, descripcion ?? null]
+            `SELECT * FROM SP_ABRIR_GARANTIA (?, ?, ?)`,
+            [idObra, idTrabajador ?? 1, descripcion ?? null]
         );
         nuevoId = rows[0]?.IDGARANTIA;
         await txInsert.commit();

@@ -10,10 +10,17 @@ function getRootPath() {
 }
 
 const uploadDir = path.join(getRootPath(), "uploads", "obras");
+const uploadGarantiaDir = path.join(getRootPath(), "uploads", "garantias");
+const uploadImssDir = path.join(getRootPath(), "uploads", "imss");
 
-// Asegurar que la carpeta exista al arrancar el servidor
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
+}
+if (!fs.existsSync(uploadGarantiaDir)) {
+    fs.mkdirSync(uploadGarantiaDir, { recursive: true });
+}
+if (!fs.existsSync(uploadImssDir)) {
+    fs.mkdirSync(uploadImssDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -23,6 +30,28 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname);
         const nombreUnico = `obra_${Date.now()}_${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, nombreUnico);
+    }
+});
+
+const garantiaStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadGarantiaDir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const nombreUnico = `garantia_${Date.now()}_${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, nombreUnico);
+    }
+});
+
+const imssStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadImssDir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const nombreUnico = `imss_${Date.now()}_${Math.round(Math.random() * 1e9)}${ext}`;
         cb(null, nombreUnico);
     }
 });
@@ -39,10 +68,34 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
+const imssFileFilter = (req, file, cb) => {
+    const tiposPermitidos = /jpeg|jpg|png|pdf/;
+    const extValida = tiposPermitidos.test(path.extname(file.originalname).toLowerCase());
+    const mimeValido = /jpeg|jpg|png|pdf/.test(file.mimetype);
+
+    if (extValida && mimeValido) {
+        cb(null, true);
+    } else {
+        cb(new Error("Solo se permiten PDF, JPG o PNG para el documento IMSS"));
+    }
+};
+
 export const uploadFotoObra = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10 MB
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-export { uploadDir };
+export const uploadFotoGarantia = multer({
+    storage: garantiaStorage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 }
+});
+
+export const uploadDocumentoImss = multer({
+    storage: imssStorage,
+    fileFilter: imssFileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 }
+});
+
+export { uploadDir, uploadGarantiaDir, uploadImssDir };

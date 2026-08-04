@@ -3,15 +3,26 @@ import audit from "./Auditoria.service.js";
 import materiales from "./Materiales.service.js";
 
 // ─── GET todos los Proveedores ───────────────────────────────────────────────
-const getProveedores = async () => {
+const getProveedores = async (search = null) => {
     const db = await getConnection();
 
-    const proveedores = await db.query("SELECT * FROM Proveedores");
+    let sql = 'SELECT * FROM Proveedores';
+    const params = [];
+
+    if (search && search.trim() !== '') {
+        sql += ' WHERE UPPER(Nombre) LIKE ?';
+        params.push(`%${search.trim().toUpperCase()}%`);
+    }
+
+    sql += ' ORDER BY Nombre';
+
+    const proveedores = await db.query(sql, params);
 
     const proveedoresConMateriales = await Promise.all(
         proveedores.map(async (proveedor) => {
             const materiales = await db.query(
-                `SELECT m.* FROM Materiales m
+                `SELECT m.*, pm.PRECIOUNITARIO AS PRECIO, pm.NOTAS AS NOTASPROVEEDOR
+                FROM Materiales m
                 JOIN Proveedores_has_Materiales pm ON pm.Materiales_idMaterial = m.idMaterial
                 WHERE pm.Proveedores_idProveedor = ?`,
                 [proveedor.IDPROVEEDOR]
@@ -31,8 +42,11 @@ const getProveedores = async () => {
 // Pasar el objeto filtrado por id desde el front (getProveedores ya retorna toda la info necesaria)
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
-const createProveedor = async ({ Nombre, Direccion, Telefono, Correo, Notas }) => {
+const createProveedor = async ({ Nombre, Direccion, Telefono, Correo, GiroPrincipal, ContactoCompras, Notas, materiales }) => {
     const db = await getConnection();
+
+    const dirBuffer = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
+    const notasBuffer = Notas != null ? Buffer.from(String(Notas), "utf8") : null;
 
     // ── Transacción 1: insertar Proveedor ──────────────────────────────────
     const txInsert = await db.transaction();
@@ -44,8 +58,8 @@ const createProveedor = async ({ Nombre, Direccion, Telefono, Correo, Notas }) =
             ["1"]
         );
         const rows = await txInsert.query(
-            `SELECT * FROM SP_INSERTAR_PROVEEDOR (?, ?, ?, ?, ?)`,
-            [Nombre, Direccion ?? null, Telefono ?? null, Correo ?? null, Notas ?? null]
+            `SELECT * FROM SP_INSERTAR_PROVEEDOR (?, ?, ?, ?, ?, ?, ?)`,
+            [Nombre, dirBuffer, Telefono ?? null, Correo ?? null, GiroPrincipal ?? null, ContactoCompras ?? null, notasBuffer]
         );
         nuevoId = rows[0].OIDPROVEEDOR;
         await txInsert.commit();
@@ -54,11 +68,18 @@ const createProveedor = async ({ Nombre, Direccion, Telefono, Correo, Notas }) =
         throw err;
     }
 
+    // ── Vinculación de materiales (secuencial, un SP por material) ─────────
+    if (materiales && materiales.length > 0) {
+        for (const m of materiales) {
+            await vincularMaterial(nuevoId, m.idMaterial, m.precio, m.notas);
+        }
+    }
+
     return nuevoId;
 };
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
-const updateProveedor = async (id, { Nombre, Direccion, Telefono, Correo, Notas }) => {
+const updateProveedor = async (id, { Nombre, Direccion, Telefono, Correo, GiroPrincipal, ContactoCompras, Notas, materiales }) => {
     const db = await getConnection();
 
     // ── 1. Leer el registro actual ANTES de modificar ───────────────────────
@@ -67,7 +88,7 @@ const updateProveedor = async (id, { Nombre, Direccion, Telefono, Correo, Notas 
 
     try {
         const rows = await txRead.query(
-            `SELECT Nombre, Direccion, Telefono, Correo, Notas
+            `SELECT Nombre, Direccion, Telefono, Correo, GiroPrincipal, ContactoCompras, Notas
              FROM Proveedores WHERE IdProveedor = ?`,
             [id]
         );
@@ -85,14 +106,17 @@ const updateProveedor = async (id, { Nombre, Direccion, Telefono, Correo, Notas 
 
     const txUpdate = await db.transaction();
 
+    const dirBuffer = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
+    const notasBuffer = Notas != null ? Buffer.from(String(Notas), "utf8") : null;
+
     try {
         await txUpdate.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             ["1"]
         );
         await txUpdate.procedure(
-            `EXECUTE SP_ACTUALIZAR_PROVEEDOR (?, ?, ?, ?, ?, ?)`,
-            [id, Nombre, Direccion ?? null, Telefono ?? null, Correo ?? null, Notas ?? null]
+            `EXECUTE PROCEDURE SP_ACTUALIZAR_PROVEEDOR (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, Nombre, dirBuffer, Telefono ?? null, Correo ?? null, GiroPrincipal ?? null, ContactoCompras ?? null, notasBuffer]
         );
 
         await txUpdate.commit();
@@ -101,6 +125,33 @@ const updateProveedor = async (id, { Nombre, Direccion, Telefono, Correo, Notas 
         await txUpdate.rollback();
         throw err;
     }
+
+    // ── 2. Sincronizar materiales del proveedor ─────────────────────────────
+    if (materiales !== undefined && materiales !== null) {
+        const txMaterials = await db.transaction();
+        try {
+            await txMaterials.execute(
+                "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+                ["1"]
+            );
+            // Volver a construir la relación: borrar y re-vincular (patrón idéntico a Kits)
+            await txMaterials.execute(
+                "DELETE FROM Proveedores_has_Materiales WHERE Proveedores_idProveedor = ?",
+                [id]
+            );
+            await txMaterials.commit();
+        } catch (err) {
+            await txMaterials.rollback();
+            throw err;
+        }
+
+        if (Array.isArray(materiales) && materiales.length > 0) {
+            for (const m of materiales) {
+                await vincularMaterial(id, m.idMaterial, m.precio, m.notas);
+            }
+        }
+    }
+
     const txAudit = await db.transaction();
     let idAudit;
 
@@ -122,11 +173,13 @@ const updateProveedor = async (id, { Nombre, Direccion, Telefono, Correo, Notas 
         throw err;
     } 
     const comparacion = [
-        { campo: 'Nombre',    anterior: anterior.NOMBRE,    nuevo: Nombre },
-        { campo: 'Direccion', anterior: anterior.DIRECCION, nuevo: Direccion ?? null },
-        { campo: 'Telefono',  anterior: anterior.TELEFONO,  nuevo: Telefono ?? null },
-        { campo: 'Correo',    anterior: anterior.CORREO,    nuevo: Correo ?? null },
-        { campo: 'Notas',     anterior: anterior.NOTAS,     nuevo: Notas ?? null },
+        { campo: 'Nombre',          anterior: anterior.NOMBRE,          nuevo: Nombre },
+        { campo: 'Direccion',       anterior: anterior.DIRECCION,       nuevo: Direccion ?? null },
+        { campo: 'Telefono',        anterior: anterior.TELEFONO,        nuevo: Telefono ?? null },
+        { campo: 'Correo',          anterior: anterior.CORREO,          nuevo: Correo ?? null },
+        { campo: 'GiroPrincipal',   anterior: anterior.GIROPRINCIPAL,   nuevo: GiroPrincipal ?? null },
+        { campo: 'ContactoCompras', anterior: anterior.CONTACTOCOMPRAS, nuevo: ContactoCompras ?? null },
+        { campo: 'Notas',           anterior: anterior.NOTAS,           nuevo: Notas ?? null },
     ];
 
     const cambios = comparacion.filter(
@@ -183,8 +236,8 @@ const vincularMaterial = async (idProveedor, idMaterial, precio, notas) => {
             ["1"]
         );
         await transaction.procedure(
-            "EXECUTE SP_VINCULAR_MATERIAL_PROVEEDOR (?, ?, ?, ?)",
-            [idProveedor, idMaterial, precio ?? null, notas ?? null]
+            "EXECUTE PROCEDURE SP_VINCULAR_MATERIAL_PROVEEDOR (?, ?, ?, ?)",
+            [idProveedor, idMaterial, precio ?? null, notas != null ? Buffer.from(String(notas), "utf8") : null]
         );
 
         await transaction.commit();
@@ -207,7 +260,7 @@ const updateMaterial = async (idProveedor, idMaterial, { precio, notas }) => {
 
     try {
         const rows = await txRead.query(
-            `SELECT precio, notas
+            `SELECT PrecioUnitario, Notas
              FROM Proveedores_has_Materiales 
              WHERE Proveedores_idProveedor = ? AND Materiales_idMaterial = ?`,
             [idProveedor, idMaterial]
@@ -233,9 +286,9 @@ const updateMaterial = async (idProveedor, idMaterial, { precio, notas }) => {
         );
         await txUpdate.execute(
             `UPDATE Proveedores_has_Materiales
-             SET precio = ?, notas = ?
+             SET PrecioUnitario = ?, Notas = ?
              WHERE Proveedores_idProveedor = ? AND Materiales_idMaterial = ?`,
-            [precio ?? null, notas ?? null, idProveedor, idMaterial]
+            [precio ?? null, notas != null ? Buffer.from(String(notas), "utf8") : null, idProveedor, idMaterial]
         );
 
         await txUpdate.commit();
@@ -265,7 +318,7 @@ const updateMaterial = async (idProveedor, idMaterial, { precio, notas }) => {
         throw err;
     } 
     const comparacion = [
-        { campo: 'Precio', anterior: anterior.PRECIO, nuevo: precio ?? null },
+        { campo: 'Precio', anterior: anterior.PRECIOUNITARIO, nuevo: precio ?? null },
         { campo: 'Notas',  anterior: anterior.NOTAS,  nuevo: notas ?? null },
     ];
 
@@ -298,7 +351,7 @@ const desvincularMaterial = async (idProveedor, idMaterial) => {
             ["1"]
         );
         await transaction.procedure(
-            "EXECUTE SP_DESVINCULAR_MATERIAL_PROVEEDOR (?, ?)",
+            "EXECUTE PROCEDURE SP_DESVINCULAR_MATERIAL_PROVEEDOR (?, ?)",
             [idProveedor, idMaterial]
         );
 

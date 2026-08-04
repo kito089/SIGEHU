@@ -48,7 +48,11 @@ const create = async (req, res) => {
             });
         }
         
-        await service.createMaterial({ Nombre, UnidadMedida, Descripcion: Descripcion ?? null });
+        await service.createMaterial({
+            Nombre, UnidadMedida,
+            Descripcion: Descripcion ?? null,
+            idTrabajadorCtx: req.user?.idTrabajador
+        });
 
         res.status(201).json({ message: 'Material creado' });
 
@@ -85,7 +89,8 @@ const update = async (req, res) => {
             {
                 Nombre, 
                 UnidadMedida, 
-                Descripcion : Descripcion ?? null
+                Descripcion : Descripcion ?? null,
+                idTrabajadorCtx: req.user?.idTrabajador
             }
         );
 
@@ -104,7 +109,7 @@ const update = async (req, res) => {
 // Desactiva el Material sin eliminar su registro.
 const remove = async (req, res) => {
     try {
-        const affected = await service.deleteMaterial(req.params.id);
+        const affected = await service.deleteMaterial(req.params.id, req.user?.idTrabajador);
 
         if (!affected) {
             return res.status(404).json({

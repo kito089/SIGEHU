@@ -23,10 +23,14 @@ const findUsosCFDI = async (_req, res) => {
 };
 
 // GET /Clientes/
-// Obtiene todos los Clientes
-const findClientes = async (_req, res) => {
+// Obtiene todos los Clientes (opcional: ?search=)
+const findClientes = async (req, res) => {
     try {
-        const Clientes = await service.getClientes();
+        const Clientes = await service.getClientes({
+            search: req.query.search,
+            activo: req.query.activo,
+            fiscal: req.query.fiscal
+        });
         res.json(Clientes);
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -52,14 +56,21 @@ const findById = async (req, res) => {
 const create = async (req, res) => {
     try {
         if (!req.body || Object.keys(req.body).length === 0) {
-            return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
+            return res.status(400).json({ error: 'El cuerpo de la solicitud esta vacio' });
         }
 
-        const { Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
-                idUsoCFDI, Observaciones } = req.body;
-        
-        await service.createCliente({ Nombre: Nombre ?? null, Direccion: Direccion ?? null, RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, 
-                                    CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null, Observaciones: Observaciones ?? null });
+        const { Nombre, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
+                idUsoCFDI, Observaciones, contactos } = req.body;
+
+        await service.createCliente({
+            Nombre: Nombre ?? null, Direccion: Direccion ?? null, RFC: RFC ?? null,
+            Telefono: Telefono ?? null, Correo: Correo ?? null,
+            idRegimenFiscal: idRegimenFiscal ?? null,
+            CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null,
+            Observaciones: Observaciones ?? null,
+            contactos: contactos ?? null,
+            idTrabajadorCtx: req.user?.idTrabajador
+        });
 
         res.status(201).json({ message: 'Cliente creado' });
 
@@ -73,18 +84,21 @@ const create = async (req, res) => {
 const update = async (req, res) => {
     try {
         if (!req.body || Object.keys(req.body).length === 0) {
-            return res.status(400).json({ error: 'El cuerpo de la solicitud está vacío' });
+            return res.status(400).json({ error: 'El cuerpo de la solicitud esta vacio' });
         }
 
-        const { Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal, 
+        const { Nombre, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
                 idUsoCFDI, Observaciones } = req.body;
-        
+
         const affected = await service.updateCliente(
             req.params.id,
             {
                 Nombre: Nombre ?? null,
-                Direccion: Direccion ?? null, RFC: RFC ?? null, idRegimenFiscal: idRegimenFiscal ?? null, 
-                CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null, Observaciones: Observaciones ?? null
+                Direccion: Direccion ?? null, RFC: RFC ?? null, Telefono: Telefono ?? null,
+                Correo: Correo ?? null, idRegimenFiscal: idRegimenFiscal ?? null,
+                CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null,
+                Observaciones: Observaciones ?? null,
+                idTrabajadorCtx: req.user?.idTrabajador
             }
         );
 
@@ -99,11 +113,46 @@ const update = async (req, res) => {
     }
 };
 
+// GET /Clientes/:id/obras
+// Obtiene todas las obras activas de un Cliente.
+const findObras = async (req, res) => {
+    try {
+        const Obras = await service.getObrasByCliente(req.params.idCliente);
+        res.json(Obras);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+// PATCH /Clientes/:id/estado
+// Activa o desactiva (soft delete) un Cliente.
+const cambiarEstado = async (req, res) => {
+    try {
+        const { activo } = req.body ?? {};
+
+        if (typeof activo !== 'boolean') {
+            return res.status(400).json({ error: 'El campo activo (boolean) es requerido' });
+        }
+
+        const affected = activo
+            ? await service.reactivarCliente(req.params.id, req.user?.idTrabajador)
+            : await service.deleteCliente(req.params.id, req.user?.idTrabajador);
+
+        if (!affected) {
+            return res.status(404).json({ error: 'Cliente no encontrado' });
+        }
+
+        res.json({ message: activo ? 'Cliente activado' : 'Cliente desactivado' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 // DELETE /Clientes/:id (soft delete)
 // Desactiva el Cliente sin eliminar su registro.
 const remove = async (req, res) => {
     try {
-        const affected = await service.deleteCliente(req.params.id);
+        const affected = await service.deleteCliente(req.params.id, req.user?.idTrabajador);
 
         if (!affected) {
             return res.status(404).json({
@@ -123,7 +172,9 @@ export default {
     findUsosCFDI,
     findClientes,
     findById,
+    findObras,
     create,
     update,
-    remove
+    remove,
+    cambiarEstado
 };
