@@ -1,4 +1,5 @@
 <div class="page">
+
   <section class="panel-frame">
 
     <div class="panel-header">
@@ -33,25 +34,27 @@
         </thead>
         <tbody>
           <tr *ngFor="let t of trabajadoresFiltrados">
-            <!-- Columna USUARIO (Lado Izquierdo) -->
+            <!-- 1. USUARIO (Lado izquierdo) -->
             <td>
               <span class="user-badge">@{{ t.usuario }}</span>
             </td>
 
-            <!-- Columna TRABAJADOR (Sin oficio) -->
+            <!-- 2. TRABAJADOR (Sin oficio) -->
             <td>
               <div class="nombre">{{ t.nombre }}</div>
             </td>
 
+            <!-- 3. TELÉFONO -->
             <td class="muted">{{ t.telefono }}</td>
 
+            <!-- 4. OBRAS ASIGNADAS (Corregido sin ?.) -->
             <td>
-              <span class="tag" [ngClass]="t.obrasAsignadas?.length ? 'tag-obras' : 'tag-obras-empty'">
+              <span class="tag" [ngClass]="t.obrasAsignadas.length ? 'tag-obras' : 'tag-obras-empty'">
                 {{ obrasLabel(t.obrasAsignadas) }}
               </span>
             </td>
 
-            <!-- Columna IMSS & Acciones -->
+            <!-- 5. IMSS Y ACCIONES -->
             <td class="col-acciones">
               <div class="acciones-group">
                 <!-- Botón Ver Detalle -->
@@ -59,7 +62,7 @@
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
 
-                <!-- Botón Documento IMSS (Deshabilitado si no hay URL) -->
+                <!-- Botón Documento IMSS -->
                 <button 
                   class="btn-imss" 
                   [disabled]="!t.documentoImssUrl" 
@@ -90,22 +93,23 @@
     </div>
 
   </section>
+
 </div>
 
-<!-- MODAL DETALLE DE TRABAJADOR -->
+<!-- MODAL DE DETALLES REDISEÑADO -->
 <div class="modal-overlay" [class.open]="selectedTrabajador" (click)="cerrarDetalle()">
   <div class="modal" *ngIf="selectedTrabajador" (click)="$event.stopPropagation()">
     
     <div class="modal-header">
       <div>
-        <span class="trabajador-tag">Ficha de Trabajador</span>
+        <div class="trabajador-tag">Ficha de Trabajador</div>
         <h2>{{ selectedTrabajador.nombre }}</h2>
       </div>
       <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
     </div>
 
     <div class="modal-body">
-      <!-- Grid de Labels Informativos (Estilo trabajadornew.component) -->
+      <!-- Grid de Labels Informativos -->
       <div class="info-labels-grid">
         <div class="field-label-group">
           <label>Nombre de Usuario</label>
@@ -123,11 +127,11 @@
         </div>
       </div>
 
-      <!-- Sección Obra(s) asignada(s) -->
+      <!-- Obra(s) Asignada(s) -->
       <div class="field-label-group mt-3">
         <label>Obra(s) asignada(s)</label>
         <div class="obras-container">
-          <ul *ngIf="selectedTrabajador.obrasAsignadas?.length; else sinObras" class="obras-list">
+          <ul *ngIf="selectedTrabajador.obrasAsignadas.length; else sinObras" class="obras-list">
             <li *ngFor="let obra of selectedTrabajador.obrasAsignadas">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
               {{ obra }}
@@ -139,11 +143,10 @@
         </div>
       </div>
 
-      <!-- Sección Subir / Gestionar Documento IMSS con Drag & Drop -->
+      <!-- Área Drag & Drop IMSS -->
       <div class="field-label-group mt-3">
         <label>Documento de Afiliación IMSS</label>
         
-        <!-- Zona Drag & Drop / Upload -->
         <div 
           class="drag-drop-zone"
           [class.drag-over]="isDragging"
@@ -159,21 +162,20 @@
             (change)="onFileSelected($event)" />
 
           <div class="upload-content">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <p>Arrastra y suelta aquí tu archivo (PDF o Imagen) o</p>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Arrastra y suelta tu archivo (PDF o Imagen) aquí, o</p>
             <button type="button" class="btn-upload" (click)="fileInput.click()">
               Subir documento
             </button>
           </div>
         </div>
 
-        <!-- Archivo cargado actualmente -->
         <div *ngIf="selectedTrabajador.documentoImssUrl" class="document-preview-bar">
           <span class="doc-name">
             📄 Documento_IMSS_{{ selectedTrabajador.usuario }}
           </span>
           <button type="button" class="btn-link" (click)="abrirDocumentoImss(selectedTrabajador.documentoImssUrl)">
-            Ver archivo actual
+            Ver archivo
           </button>
         </div>
       </div>
