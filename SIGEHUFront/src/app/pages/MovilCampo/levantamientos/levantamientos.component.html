@@ -1,0 +1,46 @@
+<div class="mobile-wrapper">
+  <header class="mobile-header">
+    <span class="back-icon">←</span>
+    <h2>Levantamiento de Medidas</h2>
+  </header>
+
+  <main class="mobile-content">
+    <!-- Información de Obra / Cliente (Datos Automáticos) -->
+    <div class="card info-card">
+      <span class="badge">Datos de la Obra</span>
+      <p class="data-row"><strong>Cliente:</strong> María Elena Gómez</p>
+      <p class="data-row"><strong>Obra:</strong> Portón Corredizo Residencial</p>
+      <p class="data-row"><strong>Ubicación:</strong> Av. de la Cruz #405</p>
+    </div>
+
+    <!-- Formulario de Dimensiones y Observaciones -->
+    <div class="card">
+      <h3>Dimensiones Reales</h3>
+      <form class="mobile-form">
+        <div class="form-group">
+          <label>Alto (m)</label>
+          <input type="number" step="0.01" placeholder="Ej. 2.40" />
+        </div>
+
+        <div class="form-group">
+          <label>Ancho (m)</label>
+          <input type="number" step="0.01" placeholder="Ej. 3.50" />
+        </div>
+
+        <div class="form-group">
+          <label>Profundidad (m)</label>
+          <input type="number" step="0.01" placeholder="Ej. 0.15" />
+        </div>
+
+        <div class="form-group">
+          <label>Observaciones del Sitio</label>
+          <textarea rows="3" placeholder="Detalles de desnivel, muros o posibles obstáculos..."></textarea>
+        </div>
+
+        <button type="button" class="btn btn-emerald btn-full">
+          Guardar Levantamiento
+        </button>
+      </form>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,55 @@
+<div class="mobile-wrapper">
+  <header class="mobile-header">
+    <span class="back-icon">←</span>
+    <h2>Garantías y Postventa</h2>
+  </header>
+
+  <main class="mobile-content">
+    <!-- Formulario de Nuevo Reporte -->
+    <div class="card">
+      <h3>Registrar Atención de Garantía</h3>
+      <form class="mobile-form">
+        <div class="form-group">
+          <label>Obra / Proyecto (Automático)</label>
+          <input type="text" value="OB-0014 - Portón Corredizo" readonly class="input-readonly" />
+        </div>
+
+        <div class="form-group">
+          <label>Fecha del Reporte</label>
+          <input type="date" />
+        </div>
+
+        <div class="form-group">
+          <label>Técnico / Trabajador Asignado</label>
+          <select>
+            <option value="">Selecciona un técnico...</option>
+            <option value="1">Saúl Rodríguez (Soldador)</option>
+            <option value="2">Juan Martínez (Instalador)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Observaciones de la Falla</label>
+          <textarea rows="3" placeholder="Detalla el problema (chapa, pintura, bisagra)..."></textarea>
+        </div>
+
+        <button type="button" class="btn btn-red btn-full">
+          Guardar Ticket de Garantía
+        </button>
+      </form>
+    </div>
+
+    <!-- Lista de Reportes Activos -->
+    <div class="card">
+      <h3>Tickets en Seguimiento</h3>
+      <div class="ticket-item">
+        <div class="ticket-header">
+          <span class="ticket-id">GAR-008</span>
+          <span class="badge badge-orange">En atención</span>
+        </div>
+        <p class="ticket-desc">Falla en ajuste de chapa principal</p>
+        <span class="ticket-tech">Técnico: Saúl Rodríguez</span>
+      </div>
+    </div>
+  </main>
+</div>
