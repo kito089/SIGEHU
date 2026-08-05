@@ -6,7 +6,8 @@ const envConfig = {
     zrokName: process.env.ZROK_DOMAIN,
     apiUrl: process.env.FRONTEND_URL,
     dbUsername: process.env.DB_USERNAME,
-    dbPassword: process.env.DB_PASSWORD
+    dbPassword: process.env.DB_PASSWORD,
+    jwtSecret: process.env.JWT_SECRET
 };
 
 // Crear un config.json que el backend puede leer con require('./config.json')

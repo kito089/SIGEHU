@@ -1,58 +1,62 @@
-<div class="dashboard-view">
-  <header class="header">
-    <h2>Órdenes de Compra y Gastos</h2>
-    <p class="subtitle">Adquisición de materia prima y control de egresos</p>
-  </header>
+<div class="page">
 
-  <div class="grid-form-table">
-    <div class="card card-highlight-blue">
-      <h3>Registrar Adquisición</h3>
-      <form class="form">
-        <div class="form-group"><label>Proveedor</label><input type="text" /></div>
-        <div class="form-group"><label>Insumo</label><input type="text" /></div>
-        <div class="form-group"><label>Obra</label><input type="text" /></div>
-        <div class="form-group"><label>Monto</label><input type="text" /></div>
-        <div class="form-group"><label>Estado</label><input type="text" /></div>
-        <button type="button" class="btn btn-blue btn-full">Guardar Orden de Compra</button>
-      </form>
+  <section class="panel-frame">
+
+    <div class="panel-header">
+      <div>
+        <h1>Órdenes de Compra</h1>
+        <p>Cotización, autorización y recepción de compras de insumos (RF-17 / RF-19)</p>
+      </div>
+      <button class="btn-primary" (click)="nuevaOrden()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Nueva Orden
+      </button>
     </div>
 
-    <div class="card">
-      <h3>Últimos Movimientos de Almacén</h3>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Folio</th>
-            <th>Proveedor</th>
-            <th>Descripción</th>
-            <th>Total</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>OC-0042</td>
-            <td>Aceros</td>
-            <td>Lámina Negra</td>
-            <td>$7500</td>
-            <td class="text-green">Pagado</td>
-          </tr>
-          <tr>
-            <td>OC-0041</td>
-            <td>Herrajes</td>
-            <td>Bisagras</td>
-            <td>$1250</td>
-            <td class="text-green">Pagado</td>
-          </tr>
-          <tr>
-            <td>OC-0040</td>
-            <td>Aceros</td>
-            <td>Ángulo</td>
-            <td>$3180</td>
-            <td class="text-orange">Pendiente</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <app-filter-bar
+      [searchTerm]="searchTerm"
+      [searchPlaceholder]="'Buscar por folio, proveedor o estado…'"
+      (searchTermChange)="onSearchChange($event)"
+    ></app-filter-bar>
+
+    <app-data-table
+      [columns]="columns"
+      [data]="ordenesFiltradas"
+      [emptyMessage]="'No se encontraron órdenes con ese criterio.'"
+      rowKey="id"
+    >
+      <ng-template #cell let-row let-col="column">
+        @switch (col.key) {
+          @case ('folio') {
+            <span class="td-folio">{{ row.folio }}</span>
+          }
+          @case ('proveedor') {
+            <span class="td-nombre">{{ row.proveedor }}</span>
+          }
+          @case ('descripcion') {
+            <span class="td-muted">{{ row.descripcion }}</span>
+          }
+          @case ('total') {
+            <span class="td-total">{{ formatoTotal(row.total) }}</span>
+          }
+          @case ('estado') {
+            <span class="badge-estado" [class]="estadoClass(row.estado)">{{ row.estado }}</span>
+          }
+        }
+      </ng-template>
+
+      <ng-template #actions let-row>
+        <div class="acciones-group">
+          @if (row.estado === 'Cotizada' || row.estado === 'Enviada') {
+            <button class="btn-ghost" (click)="autorizar(row)" title="Autorizar compra">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+              Autorizar
+            </button>
+          }
+        </div>
+      </ng-template>
+    </app-data-table>
+
+  </section>
+
 </div>

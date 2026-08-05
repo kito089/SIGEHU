@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import config from '../../config.json' with { type: 'json' };
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sigehu-dev-secret';
+const JWT_SECRET = config.jwtSecret;
 const JWT_EXPIRES_IN = '8h';
 
 const FINANCIAL_ENDPOINTS = [

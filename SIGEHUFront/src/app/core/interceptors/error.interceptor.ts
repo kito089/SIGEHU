@@ -20,8 +20,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           offlineSync.enqueue(req.method, req.url, req.body);
         }
       } else if (error.status === 401) {
-        auth.logout();
-        toast.error('Sesión expirada. Ingrese nuevamente');
+        // El fallo del login no debe tratarse como sesión expirada: la página de
+        // login muestra su propio mensaje de credenciales inválidas.
+        if (!req.url.includes('/Trabajadores/login')) {
+          auth.logout();
+          toast.error('Sesión expirada. Ingrese nuevamente');
+        }
       } else if (error.status === 403) {
         toast.error(error.error?.error || 'Acceso denegado: no tiene permisos para esta acción');
       } else if (error.status === 400) {

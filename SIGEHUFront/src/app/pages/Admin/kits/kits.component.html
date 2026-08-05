@@ -1,0 +1,62 @@
+<div class="page">
+
+  <section class="panel-frame">
+
+    <div class="panel-header">
+      <div>
+        <h1>Kits de Instalación</h1>
+        <p>Paquetes de herramientas y materiales que se asignan por obra (checklist de ruta)</p>
+      </div>
+      <button class="btn-primary" (click)="nuevoKit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Nuevo Kit
+      </button>
+    </div>
+
+    <app-filter-bar
+      [searchTerm]="searchTerm"
+      [searchPlaceholder]="'Buscar por nombre o descripción…'"
+      (searchTermChange)="onSearchChange($event)"
+    ></app-filter-bar>
+
+    <app-data-table
+      [columns]="columns"
+      [data]="kitsFiltrados"
+      [emptyMessage]="'No se encontraron kits con ese criterio.'"
+      rowKey="id"
+    >
+      <ng-template #cell let-row let-col="column">
+        @switch (col.key) {
+          @case ('nombre') {
+            <span class="td-nombre">{{ row.nombre }}</span>
+          }
+          @case ('descripcion') {
+            <span class="td-muted">{{ row.descripcion }}</span>
+          }
+          @case ('totalMateriales') {
+            <span class="td-count">{{ row.totalMateriales }}</span>
+          }
+          @case ('activo') {
+            <span class="badge-estado" [class.badge-estado--ok]="row.activo" [class.badge-estado--muted]="!row.activo">
+              {{ estadoLabel(row.activo) }}
+            </span>
+          }
+        }
+      </ng-template>
+
+      <ng-template #actions let-row>
+        <div class="acciones-group">
+          <button class="btn-ghost" (click)="verChecklist(row)" title="Ver checklist">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+            Checklist
+          </button>
+          <button class="icon-btn" (click)="editarKit(row)" aria-label="Editar kit" title="Editar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
+        </div>
+      </ng-template>
+    </app-data-table>
+
+  </section>
+
+</div>

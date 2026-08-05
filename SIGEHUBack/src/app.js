@@ -26,6 +26,7 @@ import DashboardRoutes from './routes/Dashboard.route.js';
 import BackupRoutes from './routes/Backup.route.js';
 import AuditoriaRoutes from './routes/Auditoria.route.js';
 import AuthRoutes from './routes/Auth.route.js';
+import auth from './middlewares/auth.middleware.js';
 
 const PORT = config.apiPort || 3000;
 const app = express();
@@ -40,6 +41,22 @@ app.use('/uploads', express.static(
         'uploads'
     )
 ));
+
+// Autenticación global: todo requiere JWT salvo login, refresh y la
+// verificación de salud del servidor. El aislamiento financiero se aplica
+// después para que `req.user` ya esté disponible.
+const PUBLIC_PATHS = [
+    '/',
+    '/Trabajadores/login',
+    '/Auth/refresh'
+];
+
+app.use((req, res, next) => {
+    const esPublico = PUBLIC_PATHS.some(p => req.path === p);
+    if (esPublico) return next();
+    return auth.verifyToken(req, res, next);
+});
+app.use(auth.blockFinancialForWorker);
 
 // Rutas
 app.use('/Trabajadores', TrabajadoresRoutes);

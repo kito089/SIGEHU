@@ -80,6 +80,8 @@ export class ApiService {
     if (error.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       this.router.navigate(['/login']);
     }
     if (error.status === 403) {

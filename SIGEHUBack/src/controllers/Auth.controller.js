@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
+import config from '../../config.json' with { type: 'json' };
 import { generateToken } from '../middlewares/auth.middleware.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sigehu-dev-secret';
+const JWT_SECRET = config.jwtSecret;
 
 const refresh = async (req, res) => {
     try {

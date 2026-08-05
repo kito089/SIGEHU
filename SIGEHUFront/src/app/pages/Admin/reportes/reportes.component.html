@@ -1,0 +1,58 @@
+<div class="page">
+
+  <section class="panel-frame">
+    <div class="panel-header">
+      <div>
+        <h1>Reportes</h1>
+        <p>Consultas generales e indicadores del negocio (RF-30 / RF-31)</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-ghost" (click)="nuevaBusqueda()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          Búsqueda global
+        </button>
+        <button class="btn-primary" (click)="irAConsultas()">
+          Consultas detalladas
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="kpi-grid">
+    @for (kpi of kpis; track kpi.label) {
+      <app-kpi-card
+        [value]="kpi.value"
+        [label]="kpi.label"
+        [iconSvg]="kpi.iconSvg"
+        [iconBgColor]="kpi.iconBgColor"
+        [iconColor]="kpi.iconColor"
+      ></app-kpi-card>
+    }
+  </section>
+
+  <section class="panel-frame">
+    <div class="panel-header">
+      <div>
+        <h1>Actividad reciente</h1>
+        <p>Últimos eventos de obras, instalaciones y clientes</p>
+      </div>
+    </div>
+
+    <div class="act-list">
+      @for (act of actividades; track act.id) {
+        <div class="act-item">
+          <span class="act-item__dot" [class]="estadoClass(act.estado)"></span>
+          <div class="act-item__body">
+            <div class="act-item__top">
+              <span class="act-item__tipo">{{ tipoLabel(act.tipo) }}</span>
+              <span class="act-item__fecha">{{ act.fecha }}</span>
+            </div>
+            <p class="act-item__texto">{{ act.texto }}</p>
+            <p class="act-item__detalle">{{ act.detalle }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+</div>

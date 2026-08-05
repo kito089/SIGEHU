@@ -57,6 +57,22 @@ export class AuthService {
     return localStorage.getItem('token') || sessionStorage.getItem('token');
   }
 
+  // Renovación transparente (RF-34): persiste el token renovado y el usuario en
+  // el mismo almacenamiento donde vive la sesión actual (localStorage si se marcó
+  // "Recordar sesión", sessionStorage en caso contrario).
+  refreshSession(newToken: string): void {
+    const store = this.getSessionStore();
+    store.setItem('token', newToken);
+    const user = this.getUser();
+    if (user) {
+      store.setItem('user', JSON.stringify(user));
+    }
+  }
+
+  private getSessionStore(): Storage {
+    return localStorage.getItem('token') !== null ? localStorage : sessionStorage;
+  }
+
   private setSession(res: AuthResponse, remember: boolean): void {
     this.clearSession();
     const store = remember ? localStorage : sessionStorage;
