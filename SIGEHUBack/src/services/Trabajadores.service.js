@@ -208,6 +208,10 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, C
 
     const rutaAnterior = anterior.RUTADOCUMENTOIMSS ?? anterior.rutaDocumentoImss ?? null;
 
+    // TIPOUSUARIO es inmutable (RF-27): 1=Propietario no cambia a 2=Trabajador y viceversa.
+    // Se fuerza el valor actual del registro ignorando cualquier intento de cambio.
+    const tipoInmutable = anterior.TIPOSUSUARIOS_IDTIPOUSUARIO ?? anterior.TiposUsuarios_idTipoUsuario ?? Tipo;
+
     const txUpdate = await db.transaction();
 
     try {
@@ -229,7 +233,7 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, C
                  Correo = ?,
                  Observaciones = ?
              WHERE IdTrabajador  = ?`,
-            [Usuario, Contra ?? null, Nombre, Telefono ?? null, RutaDocumentoIMSS ?? null, Tipo, Correo ?? null, obsBuffer, id]
+            [Usuario, Contra ?? null, Nombre, Telefono ?? null, RutaDocumentoIMSS ?? null, tipoInmutable, Correo ?? null, obsBuffer, id]
         );
 
         if (deleteImss) {
@@ -275,7 +279,7 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, C
         { campo: 'NombreUsuario', anterior: anterior.NOMBREUSUARIO, nuevo: Usuario },
         { campo: 'NombreCompleto', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre },
         { campo: 'Telefono', anterior: anterior.TELEFONO, nuevo: Telefono ?? null },
-        { campo: 'Tipo', anterior: anterior.TIPOSUSUARIOS_IDTIPOUSUARIO, nuevo: Tipo },
+        { campo: 'Tipo', anterior: anterior.TIPOSUSUARIOS_IDTIPOUSUARIO, nuevo: tipoInmutable },
         { campo: 'Correo', anterior: anterior.CORREO, nuevo: Correo ?? null },
         { campo: 'Observaciones', anterior: anterior.OBSERVACIONES, nuevo: Observaciones ?? null },
     ];

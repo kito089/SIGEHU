@@ -53,6 +53,7 @@ export class TrabajadorNewComponent implements OnInit {
   documentoExistenteVisible = false;
 
   private previewUrl: string | null = null;
+  private tipoUsuarioActual: number | null = null;
 
   oficios = [
     'Especialista en Corte y Soldadura',
@@ -235,7 +236,8 @@ export class TrabajadorNewComponent implements OnInit {
     try {
       let id: number;
       if (this.trabajadorId) {
-        payload['Tipo'] = 2; // TiposUsuarios: 1 = Propietario, 2 = Trabajador
+        // El tipo de usuario es inmutable: se conserva el valor actual del registro.
+        payload['Tipo'] = this.tipoUsuarioActual ?? 2; // TiposUsuarios: 1 = Propietario, 2 = Trabajador
         await firstValueFrom(this.api.put('/Trabajadores/' + this.trabajadorId, payload));
         id = this.trabajadorId;
       } else {
@@ -283,6 +285,7 @@ export class TrabajadorNewComponent implements OnInit {
   // ── Carga para edición ───────────────────────────────────────────────────
   private async fetchTrabajador(id: number): Promise<any> {
     const raw: any = await firstValueFrom(this.api.get('/Trabajadores/' + id));
+    this.tipoUsuarioActual = Number(raw.TIPOSUSUARIOS_IDTIPOUSUARIO ?? raw.TiposUsuarios_idTipoUsuario ?? raw.idTipoUsuario ?? null);
     return {
       usuario: raw.NOMBREUSUARIO ?? raw.nombreUsuario ?? '',
       nombre: raw.NOMBRECOMPLETO ?? raw.nombreCompleto ?? '',

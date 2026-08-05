@@ -270,7 +270,7 @@ const login = async (req, res) => {
             idTrabajador: trabajador.IDTRABAJADOR,
             usuario: trabajador.NOMBREUSUARIO,
             nombre: trabajador.NOMBRECOMPLETO,
-            rol: trabajador.TIPOUSUARIO
+            rol: trabajador.TIPOUSUARIO ?? trabajador.TipoUsuario ?? 'Trabajador'
         });
 
         res.json({
@@ -279,7 +279,7 @@ const login = async (req, res) => {
                 idTrabajador: trabajador.IDTRABAJADOR,
                 usuario: trabajador.NOMBREUSUARIO,
                 nombre: trabajador.NOMBRECOMPLETO,
-                rol: trabajador.TIPOUSUARIO
+                rol: trabajador.TIPOUSUARIO ?? trabajador.TipoUsuario ?? 'Trabajador'
             }
         });
 
