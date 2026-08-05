@@ -296,8 +296,10 @@ CREATE TABLE Trabajadores (
     Contra VARCHAR(100) NOT NULL, -- hash bcrypt (NUNCA texto plano)
     NombreCompleto VARCHAR(100) NOT NULL,
     Telefono VARCHAR(15),
+    Correo VARCHAR(254),
     RutaDocumentoIMSS VARCHAR(300), -- ruta relativa al PDF/IMG del IMSS (IS-04)
     TiposUsuarios_idTipoUsuario INTEGER NOT NULL,
+    Observaciones BLOB SUB_TYPE TEXT,
     Activo BOOLEAN DEFAULT TRUE NOT NULL,
     PRIMARY KEY (idTrabajador),
     CONSTRAINT fk_Trabajadores_TiposUsuarios1
@@ -2290,15 +2292,18 @@ CREATE OR ALTER PROCEDURE SP_INSERTAR_TRABAJADOR (
     tNombre VARCHAR(100),
     tTelefono VARCHAR(15),
     tTipo INTEGER,
-    tRutaIMSS VARCHAR(300) = NULL
+    tRutaIMSS VARCHAR(300) = NULL,
+    tCorreo VARCHAR(254) = NULL,
+    tObservaciones BLOB SUB_TYPE TEXT = NULL
 )
 RETURNS (
     oIdTrabajador INTEGER
 )
 AS
 BEGIN
-    INSERT INTO Trabajadores (NombreUsuario, Contra, NombreCompleto, Telefono, RutaDocumentoIMSS, TiposUsuarios_idTipoUsuario)
-    VALUES (:tUsuario, :tContra, :tNombre, :tTelefono, :tRutaIMSS, :tTipo)
+    INSERT INTO Trabajadores (NombreUsuario, Contra, NombreCompleto, Telefono, RutaDocumentoIMSS,
+                              TiposUsuarios_idTipoUsuario, Correo, Observaciones)
+    VALUES (:tUsuario, :tContra, :tNombre, :tTelefono, :tRutaIMSS, :tTipo, :tCorreo, :tObservaciones)
     RETURNING idTrabajador INTO :oIdTrabajador;
 
     SUSPEND;
@@ -3371,3 +3376,24 @@ SELECT
     cp.Descripcion AS DescripcionPermiso
 FROM PermisosGranularesGarantias pgg
 JOIN CamposPermiso cp ON cp.idCampoPermiso = pgg.CamposPermiso_idCampoPermiso;
+
+CREATE OR ALTER VIEW VW_TRABAJADORES_CON_COUNT_OBRAS AS
+SELECT
+    t.idTrabajador,
+    t.NombreUsuario,
+    t.NombreCompleto,
+    t.Telefono,
+    t.RutaDocumentoIMSS,
+    t.TiposUsuarios_idTipoUsuario,
+    t.Activo,
+    t.Correo,
+    t.Observaciones,
+    COUNT(oht.idDetalleAsignacion) AS TotalObras
+FROM Trabajadores t
+LEFT JOIN Obras_has_Trabajadores oht
+       ON oht.Trabajadores_idTrabajador = t.idTrabajador
+LEFT JOIN Obras o
+       ON o.idObra = oht.Obras_idObra
+      AND o.Activo = TRUE
+GROUP BY t.idTrabajador, t.NombreUsuario, t.NombreCompleto, t.Telefono, t.RutaDocumentoIMSS,
+         t.TiposUsuarios_idTipoUsuario, t.Activo, t.Correo, t.Observaciones;

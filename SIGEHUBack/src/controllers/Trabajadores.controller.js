@@ -4,6 +4,22 @@ import service from '../services/Trabajadores.service.js';
 
 const SALT_ROUNDS = 10;
 
+// ─── Saneamiento de teléfono ─────────────────────────────────────────────────
+// Elimina espacios, guiones y paréntesis; conserva únicamente "+" seguido de
+// dígitos, con un máximo de 15 caracteres (formato E.164 del campo Telefono).
+// Devuelve null cuando el valor no es un teléfono válido.
+const sanitizeTelefono = (telefono) => {
+    if (telefono == null || telefono === '') return null;
+
+    const comprimido = String(telefono).replace(/[\s\-()]/g, '');
+
+    if (!/^\+?\d{1,15}$/.test(comprimido)) {
+        return null;
+    }
+
+    return comprimido;
+};
+
 // GET Trabajadores/TiposUsuarios
 // Obtiene todos los tipos de usuario
 const findTiposUsuarios = async (_req, res) => {
@@ -48,10 +64,10 @@ const create = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud est vaco' });
         }
 
-        const { Usuario, Contra, Nombre, Telefono, Tipo, RutaDocumentoIMSS } = req.body;
+        const { Usuario, Contra, Nombre, Telefono, Tipo, Correo, Observaciones, RutaDocumentoIMSS } = req.body;
 
         const datos = { Usuario, Contra, Nombre, Tipo };
-        const opcionales = ['Telefono', 'RutaDocumentoIMSS'];
+        const opcionales = ['Telefono', 'RutaDocumentoIMSS', 'Correo', 'Observaciones'];
 
         const faltantes = Object.entries(datos)
             .filter(([clave, valor]) => !opcionales.includes(clave) && (valor == null || valor === ''))
@@ -62,20 +78,27 @@ const create = async (req, res) => {
                 error: `Faltan campos requeridos: ${faltantes.join(', ')}`
             });
         }
-        console.log("Datos recibidos: ",{Usuario, Contra, Nombre, Telefono, Tipo});
+
+        const telefono = sanitizeTelefono(Telefono);
+        if (Telefono != null && Telefono !== '' && telefono === null) {
+            return res.status(400).json({
+                error: 'Teléfono inválido: usa solo "+" y números, máximo 15 dígitos'
+            });
+        }
 
         const hash = await bcrypt.hash(Contra, SALT_ROUNDS);
-        console.log("Hash generado: ", hash)
         const nuevoId = await service.createTrabajador({
-            Usuario, Contra: hash, Nombre, Telefono: Telefono ?? null, Tipo,
+            Usuario, Contra: hash, Nombre, Telefono: telefono, Tipo,
+            Correo: Correo ?? null, Observaciones: Observaciones ?? null,
             RutaDocumentoIMSS: RutaDocumentoIMSS ?? null,
-            idTrabajadorCtx: req.user?.idTrabajador
+            idTrabajadorCtx: req.user?.idTrabajador ?? 1
         });
 
         res.status(201).json({ message: 'Trabajador creado', idTrabajador: nuevoId });
 
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[POST /Trabajadores] Error al crear trabajador:', e);
+        res.status(500).json({ error: 'Error en la transacción de datos al intentar guardar el trabajador' });
     }
 };
 
@@ -87,10 +110,10 @@ const update = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud est vaco' });
         }
 
-        const { Usuario, Contra, Nombre, Telefono, Tipo, RutaDocumentoIMSS, deleteImss } = req.body;
+        const { Usuario, Contra, Nombre, Telefono, Tipo, Correo, Observaciones, RutaDocumentoIMSS, deleteImss } = req.body;
 
         const datos = { Usuario, Nombre, Tipo };
-        const opcionales = ['Telefono', 'Contra', 'RutaDocumentoIMSS', 'deleteImss'];
+        const opcionales = ['Telefono', 'Contra', 'RutaDocumentoIMSS', 'deleteImss', 'Correo', 'Observaciones'];
 
         const faltantes = Object.entries(datos)
             .filter(([clave, valor]) => !opcionales.includes(clave) && (valor == null || valor === ''))
@@ -99,6 +122,13 @@ const update = async (req, res) => {
         if (faltantes.length > 0) {
             return res.status(400).json({
                 error: `Faltan campos requeridos: ${faltantes.join(', ')}`
+            });
+        }
+
+        const telefono = sanitizeTelefono(Telefono);
+        if (Telefono != null && Telefono !== '' && telefono === null) {
+            return res.status(400).json({
+                error: 'Teléfono inválido: usa solo "+" y números, máximo 15 dígitos'
             });
         }
 
@@ -112,11 +142,13 @@ const update = async (req, res) => {
                 Usuario,
                 Contra: hash,
                 Nombre,
-                Telefono: Telefono ?? null,
+                Telefono: telefono,
                 Tipo,
+                Correo: Correo ?? null,
+                Observaciones: Observaciones ?? null,
                 RutaDocumentoIMSS: RutaDocumentoIMSS ?? null,
                 deleteImss: deleteImss === true,
-                idTrabajadorCtx: req.user?.idTrabajador
+                idTrabajadorCtx: req.user?.idTrabajador ?? 1
             }
         );
 
@@ -127,7 +159,8 @@ const update = async (req, res) => {
         res.json({ message: 'Trabajador actualizado' });
 
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('[PUT /Trabajadores/:id] Error al actualizar trabajador:', e);
+        res.status(500).json({ error: 'Error en la transacción de datos al intentar guardar el trabajador' });
     }
 };
 
@@ -178,7 +211,7 @@ const uploadImss = async (req, res) => {
         await service.updateRutaImss(
             req.params.id,
             rutaRelativa,
-            req.user?.idTrabajador
+            req.user?.idTrabajador ?? 1
         );
 
         res.status(201).json({ message: 'Documento IMSS guardado', ruta: rutaRelativa });
@@ -199,7 +232,7 @@ const cambiarActivo = async (req, res) => {
         const affected = await service.cambiarActivo(
             req.params.id,
             activo,
-            req.user?.idTrabajador
+            req.user?.idTrabajador ?? 1
         );
 
         if (!affected) {
@@ -255,10 +288,22 @@ const login = async (req, res) => {
     }
 };
 
+// GET /Trabajadores/:id/obras
+// Obtiene las obras asignadas a un trabajador específico.
+const findObras = async (req, res) => {
+    try {
+        const obras = await service.getObrasByTrabajador(req.params.id);
+        res.json(obras);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 export default {
     findTrabajadores,
     findTiposUsuarios,
     findById,
+    findObras,
     checkUsername,
     create,
     update,

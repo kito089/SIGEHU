@@ -1,7 +1,11 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { firstValueFrom, Subscription } from 'rxjs';
+import { ApiService } from '../../../services/api.service';
+import { EnvService } from '../../../services/env.service';
+import { TrabajadoresRefreshService } from '../../../services/trabajadores-refresh.service';
 
 export interface Trabajador {
   id: number;
@@ -9,6 +13,8 @@ export interface Trabajador {
   nombre: string;
   telefono: string;
   correo: string;
+  observaciones: string;
+  totalObras: number;
   obrasAsignadas: string[];
   documentoImssUrl?: string;
 }
@@ -21,60 +27,61 @@ export interface Trabajador {
   styleUrl: './trabajadores.component.css',
   encapsulation: ViewEncapsulation.None
 })
-export class TrabajadoresComponent implements OnInit {
+export class TrabajadoresComponent implements OnInit, OnDestroy {
 
   trabajadores: Trabajador[] = [];
   searchTerm = '';
   selectedTrabajador: Trabajador | null = null;
-  isDragging = false;
+  private refreshSub: Subscription | null = null;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private api: ApiService,
+    private env: EnvService,
+    private refreshService: TrabajadoresRefreshService
+  ) {}
 
   ngOnInit(): void {
+    this.cargarTrabajadores();
+
+    // Recarga cuando `trabajadornew` confirma un guardado.
+    this.refreshSub = this.refreshService.cambios$.subscribe(() => {
+      this.cargarTrabajadores();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.refreshSub?.unsubscribe();
+  }
+
+  cargarTrabajadores(): void {
     this.fetchTrabajadores().then(trabajadores => {
       this.trabajadores = trabajadores;
     });
   }
 
+  private mapTrabajador(raw: any): Trabajador {
+    return {
+      id: raw.IDTRABAJADOR ?? raw.idTrabajador,
+      usuario: raw.NOMBREUSUARIO ?? raw.nombreUsuario ?? '',
+      nombre: raw.NOMBRECOMPLETO ?? raw.nombreCompleto ?? '',
+      telefono: raw.TELEFONO ?? raw.telefono ?? '',
+      correo: raw.CORREO ?? raw.correo ?? '',
+      observaciones: raw.OBSERVACIONES ?? raw.observaciones ?? '',
+      totalObras: Number(raw.TOTALOBRAS ?? raw.totalObras ?? 0),
+      obrasAsignadas: [],
+      documentoImssUrl: raw.RUTADOCUMENTOIMSS ?? raw.rutaDocumentoImss ?? '',
+    };
+  }
+
   private async fetchTrabajadores(): Promise<Trabajador[]> {
-    return [
-      { 
-        id: 1, 
-        usuario: 'ing_beltran',
-        nombre: 'Ing. Beltrán', 
-        telefono: '331-402-8871',
-        correo: 'beltran@herreriautrilla.com',
-        obrasAsignadas: ['Barandales Terraza Norte', 'Reja Enrollable Local'],
-        documentoImssUrl: 'assets/docs/imss_beltran.pdf' 
-      },
-      { 
-        id: 2, 
-        usuario: 'jlopez',
-        nombre: 'J. López', 
-        telefono: '331-556-2290',
-        correo: 'jlopez@herreriautrilla.com',
-        obrasAsignadas: ['Protecciones Ventana Mod. P12', 'Fuga en Bisagra Portón'],
-        documentoImssUrl: 'assets/docs/imss_jlopez.pdf'
-      },
-      { 
-        id: 3, 
-        usuario: 'medina_s',
-        nombre: 'Medina S.', 
-        telefono: '333-118-7742',
-        correo: 'medina@herreriautrilla.com',
-        obrasAsignadas: ['Estructura Domo Patio'],
-        documentoImssUrl: ''
-      },
-      { 
-        id: 4, 
-        usuario: 'nbarcenas',
-        nombre: 'N. Bárcenas', 
-        telefono: '331-987-0034',
-        correo: 'barcenas@herreriautrilla.com',
-        obrasAsignadas: ['Portón Automatizado Principal', 'Reja Perimetral Sección A'],
-        documentoImssUrl: ''
-      }
-    ];
+    const rows: unknown[] = await firstValueFrom(this.api.get<any[]>('/Trabajadores'));
+    return (rows || []).map(row => this.mapTrabajador(row));
+  }
+
+  private async fetchObrasAsignadas(id: number): Promise<string[]> {
+    const rows: any[] = await firstValueFrom(this.api.get<any[]>('/Trabajadores/' + id + '/obras'));
+    return (rows || []).map(row => row.NOMBREOBRA ?? row.nombreObra ?? 'Obra sin nombre');
   }
 
   get trabajadoresFiltrados(): Trabajador[] {
@@ -88,80 +95,59 @@ export class TrabajadoresComponent implements OnInit {
     );
   }
 
-  obrasLabel(obras: string[]): string {
-    if (!obras || obras.length === 0) return 'Sin obra asignada';
-    return `${obras.length} ${obras.length === 1 ? 'obra asignada' : 'obras asignadas'}`;
+  obrasLabel(totalObras: number): string {
+    if (!totalObras || totalObras === 0) return 'Sin obras asignadas';
+    return `${totalObras} ${totalObras === 1 ? 'obra asignada' : 'obras asignadas'}`;
   }
 
-  verTrabajador(trabajador: Trabajador): void {
+  async verTrabajador(trabajador: Trabajador): Promise<void> {
     this.selectedTrabajador = trabajador;
+    try {
+      trabajador.obrasAsignadas = await this.fetchObrasAsignadas(trabajador.id);
+    } catch {
+      trabajador.obrasAsignadas = [];
+    }
   }
 
   cerrarDetalle(): void {
     this.selectedTrabajador = null;
-    this.isDragging = false;
   }
 
   abrirDocumentoImss(url?: string): void {
-    if (url) {
+    if (!url) return;
+
+    // Si ya es URL absoluta o blob, se abre tal cual.
+    if (/^(blob:|https?:|data:)/i.test(url)) {
       window.open(url, '_blank');
+      return;
     }
+
+    const base = (this.env.getBaseUrl() || '').replace(/\/+$/, '');
+    window.open(base + '/' + url.replace(/^\/+/, ''), '_blank');
   }
 
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = true;
-  }
+  async eliminarTrabajador(trabajador: Trabajador): Promise<void> {
+    const confirmado = confirm(`¿Eliminar a "${trabajador.nombre}"? Esta acción no se puede deshacer.`);
+    if (!confirmado) return;
 
-  onDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = false;
-  }
-
-  onDrop(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = false;
-
-    if (event.dataTransfer && event.dataTransfer.files.length > 0) {
-      const file = event.dataTransfer.files[0];
-      this.procesarArchivo(file);
-    }
-  }
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const file = input.files[0];
-      this.procesarArchivo(file);
-    }
-  }
-
-  private procesarArchivo(file: File): void {
-    if (this.selectedTrabajador) {
-      const tempUrl = URL.createObjectURL(file);
-      this.selectedTrabajador.documentoImssUrl = tempUrl;
-      alert(`Documento "${file.name}" vinculado a ${this.selectedTrabajador.nombre}.`);
+    try {
+      await firstValueFrom(this.api.delete('/Trabajadores/' + trabajador.id));
+      this.trabajadores = this.trabajadores.filter(t => t.id !== trabajador.id);
+      if (this.selectedTrabajador?.id === trabajador.id) {
+        this.selectedTrabajador = null;
+      }
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
     }
   }
 
   actualizarDatos(trabajador: Trabajador): void {
-    alert(`Aquí se abriría el formulario para actualizar los datos de "${trabajador.nombre}".`);
-  }
-
-  eliminarTrabajador(trabajador: Trabajador): void {
-    const confirmado = confirm(`¿Eliminar a "${trabajador.nombre}"? Esta acción no se puede deshacer.`);
-    if (!confirmado) return;
-
-    this.trabajadores = this.trabajadores.filter(t => t.id !== trabajador.id);
-    if (this.selectedTrabajador?.id === trabajador.id) {
-      this.selectedTrabajador = null;
-    }
+    this.router.navigate(['/admin/trabajadores/nuevo'], {
+      queryParams: { id: trabajador.id }
+    });
   }
 
   nuevoTrabajador(): void {
-    alert('Aquí se abriría el formulario de "Nuevo Trabajador".');
+    this.router.navigate(['/admin/trabajadores/nuevo']);
   }
 }

@@ -171,6 +171,28 @@ tr:last-child td {
   color: #64748b;
 }
 
+/* Insignia numérica para el total de obras asignadas */
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background-color: rgba(37, 99, 235, 0.15);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.count-badge.count-empty {
+  background-color: rgba(100, 116, 139, 0.15);
+  border-color: #1e293b;
+  color: #64748b;
+}
+
 .col-acciones {
   text-align: right;
   white-space: nowrap;

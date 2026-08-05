@@ -47,10 +47,10 @@
             <!-- 3. TELÉFONO -->
             <td class="muted">{{ t.telefono }}</td>
 
-            <!-- 4. OBRAS ASIGNADAS (Corregido sin ?.) -->
+            <!-- 4. OBRAS ASIGNADAS (texto dinámico según la cantidad) -->
             <td>
-              <span class="tag" [ngClass]="t.obrasAsignadas.length ? 'tag-obras' : 'tag-obras-empty'">
-                {{ obrasLabel(t.obrasAsignadas) }}
+              <span class="tag" [ngClass]="t.totalObras > 0 ? 'tag-obras' : 'tag-obras-empty'">
+                {{ obrasLabel(t.totalObras) }}
               </span>
             </td>
 
@@ -125,6 +125,11 @@
           <label>Correo Electrónico</label>
           <div class="field-value">{{ selectedTrabajador.correo || 'No registrado' }}</div>
         </div>
+
+        <div class="field-label-group span-2">
+          <label>Observaciones</label>
+          <div class="field-value">{{ selectedTrabajador.observaciones || 'Sin observaciones' }}</div>
+        </div>
       </div>
 
       <!-- Obra(s) Asignada(s) -->
@@ -143,41 +148,23 @@
         </div>
       </div>
 
-      <!-- Área Drag & Drop IMSS -->
+      <!-- Documento de Afiliación IMSS (solo visualización / apertura) -->
       <div class="field-label-group mt-3">
         <label>Documento de Afiliación IMSS</label>
-        
-        <div 
-          class="drag-drop-zone"
-          [class.drag-over]="isDragging"
-          (dragover)="onDragOver($event)"
-          (dragleave)="onDragLeave($event)"
-          (drop)="onDrop($event)">
-          
-          <input 
-            type="file" 
-            #fileInput 
-            accept="image/*,.pdf" 
-            style="display: none" 
-            (change)="onFileSelected($event)" />
 
-          <div class="upload-content">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <p>Arrastra y suelta tu archivo (PDF o Imagen) aquí, o</p>
-            <button type="button" class="btn-upload" (click)="fileInput.click()">
-              Subir documento
-            </button>
-          </div>
-        </div>
-
-        <div *ngIf="selectedTrabajador.documentoImssUrl" class="document-preview-bar">
+        <div *ngIf="selectedTrabajador.documentoImssUrl && selectedTrabajador.documentoImssUrl.indexOf('blob:') !== 0; else sinDocumento" class="document-preview-bar">
           <span class="doc-name">
             📄 Documento_IMSS_{{ selectedTrabajador.usuario }}
           </span>
           <button type="button" class="btn-link" (click)="abrirDocumentoImss(selectedTrabajador.documentoImssUrl)">
-            Ver archivo
+            Ver documento
           </button>
         </div>
+        <ng-template #sinDocumento>
+          <div class="obras-container">
+            <p class="sin-obras">Este trabajador no tiene documento IMSS vinculado.</p>
+          </div>
+        </ng-template>
       </div>
     </div>
 

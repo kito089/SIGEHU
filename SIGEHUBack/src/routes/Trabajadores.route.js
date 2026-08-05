@@ -7,6 +7,7 @@ const router = Router();
 router.get('/', ctrl.findTrabajadores);
 router.get('/TiposUsuarios', ctrl.findTiposUsuarios)
 router.get('/check-username', ctrl.checkUsername)
+router.get('/:id/obras', ctrl.findObras)
 router.get('/:id', ctrl.findById);
 
 router.post('/', ctrl.create);

@@ -27,7 +27,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       } else if (error.status === 400) {
         toast.error(error.error?.error || 'Datos inválidos');
       } else if (error.status >= 500) {
-        toast.error('Error del servidor, intente más tarde');
+        toast.error(error.error?.error || 'Error del servidor, intente más tarde');
         console.error('[500]', error);
       }
       return throwError(() => error);

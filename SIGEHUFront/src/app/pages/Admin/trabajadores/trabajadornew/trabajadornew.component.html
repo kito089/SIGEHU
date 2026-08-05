@@ -8,16 +8,33 @@
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
-      <div class="field">
-        <label for="nombre">Nombre Completo</label>
-        <input
-          id="nombre"
-          type="text"
-          formControlName="nombre"
-          placeholder="Ej. Juan López">
-        <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
-          Ingresa el nombre del trabajador
-        </span>
+      <div class="field-row">
+        <div class="field">
+          <label for="usuario">Usuario</label>
+          <input
+            id="usuario"
+            type="text"
+            formControlName="usuario"
+            autocomplete="off"
+            placeholder="usuario.sigehu"
+            pattern="[a-zA-Z0-9._-]{3,}"
+            title="Solo letras, números, puntos, guiones y guión bajo (mín. 3)">
+          <span class="field-error" *ngIf="form.get('usuario')?.touched && form.get('usuario')?.invalid">
+            Usuario requerido (mín. 3 caracteres)
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="nombre">Nombre Completo</label>
+          <input
+            id="nombre"
+            type="text"
+            formControlName="nombre"
+            placeholder="Ej. Juan López">
+          <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+            Ingresa el nombre del trabajador
+          </span>
+        </div>
       </div>
 
       <div class="field">
@@ -38,9 +55,11 @@
             id="telefono"
             type="tel"
             formControlName="telefono"
-            placeholder="10 dígitos">
+            inputmode="tel"
+            placeholder="+52 449 000 00 00"
+            (input)="onTelefonoInput($event)">
           <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-            Ingresa un teléfono válido a 10 dígitos
+            Teléfono inválido: solo "+", números y espacios
           </span>
         </div>
 
@@ -64,6 +83,55 @@
           rows="3"
           formControlName="observaciones"
           placeholder="Disponibilidad, habilidades específicas, notas internas, etc."></textarea>
+      </div>
+
+      <!-- Documento IMSS: botón "Subir documento" + zona de arrastrar y soltar -->
+      <div class="field">
+        <label>Documento de Afiliación IMSS (opcional)</label>
+
+        <!-- Zona de subida: oculta si hay documento seleccionado O existe uno en edición -->
+        <div
+          *ngIf="!documentoSeleccionado && !documentoExistenteVisible"
+          class="drag-drop-zone"
+          [class.drag-over]="isDragging"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)">
+          <input
+            type="file"
+            #fileInput
+            accept="image/*,.pdf"
+            style="display: none"
+            (change)="onFileSelected($event)" />
+
+          <div class="upload-content">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Arrastra y suelta tu archivo (PDF o Imagen) aquí, o</p>
+            <button type="button" class="btn-upload" (click)="fileInput.click()">
+              Subir documento
+            </button>
+          </div>
+        </div>
+
+        <!-- Tag del documento recién seleccionado -->
+        <div *ngIf="documentoSeleccionado" class="doc-tag">
+          <button type="button" class="doc-tag-preview" (click)="previsualizarDocumento()" title="Previsualizar documento">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="doc-name">{{ documentoSeleccionado.name }}</span>
+            <span class="doc-size">{{ formatearTamano(documentoSeleccionado.size) }}</span>
+          </button>
+          <button type="button" class="doc-tag-quitar" (click)="quitarDocumento()">Quitar</button>
+        </div>
+
+        <!-- Tag del documento existente (edición) -->
+        <div *ngIf="documentoExistenteVisible && !documentoSeleccionado" class="doc-tag">
+          <button type="button" class="doc-tag-preview" (click)="previsualizarDocumento()" title="Ver documento IMSS">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="doc-name">{{ nombreArchivoExistente() }}</span>
+            <span class="doc-size">Documento vinculado</span>
+          </button>
+          <button type="button" class="doc-tag-quitar" (click)="quitarDocumento()">Quitar</button>
+        </div>
       </div>
 
       <p class="hint">

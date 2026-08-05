@@ -36,11 +36,16 @@ const getTiposUsuarios = async () => {
 };
 
 // ─── GET todos los trabajadores ───────────────────────────────────────────────
+// Trae Correo/Observaciones (campos opcionales) y el conteo de obras asignadas.
 const getTrabajadores = async () => {
     const db = await getConnection();
 
     const result = await db.query(
-        "SELECT * FROM Trabajadores WHERE Activo = TRUE",
+        `SELECT idTrabajador, NombreUsuario, NombreCompleto, Telefono, RutaDocumentoIMSS,
+                TiposUsuarios_idTipoUsuario, Activo, Correo, Observaciones, TotalObras
+         FROM VW_TRABAJADORES_CON_COUNT_OBRAS
+         WHERE Activo = TRUE
+         ORDER BY NombreCompleto`,
         []
     );
 
@@ -52,7 +57,10 @@ const getTrabajadorById = async (id) => {
     const db = await getConnection();
 
     const result = await db.query(
-        "SELECT * FROM Trabajadores WHERE idTrabajador = ? AND Activo = TRUE",
+        `SELECT idTrabajador, NombreUsuario, NombreCompleto, Telefono, RutaDocumentoIMSS,
+                TiposUsuarios_idTipoUsuario, Activo, Correo, Observaciones, TotalObras
+         FROM VW_TRABAJADORES_CON_COUNT_OBRAS
+         WHERE idTrabajador = ? AND Activo = TRUE`,
         [id]
     );
 
@@ -93,6 +101,21 @@ const checkUsername = async (usuario, idExcluir = null) => {
     return (result || []).length > 0;
 };
 
+// ─── GET obras asignadas a un trabajador ─────────────────────────────────────
+const getObrasByTrabajador = async (idTrabajador) => {
+    const db = await getConnection();
+
+    return await db.query(
+        `SELECT o.idObra, o.Nombre AS NombreObra, o.Direccion, e.Nombre AS EstadoObra
+         FROM Obras_has_Trabajadores oht
+         JOIN Obras o ON o.idObra = oht.Obras_idObra AND o.Activo = TRUE
+         LEFT JOIN EstadosObra e ON e.idEstadoObra = oht.EstadosObra_idEstadoObra
+         WHERE oht.Trabajadores_idTrabajador = ?
+         ORDER BY o.Nombre`,
+        [idTrabajador]
+    );
+};
+
 // ─── UPDATE ruta documento IMSS ───────────────────────────────────────────────
 const updateRutaImss = async (id, rutaImss, idTrabajadorCtx = 1) => {
     const db = await getConnection();
@@ -128,23 +151,24 @@ const updateRutaImss = async (id, rutaImss, idTrabajadorCtx = 1) => {
 };
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
-const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo, RutaDocumentoIMSS, idTrabajadorCtx = 1 }) => {
+const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo, Correo, Observaciones, RutaDocumentoIMSS, idTrabajadorCtx = 1 }) => {
     const db = await getConnection();
 
     const txInsert = await db.transaction();
 
     let nuevoId;
-    console.log("Datos recibidos 2: ",{ Usuario, Contra, Nombre, Telefono, Tipo });
     try {
+        // Observaciones es BLOB SUB_TYPE TEXT: el driver exige Buffer, no string.
+        const obsBuffer = Observaciones != null ? Buffer.from(String(Observaciones), "utf8") : null;
+
         await txInsert.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             [String(idTrabajadorCtx)]
         );
         const rows = await txInsert.query(
-            `SELECT * FROM SP_INSERTAR_TRABAJADOR (?, ?, ?, ?, ?)`,
-            [Usuario, Contra, Nombre, Telefono ?? null, Tipo]
+            `SELECT * FROM SP_INSERTAR_TRABAJADOR (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [Usuario, Contra, Nombre, Telefono ?? null, Tipo, RutaDocumentoIMSS ?? null, Correo ?? null, obsBuffer]
         );
-        console.log("nuevoId: ", rows)
         nuevoId = rows[0].OIDTRABAJADOR; // nombre en mayúsculas, Firebird normaliza
         await txInsert.commit();
         
@@ -157,7 +181,7 @@ const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo, RutaD
 };
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
-const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, RutaDocumentoIMSS, deleteImss = false, idTrabajadorCtx = 1 }) => {
+const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, Correo, Observaciones, RutaDocumentoIMSS, deleteImss = false, idTrabajadorCtx = 1 }) => {
     const db = await getConnection();
 
     // ── 1. Leer el registro actual ANTES de modificar ───────────────────────
@@ -166,7 +190,7 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, R
 
     try {
         const rows = await txRead.query(
-            `SELECT NombreUsuario, NombreCompleto, Telefono, TiposUsuarios_idTipoUsuario, RutaDocumentoIMSS
+            `SELECT NombreUsuario, NombreCompleto, Telefono, TiposUsuarios_idTipoUsuario, RutaDocumentoIMSS, Correo, Observaciones
              FROM Trabajadores WHERE IdTrabajador = ?`,
             [id]
         );
@@ -187,6 +211,9 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, R
     const txUpdate = await db.transaction();
 
     try {
+        // Observaciones es BLOB SUB_TYPE TEXT: el driver exige Buffer, no string.
+        const obsBuffer = Observaciones != null ? Buffer.from(String(Observaciones), "utf8") : null;
+
         await txUpdate.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             [String(idTrabajadorCtx)]
@@ -198,9 +225,11 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, R
                  NombreCompleto = ?,
                  Telefono = ?,
                  RutaDocumentoIMSS = COALESCE(?, RutaDocumentoIMSS),
-                 TiposUsuarios_idTipoUsuario = ?
+                 TiposUsuarios_idTipoUsuario = ?,
+                 Correo = ?,
+                 Observaciones = ?
              WHERE IdTrabajador  = ?`,
-            [Usuario, Contra ?? null, Nombre, Telefono ?? null, RutaDocumentoIMSS ?? null, Tipo, id]
+            [Usuario, Contra ?? null, Nombre, Telefono ?? null, RutaDocumentoIMSS ?? null, Tipo, Correo ?? null, obsBuffer, id]
         );
 
         if (deleteImss) {
@@ -247,6 +276,8 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, R
         { campo: 'NombreCompleto', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre },
         { campo: 'Telefono', anterior: anterior.TELEFONO, nuevo: Telefono ?? null },
         { campo: 'Tipo', anterior: anterior.TIPOSUSUARIOS_IDTIPOUSUARIO, nuevo: Tipo },
+        { campo: 'Correo', anterior: anterior.CORREO, nuevo: Correo ?? null },
+        { campo: 'Observaciones', anterior: anterior.OBSERVACIONES, nuevo: Observaciones ?? null },
     ];
 
     const cambios = comparacion.filter(
@@ -335,6 +366,7 @@ export default {
     getTrabajadores,
     getTrabajadorById,
     getTrabajadorByUsuario,
+    getObrasByTrabajador,
     checkUsername,
     updateRutaImss,
     createTrabajador,
