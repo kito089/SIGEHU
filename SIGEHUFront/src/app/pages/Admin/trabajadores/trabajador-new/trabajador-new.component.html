@@ -1,11 +1,14 @@
 <div class="page">
-  <div class="form-card">
-
-    <div class="form-header">
-      <h1>{{ esEdicion ? 'Actualizar Datos del Trabajador' : 'Nuevo Trabajador' }}</h1>
-      <p>Registra la información de contacto y oficio del personal operativo</p>
-    </div>
-
+  <app-entity-form
+    [title]="esEdicion ? 'Actualizar Datos del Trabajador' : 'Nuevo Trabajador'"
+    subtitle="Registra la información de contacto y oficio del personal operativo"
+    badgeText="Trabajador"
+    [loading]="loading"
+    [submitting]="guardando"
+    [submitLabel]="esEdicion ? 'Guardar Cambios' : 'Guardar Trabajador'"
+    (submitRequested)="onSubmit()"
+    (cancelRequested)="cancelar()"
+  >
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
       <div class="field-row">
@@ -138,15 +141,6 @@
         La asignación de obras a este trabajador se hace desde el tablero o desde la pantalla de asignación, no desde este formulario.
       </p>
 
-      <div class="form-actions">
-        <button type="button" class="btn-secondary" (click)="cancelar()">Cancelar</button>
-        <button type="submit" class="btn-primary" [disabled]="guardando">
-          <span *ngIf="!guardando">{{ esEdicion ? 'Guardar Cambios' : 'Guardar Trabajador' }}</span>
-          <span *ngIf="guardando">Guardando…</span>
-        </button>
-      </div>
-
-    </form>
-
-  </div>
+      </form>
+  </app-entity-form>
 </div>

@@ -1,0 +1,42 @@
+<section class="entity-form">
+
+  <div class="entity-form__header">
+    <div>
+      <div class="entity-form__badge" *ngIf="badgeText">{{ badgeText }}</div>
+      <h1>{{ title }}</h1>
+      <p *ngIf="subtitle">{{ subtitle }}</p>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="entity-form__loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Cargando información…</p>
+    </div>
+  } @else {
+    <div class="entity-form__body">
+      <ng-content></ng-content>
+    </div>
+
+    <div class="entity-form__footer">
+      <app-button
+        variant="secondary"
+        [disabled]="submitting"
+        (buttonClick)="onCancel()"
+      >
+        {{ cancelLabel }}
+      </app-button>
+
+      <app-button
+        type="submit"
+        variant="primary"
+        [loading]="submitting"
+        [disabled]="submitting"
+        (buttonClick)="submitRequested.emit()"
+      >
+        {{ submitLabel }}
+      </app-button>
+    </div>
+  }
+
+</section>

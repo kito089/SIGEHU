@@ -1,0 +1,25 @@
+<div class="modal__backdrop" (click)="onBackdropClick($event)">
+  <div class="modal__panel" appFocusTrap role="dialog" aria-modal="true" [attr.aria-labelledby]="'modal-title'">
+    <div class="modal__header">
+      <ion-icon
+        [name]="variant === 'danger' ? 'warning' : 'help-circle-outline'"
+        [class.modal__icon--danger]="variant === 'danger'"
+        class="modal__icon"
+      ></ion-icon>
+      <h2 id="modal-title" class="modal__title">{{ title }}</h2>
+    </div>
+    <p class="modal__message">{{ message }}</p>
+    <div class="modal__actions">
+      <app-button
+        variant="secondary"
+        [disabled]="loading"
+        (buttonClick)="cancelled.emit()"
+      >{{ cancelLabel }}</app-button>
+      <app-button
+        [variant]="variant === 'danger' ? 'danger' : 'primary'"
+        [loading]="loading"
+        (buttonClick)="confirmed.emit()"
+      >{{ confirmLabel }}</app-button>
+    </div>
+  </div>
+</div>

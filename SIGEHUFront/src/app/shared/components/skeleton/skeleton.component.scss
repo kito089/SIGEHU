@@ -1,0 +1,86 @@
+.sk__pulse {
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  border-radius: var(--radius-md);
+  height: 16px;
+}
+
+.sk__circle { border-radius: var(--radius-full); }
+
+.sk__avatar { width: 48px; height: 48px; }
+
+.sk__h-line { height: 14px; }
+.sk__h-sm { height: 10px; }
+.sk__h-xs { height: 8px; }
+.sk__h-lg { height: 28px; }
+
+.sk__w-full { width: 100%; }
+.sk__w-80 { width: 80%; }
+.sk__w-60 { width: 60%; }
+.sk__w-50 { width: 50%; }
+.sk__w-40 { width: 40%; }
+.sk__w-30 { width: 30%; }
+.sk__w-20 { width: 20%; }
+
+.sk__w-line { width: 100%; }
+
+.sk__table-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: 12px var(--spacing-md);
+  align-items: center;
+}
+
+.sk__cell {
+  flex: 1;
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  height: 14px;
+  border-radius: var(--radius-md);
+}
+
+.sk__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.sk__card-header { display: flex; gap: var(--spacing-sm); flex-direction: column; }
+.sk__card-body { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.sk__card-footer { margin-top: var(--spacing-sm); }
+
+.sk__kanban {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+}
+
+.sk__metric {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.sk__detail {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+}
+
+.sk__detail-avatar { width: 40px; height: 40px; flex-shrink: 0; }
+
+.sk__detail-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

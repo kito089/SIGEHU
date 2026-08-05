@@ -14,52 +14,29 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
       <div class="field">
-        <label for="usuario">Usuario</label>
-        <div class="input-wrap" [class.invalid]="usuarioCtrl?.touched && usuarioCtrl?.invalid">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          <input
-            id="usuario"
-            type="text"
-            formControlName="usuario"
-            placeholder="Ej. carlos.utrilla"
-            autocomplete="username"
-            autocapitalize="none">
-        </div>
-        <span class="field-error" *ngIf="usuarioCtrl?.touched && usuarioCtrl?.invalid">
-          Ingresa tu usuario
-        </span>
+        <app-input
+          class="login-field"
+          label="Usuario"
+          placeholder="Ej. carlos.utrilla"
+          formControlName="usuario"
+          [errorMessage]="usuarioCtrl?.touched && usuarioCtrl?.invalid ? 'Ingresa tu usuario' : ''"
+          autocomplete="username"
+          icon="person-outline"
+        ></app-input>
       </div>
 
       <div class="field">
-        <label for="contrasena">Contraseña</label>
-        <div class="input-wrap" [class.invalid]="contrasenaCtrl?.touched && contrasenaCtrl?.invalid">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-          </svg>
-          <input
-            id="contrasena"
-            [type]="showPassword ? 'text' : 'password'"
-            formControlName="contrasena"
-            placeholder="••••••••"
-            autocomplete="current-password">
-          <button
-            type="button"
-            class="toggle-visibility"
-            (click)="togglePassword()"
-            [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">
-            <svg *ngIf="!showPassword" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>
-            </svg>
-            <svg *ngIf="showPassword" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/>
-            </svg>
-          </button>
-        </div>
-        <span class="field-error" *ngIf="contrasenaCtrl?.touched && contrasenaCtrl?.invalid">
-          Ingresa tu contraseña
-        </span>
+        <app-input
+          class="login-field"
+          label="Contraseña"
+          placeholder="••••••••"
+          type="password"
+          formControlName="contrasena"
+          [errorMessage]="contrasenaCtrl?.touched && contrasenaCtrl?.invalid ? 'Ingresa tu contraseña' : ''"
+          autocomplete="current-password"
+          icon="lock-closed-outline"
+          [togglable]="true"
+        ></app-input>
       </div>
 
       <div class="row-between">
@@ -72,18 +49,24 @@
         </button>
       </div>
 
-      <div class="forgot-message" *ngIf="showForgotMessage">
+      <div class="forgot-message" *ngIf="showForgotMessage()">
         Comunícate con el administrador para cambiar tu contraseña.
       </div>
 
-      <div class="error-message" *ngIf="errorMessage">
-        {{ errorMessage }}
+      <div class="error-message" *ngIf="errorMessage()">
+        {{ errorMessage() }}
       </div>
 
-      <button type="submit" class="submit-btn" [disabled]="loading">
-        <span *ngIf="!loading">Ingresar al Sistema</span>
-        <span *ngIf="loading">Verificando…</span>
-      </button>
+      <app-button
+        class="submit-btn"
+        type="submit"
+        variant="primary"
+        [disabled]="loading()"
+        [fullWidth]="true"
+      >
+        <span *ngIf="!loading()">Ingresar al Sistema</span>
+        <span *ngIf="loading()">Verificando…</span>
+      </app-button>
 
     </form>
 

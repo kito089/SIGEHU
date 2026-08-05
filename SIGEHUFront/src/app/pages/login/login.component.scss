@@ -1,0 +1,280 @@
+:host {
+  // -----------------------------------------------------------------------------
+  // Paleta del diseño anexo (Login) - mapeada a las variables low-level que
+  // consumen los componentes reutilizables app-input / app-button
+  // -----------------------------------------------------------------------------
+  --login-bg: #0a0e1a;
+  --login-panel: #141c30;
+  --login-panel-border: #232d47;
+  --login-field-bg: #1a2338;
+  --login-field-border: #2a3552;
+  --login-accent: #2f8fef;
+  --login-accent-soft: rgba(47, 143, 239, 0.12);
+  --login-text-primary: #eef1f7;
+  --login-text-secondary: #8992a8;
+  --login-text-tertiary: #5c6580;
+  --login-danger: #f4574f;
+  --login-danger-soft: rgba(244, 87, 79, 0.12);
+  --login-info-soft: rgba(47, 143, 239, 0.10);
+
+  // Tokens consumidos por app-input / app-button
+  --bg: var(--login-bg);
+  --panel: var(--login-panel);
+  --bg-input: var(--login-field-bg);
+  --border-input: var(--login-field-border);
+  --border-focus: var(--login-accent);
+  --border-subtle: var(--login-panel-border);
+  --accent-blue: var(--login-accent);
+  --accent-blue-hover: #4aa3f5;
+  --accent: var(--login-accent);
+  --error: var(--login-danger);
+  --error-text: var(--login-danger);
+  --text-primary: var(--login-text-primary);
+  --text-secondary: var(--login-text-secondary);
+  --text-muted: var(--login-text-tertiary);
+  --bg-hover: var(--login-accent-soft);
+  --focus-ring: 0 0 0 1px var(--login-accent);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-size-base: 13.5px;
+  --font-size-sm: 12px;
+  --font-size-xs: 11.5px;
+  --transition-fast: 0.15s ease;
+  --spacing-sm: 8px;
+
+  display: block;
+  min-height: 100vh;
+  background: var(--login-bg);
+  font-family: var(--font-family);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--login-panel);
+  border: 1px solid var(--login-panel-border);
+  border-radius: 14px;
+  padding: 30px 28px 24px;
+}
+
+/* ---------- Brand ---------- */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--login-accent-soft);
+  border: 1.5px solid var(--login-accent);
+  color: var(--login-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.brand h1 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--login-text-primary);
+}
+
+.brand p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--login-text-secondary);
+}
+
+/* ---------- Form fields ---------- */
+.field {
+  margin-bottom: 16px;
+}
+
+/* ---------- Row: recordar / olvidaste ---------- */
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--login-text-secondary);
+  cursor: pointer;
+}
+
+.checkbox input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--login-accent);
+  cursor: pointer;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--login-accent);
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Mensajes ---------- */
+.forgot-message {
+  background: var(--login-info-soft);
+  border: 1px solid var(--login-accent);
+  color: var(--login-accent);
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.error-message {
+  background: var(--login-danger-soft);
+  border: 1px solid var(--login-danger);
+  color: var(--login-danger);
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+/* ---------- Submit ---------- */
+.submit-btn {
+  display: block;
+  width: 100%;
+}
+
+/* ---------- Footer ---------- */
+.footer-note {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--login-panel-border);
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--login-text-tertiary);
+}
+
+/* =============================================================================
+   Overrides ::ng-deep scoped al login para igualar el diseño anexo
+   (detalles internos de app-input / app-button que no se controlan por token)
+   ============================================================================= */
+
+/* Ajustar label: gap del diseño (label 12px/600 + 6px de separación) */
+.field app-input ::ng-deep .input__label {
+  margin-bottom: 6px;
+  color: var(--login-text-secondary);
+}
+
+/* Campo: padding y placeholder del diseño anexo */
+.field app-input ::ng-deep .input__field {
+  padding: 10px 12px;
+}
+
+.field app-input ::ng-deep .input__field--with-icon {
+  padding-left: 36px;
+}
+
+.field app-input ::ng-deep .input__field--with-toggle {
+  padding-right: 40px;
+}
+
+.field app-input ::ng-deep .input__field::placeholder {
+  color: var(--login-text-tertiary);
+}
+
+/* Icono izquierdo: 15px y color terciario */
+.field app-input ::ng-deep .input__icon {
+  left: 12px;
+  font-size: 15px;
+  color: var(--login-text-tertiary);
+}
+
+/* Botón toggle de contraseña: color de hover del diseño */
+.field app-input ::ng-deep .input__toggle {
+  color: var(--login-text-tertiary);
+}
+
+.field app-input ::ng-deep .input__toggle:hover {
+  color: var(--login-text-secondary);
+  background: var(--login-accent-soft);
+}
+
+.field app-input ::ng-deep .input__toggle ion-icon {
+  color: var(--login-text-tertiary);
+}
+
+/* Error de campo: solo texto (sin icono) como en el diseño anexo */
+.field app-input ::ng-deep .input__error {
+  margin-top: 6px;
+  color: var(--login-danger);
+}
+
+.field app-input ::ng-deep .input__error ion-icon {
+  display: none;
+}
+
+/* Botón submit: fondo accent, texto oscuro, hover con brightness */
+.submit-btn ::ng-deep .btn--primary {
+  background-color: var(--login-accent);
+  border-color: var(--login-accent);
+  color: #071022;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.submit-btn ::ng-deep .btn--primary:hover:not(:disabled) {
+  background-color: var(--login-accent);
+  border-color: var(--login-accent);
+  filter: brightness(1.08);
+}
+
+.submit-btn ::ng-deep .btn--primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+@media (max-width: 420px) {
+  .login-card {
+    padding: 26px 20px 20px;
+  }
+}

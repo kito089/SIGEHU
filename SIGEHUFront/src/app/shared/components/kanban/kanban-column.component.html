@@ -1,0 +1,42 @@
+<div class="kanban-column" [attr.data-estado]="column().id">
+  <header class="column-header">
+    <h3 class="column-title">
+      <span class="column-dot" [style.background-color]="column().color" aria-hidden="true"></span>
+      {{ column().title }}
+    </h3>
+    <div class="column-actions">
+      <span class="column-count">{{ column().cards.length }}</span>
+      <button class="column-add-btn" (click)="onAddCard()" type="button" aria-label="Añadir tarea">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="column-cards" role="list">
+    @if (column().cards.length === 0) {
+      <div class="empty-column" role="status">
+        Sin tareas
+      </div>
+    } @else {
+      @for (card of column().cards; track card.id) {
+        <app-kanban-card
+          [card]="card"
+          (click)="onCardClick(card)"
+          role="listitem"
+          tabindex="0"
+        ></app-kanban-card>
+      }
+    }
+  </div>
+
+  <button class="add-task-btn" (click)="onAddCard()" type="button">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    + Agregar tarea
+  </button>
+</div>

@@ -1,0 +1,44 @@
+<div class="omnibox" (keydown.escape)="cerrar()">
+  <div class="omnibox__box">
+    <ion-icon class="omnibox__icon" name="search-outline"></ion-icon>
+    <input
+      class="omnibox__input"
+      type="text"
+      [(ngModel)]="query"
+      (input)="onInput()"
+      (focus)="onFocus()"
+      placeholder="Buscar clientes, obras, proveedores…"
+      aria-label="Buscador global"
+    />
+    <kbd class="omnibox__kbd">/</kbd>
+  </div>
+
+  <div class="omnibox__panel" *ngIf="open && query.trim().length >= 2" (click)="cerrar()">
+    <div class="omnibox__inner" (click)="$event.stopPropagation()">
+      <div class="omnibox__loading" *ngIf="loading">
+        <span class="omnibox__skeleton omnibox__skeleton--line"></span>
+        <span class="omnibox__skeleton omnibox__skeleton--line omnibox__skeleton--short"></span>
+        <span class="omnibox__skeleton omnibox__skeleton--line"></span>
+      </div>
+
+      <div class="omnibox__group" *ngFor="let g of groups">
+        <div class="omnibox__group-title">
+          <ion-icon [name]="g.icon"></ion-icon>
+          {{ g.tipo }} ({{ g.items.length }})
+        </div>
+        <a
+          *ngFor="let r of g.items"
+          class="omnibox__result"
+          (click)="seleccionar(r)"
+        >
+          <span class="omnibox__result-title">{{ r.titulo }}</span>
+          <span class="omnibox__result-sub" *ngIf="r.subtitulo">{{ r.subtitulo }}</span>
+        </a>
+      </div>
+
+      <div class="omnibox__empty" *ngIf="!loading && groups.length === 0">
+        Sin resultados para «{{ query.trim() }}»
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,11 +1,12 @@
-import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { EnvService } from '../../../services/env.service';
 import { TrabajadoresRefreshService } from '../../../services/trabajadores-refresh.service';
+import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
+import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 
 export interface Trabajador {
   id: number;
@@ -22,29 +23,33 @@ export interface Trabajador {
 @Component({
   selector: 'app-trabajadores',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent],
   templateUrl: './trabajadores.component.html',
-  styleUrl: './trabajadores.component.css',
-  encapsulation: ViewEncapsulation.None
+  styleUrl: './trabajadores.component.scss',
 })
 export class TrabajadoresComponent implements OnInit, OnDestroy {
+  private router = inject(Router);
+  private api = inject(ApiService);
+  private env = inject(EnvService);
+  private refreshService = inject(TrabajadoresRefreshService);
+
 
   trabajadores: Trabajador[] = [];
   searchTerm = '';
   selectedTrabajador: Trabajador | null = null;
   private refreshSub: Subscription | null = null;
 
-  constructor(
-    private router: Router,
-    private api: ApiService,
-    private env: EnvService,
-    private refreshService: TrabajadoresRefreshService
-  ) {}
+  columns: DataTableColumn[] = [
+    { key: 'usuario', label: 'Usuario' },
+    { key: 'nombre', label: 'Trabajador' },
+    { key: 'telefono', label: 'Teléfono' },
+    { key: 'totalObras', label: 'Obra(s) asignada(s)' },
+  ];
 
   ngOnInit(): void {
     this.cargarTrabajadores();
 
-    // Recarga cuando `trabajadornew` confirma un guardado.
+    // Recarga cuando `trabajador-new` confirma un guardado.
     this.refreshSub = this.refreshService.cambios$.subscribe(() => {
       this.cargarTrabajadores();
     });
@@ -93,6 +98,10 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
       t.usuario.toLowerCase().includes(term) ||
       t.telefono.includes(term)
     );
+  }
+
+  onSearchChange(term: string): void {
+    this.searchTerm = term;
   }
 
   obrasLabel(totalObras: number): string {

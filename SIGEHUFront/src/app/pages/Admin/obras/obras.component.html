@@ -1,0 +1,74 @@
+<div class="page">
+
+  <section class="panel-frame">
+
+    <div class="panel-header">
+      <div>
+        <h1>Gestión de Obras / Proyectos</h1>
+        <p>Múltiples obras independientes por cliente, con ciclo de vida y doble validación de estado</p>
+      </div>
+      <button class="btn-primary" (click)="nuevoObra()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Nueva obra
+      </button>
+    </div>
+
+    <app-filter-bar
+      [searchTerm]="searchTerm"
+      [searchPlaceholder]="'Buscar por obra, cliente o dirección…'"
+      (searchTermChange)="onSearchChange($event)"
+    ></app-filter-bar>
+
+    <app-data-table
+      [columns]="columns"
+      [data]="obrasFiltradas"
+      [emptyMessage]="'No se encontraron obras con ese criterio.'"
+      rowKey="idObra"
+    >
+      <ng-template #cell let-row let-col="column">
+        @switch (col.key) {
+          @case ('nombre') {
+            <button class="td-nombre" (click)="verObra(row)">{{ row.nombre }}</button>
+            <div class="td-direccion">{{ row.direccion || 'Sin dirección' }}</div>
+          }
+          @case ('cliente') {
+            <span class="td-muted">{{ row.nombreCliente || '—' }}</span>
+          }
+          @case ('estado') {
+            <span class="estado-pill" [style.background-color]="estadoColor(row.estadoObra)">
+              <span class="estado-dot" [style.background-color]="estadoColor(row.estadoObra)"></span>
+              {{ row.estadoObra }}
+            </span>
+          }
+          @case ('fecha') {
+            <span class="td-muted">{{ row.fechaUltimaActualizacion }}</span>
+          }
+        }
+      </ng-template>
+
+      <ng-template #actions let-row>
+        <div class="acciones-group">
+          <button class="icon-btn" (click)="abrirCambioEstado(row)" aria-label="Cambiar estado" title="Transición de estado">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          </button>
+          <button class="icon-btn" (click)="verObra(row)" aria-label="Ver obra" title="Ver detalle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </ng-template>
+    </app-data-table>
+
+  </section>
+
+</div>
+
+<!-- Modal de confirmación para transición de estado (RF-08 / RNF-07) -->
+<app-confirm-modal
+  *ngIf="confirmarCambio && obraEstado"
+  variant="default"
+  title="Cambiar estado de obra"
+  [message]="mensajeConfirmacion()"
+  confirmLabel="Cambiar estado"
+  (confirmed)="ejecutarCambioEstado()"
+  (cancelled)="cerrarCambioEstado()"
+></app-confirm-modal>

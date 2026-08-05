@@ -1,0 +1,102 @@
+<div class="page">
+  <app-entity-form
+    [title]="esEdicion ? 'Editar Proveedor' : 'Nuevo Proveedor'"
+    subtitle="Registra la información de contacto y condiciones comerciales del proveedor"
+    badgeText="Proveedor"
+    [loading]="loading"
+    [submitting]="guardando"
+    submitLabel="Guardar Proveedor"
+    (submitRequested)="onSubmit()"
+    (cancelRequested)="cancelar()"
+  >
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <div class="field">
+        <label for="empresa">Nombre de la Empresa / Distribuidor</label>
+        <input
+          id="empresa"
+          type="text"
+          formControlName="empresa"
+          placeholder="Ej. Aceros Monterrey">
+        <span class="field-error" *ngIf="form.get('empresa')?.touched && form.get('empresa')?.invalid">
+          Ingresa el nombre de la empresa
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="giroPrincipal">Giro Principal</label>
+        <input
+          id="giroPrincipal"
+          type="text"
+          formControlName="giroPrincipal"
+          placeholder="Ej. Distribuidor de perfiles y lámina">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="contacto">Contacto de Compras</label>
+          <input
+            id="contacto"
+            type="text"
+            formControlName="contacto"
+            placeholder="Nombre de la persona de contacto">
+          <span class="field-error" *ngIf="form.get('contacto')?.touched && form.get('contacto')?.invalid">
+            Ingresa el nombre del contacto
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="telefono">Teléfono</label>
+          <input
+            id="telefono"
+            type="tel"
+            formControlName="telefono"
+            placeholder="10 dígitos">
+          <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
+            Ingresa un teléfono válido a 10 dígitos
+          </span>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="correo">Correo Electrónico</label>
+          <input
+            id="correo"
+            type="email"
+            formControlName="correo"
+            placeholder="ventas@proveedor.com">
+          <span class="field-error" *ngIf="form.get('correo')?.touched && form.get('correo')?.invalid">
+            Ingresa un correo válido
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="datoFinanciero">Datos Financieros</label>
+          <select id="datoFinanciero" formControlName="datoFinanciero">
+            <option *ngFor="let o of opcionesFinancieras" [value]="o.value">{{ o.label }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="direccion">Dirección</label>
+        <input
+          id="direccion"
+          type="text"
+          formControlName="direccion"
+          placeholder="Calle, número, colonia, ciudad">
+      </div>
+
+      <div class="field">
+        <label for="observaciones">Observaciones</label>
+        <textarea
+          id="observaciones"
+          rows="3"
+          formControlName="observaciones"
+          placeholder="Condiciones de entrega, pedido mínimo, notas internas, etc."></textarea>
+      </div>
+
+    </form>
+  </app-entity-form>
+</div>

@@ -1,0 +1,14 @@
+<nav class="dashboard-tabs" role="tablist" aria-label="Vistas del dashboard">
+  @for (tab of tabs; track tab.key) {
+    <button
+      role="tab"
+      [attr.aria-selected]="activeTab() === tab.key"
+      [class]="tabClass(tab.key)"
+      (click)="onTabClick(tab.key)"
+      class="tab-btn"
+    >
+      <span class="tab-icon" [innerHTML]="getSafeIconSvg(tab.icon)" aria-hidden="true"></span>
+      <span class="tab-label">{{ tab.label }}</span>
+    </button>
+  }
+</nav>

@@ -1,0 +1,51 @@
+.main-layout {
+  min-height: 100vh;
+  display: flex;
+  background: var(--sigehu-content-bg);
+  font-family: var(--sigehu-font-family);
+}
+
+.content-wrapper {
+  flex: 1;
+  margin-left: var(--sigehu-sidebar-width);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--sigehu-content-bg);
+}
+
+.main-content {
+  flex: 1;
+  padding: var(--sigehu-space-6) var(--sigehu-space-8);
+  min-height: calc(100vh - var(--sigehu-topbar-height));
+  overflow-y: auto;
+
+  // Container max-width para contenido centrado
+  > * {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .content-wrapper {
+    margin-left: 0;
+  }
+
+  .main-content {
+    padding: var(--sigehu-space-4) var(--sigehu-space-4);
+  }
+}
+
+/* Animación suave para router-outlet */
+.main-content :host-context(.main-content) {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

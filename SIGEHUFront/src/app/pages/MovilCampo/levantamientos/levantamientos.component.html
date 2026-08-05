@@ -1,46 +1,85 @@
-<div class="mobile-wrapper">
-  <header class="mobile-header">
-    <span class="back-icon">←</span>
+<ion-content class="ion-padding">
+
+  <div class="mobile-header">
+    <ion-button fill="clear" class="back-btn" (click)="volver()" aria-label="Volver">
+      <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+    </ion-button>
     <h2>Levantamiento de Medidas</h2>
-  </header>
+  </div>
 
-  <main class="mobile-content">
-    <!-- Información de Obra / Cliente (Datos Automáticos) -->
-    <div class="card info-card">
-      <span class="badge">Datos de la Obra</span>
-      <p class="data-row"><strong>Cliente:</strong> María Elena Gómez</p>
-      <p class="data-row"><strong>Obra:</strong> Portón Corredizo Residencial</p>
-      <p class="data-row"><strong>Ubicación:</strong> Av. de la Cruz #405</p>
-    </div>
+  <!-- Información de Obra / Cliente (datos de la orden, RF-11) -->
+  <ion-card class="sigehu-card">
+    <ion-card-header>
+      <ion-card-subtitle>Orden de levante asignada</ion-card-subtitle>
+      <ion-card-title>{{ informacionObra.obra }}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item lines="none" class="sigehu-item">
+        <ion-label>Cliente</ion-label>
+        <strong slot="end">{{ informacionObra.cliente }}</strong>
+      </ion-item>
+      <ion-item lines="none" class="sigehu-item">
+        <ion-label>Ubicación</ion-label>
+        <strong slot="end">{{ informacionObra.ubicacion }}</strong>
+      </ion-item>
+      <ion-item lines="none" class="sigehu-item">
+        <ion-label>Teléfono</ion-label>
+        <strong slot="end">{{ informacionObra.telefono }}</strong>
+      </ion-item>
+    </ion-card-content>
+  </ion-card>
 
-    <!-- Formulario de Dimensiones y Observaciones -->
-    <div class="card">
-      <h3>Dimensiones Reales</h3>
-      <form class="mobile-form">
-        <div class="form-group">
-          <label>Alto (m)</label>
-          <input type="number" step="0.01" placeholder="Ej. 2.40" />
-        </div>
+  <!-- Captura de medidas y observaciones (RF-12) -->
+  <form [formGroup]="form" (ngSubmit)="submitLevantamiento()" novalidate>
+    <ion-card class="sigehu-card">
+      <ion-card-header>
+        <ion-card-title>Dimensiones Reales</ion-card-title>
+      </ion-card-header>
+      <ion-card-content class="ion-no-padding">
+        <ion-list>
+          <ion-item class="sigehu-field">
+            <ion-label position="stacked">Alto (m)</ion-label>
+            <ion-input
+              type="number"
+              formControlName="alto"
+              placeholder="Ej. 2.40"
+              inputmode="decimal"></ion-input>
+          </ion-item>
+          <ion-item class="sigehu-field">
+            <ion-label position="stacked">Ancho (m)</ion-label>
+            <ion-input
+              type="number"
+              formControlName="ancho"
+              placeholder="Ej. 3.50"
+              inputmode="decimal"></ion-input>
+          </ion-item>
+          <ion-item class="sigehu-field">
+            <ion-label position="stacked">Profundidad (m)</ion-label>
+            <ion-input
+              type="number"
+              formControlName="profundidad"
+              placeholder="Ej. 0.15"
+              inputmode="decimal"></ion-input>
+          </ion-item>
+          <ion-item class="sigehu-field">
+            <ion-label position="stacked">Observaciones del sitio</ion-label>
+            <ion-textarea
+              rows="3"
+              formControlName="observaciones"
+              placeholder="Desnivel, muros, obstáculos…"></ion-textarea>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
 
-        <div class="form-group">
-          <label>Ancho (m)</label>
-          <input type="number" step="0.01" placeholder="Ej. 3.50" />
-        </div>
-
-        <div class="form-group">
-          <label>Profundidad (m)</label>
-          <input type="number" step="0.01" placeholder="Ej. 0.15" />
-        </div>
-
-        <div class="form-group">
-          <label>Observaciones del Sitio</label>
-          <textarea rows="3" placeholder="Detalles de desnivel, muros o posibles obstáculos..."></textarea>
-        </div>
-
-        <button type="button" class="btn btn-emerald btn-full">
-          Guardar Levantamiento
-        </button>
-      </form>
-    </div>
-  </main>
-</div>
+    <ion-button
+      type="submit"
+      expand="block"
+      size="large"
+      class="sigehu-submit"
+      [disabled]="guardando"
+    >
+      {{ guardando ? 'Guardando…' : 'Guardar Levantamiento' }}
+    </ion-button>
+  </form>
+</ion-content>

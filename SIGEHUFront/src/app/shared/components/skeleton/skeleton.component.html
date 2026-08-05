@@ -1,0 +1,61 @@
+<ng-container [ngSwitch]="type">
+  <div *ngSwitchCase="'table-row'" class="sk__table-row">
+    <div class="sk__cell ng-star-inserted"></div>
+    <div class="sk__cell ng-star-inserted"></div>
+    <div class="sk__cell ng-star-inserted"></div>
+    <div class="sk__cell ng-star-inserted"></div>
+    <div class="sk__cell ng-star-inserted"></div>
+  </div>
+
+  <ng-container *ngSwitchCase="'table'">
+    <div class="sk__table-row" *ngFor="let _ of [].constructor(lines)">
+      <div class="sk__cell"></div>
+      <div class="sk__cell"></div>
+      <div class="sk__cell"></div>
+      <div class="sk__cell"></div>
+      <div class="sk__cell"></div>
+    </div>
+  </ng-container>
+
+  <div *ngSwitchCase="'card'" class="sk__card">
+    <div class="sk__card-header">
+      <div class="sk__pulse sk__w-40"></div>
+      <div class="sk__pulse sk__w-60 sk__h-sm"></div>
+    </div>
+    <div class="sk__card-body">
+      <div class="sk__pulse sk__w-full sk__h-line"></div>
+      <div class="sk__pulse sk__w-80 sk__h-line"></div>
+      <div class="sk__pulse sk__w-60 sk__h-line"></div>
+    </div>
+    <div class="sk__card-footer">
+      <div class="sk__pulse sk__w-30 sk__h-sm"></div>
+    </div>
+  </div>
+
+  <div *ngSwitchCase="'kanban-card'" class="sk__kanban">
+    <div class="sk__pulse sk__w-60 sk__h-line"></div>
+    <div class="sk__pulse sk__w-full sk__h-line" style="margin-top: 8px"></div>
+    <div class="sk__pulse sk__w-40 sk__h-sm" style="margin-top: 12px"></div>
+  </div>
+
+  <div *ngSwitchCase="'metric-card'" class="sk__metric">
+    <div class="sk__pulse sk__w-20 sk__h-xs"></div>
+    <div class="sk__pulse sk__w-50 sk__h-lg" style="margin-top: 12px"></div>
+  </div>
+
+  <div *ngSwitchCase="'avatar'" class="sk__circle sk__avatar"></div>
+
+  <div *ngSwitchCase="'text-line'" class="sk__pulse sk__text-line" [style.width]="width"></div>
+
+  <ng-container *ngSwitchCase="'text-block'">
+    <div class="sk__pulse sk__text-line" *ngFor="let _ of [].constructor(lines)"></div>
+  </ng-container>
+
+  <div *ngSwitchCase="'detail'" class="sk__detail">
+    <div class="sk__pulse sk__circle sk__detail-avatar"></div>
+    <div class="sk__detail-info">
+      <div class="sk__pulse sk__w-50 sk__h-line"></div>
+      <div class="sk__pulse sk__w-80 sk__h-sm"></div>
+    </div>
+  </div>
+</ng-container>

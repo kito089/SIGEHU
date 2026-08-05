@@ -3,10 +3,6 @@
 SIGEHUBack/config.json
 SIGEHUFront/src/environments/environment.ts
 SIGEHUFront/src/environments/environment.prod.ts
-AGENTS.md
-.planning/
-docs/
-*.md
 
 #Builds
 dist/

@@ -1,0 +1,110 @@
+.kpi-card {
+  background: var(--sigehu-dashboard-bg);
+  border: var(--sigehu-border-width) solid var(--sigehu-kpi-border);
+  border-radius: var(--sigehu-radius-lg);
+  padding: var(--sigehu-space-6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sigehu-space-4);
+  min-width: 220px;
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+}
+
+.kpi-card--primary {
+  max-width: 45%;
+  flex: 0 0 45%;
+}
+
+.kpi-card--secondary {
+  max-width: 320px;
+  flex: 1;
+}
+
+.kpi-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--sigehu-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-card__icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.kpi-card__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.kpi-card__value {
+  margin: 0 0 var(--sigehu-space-1);
+  font-size: var(--sigehu-font-size-3xl);
+  font-weight: var(--sigehu-font-weight-bold);
+  color: var(--sigehu-text-primary);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.kpi-card__label {
+  margin: 0;
+  font-size: var(--sigehu-font-size-md);
+  color: var(--sigehu-text-secondary);
+  font-weight: var(--sigehu-font-weight-regular);
+}
+
+.kpi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--sigehu-font-size-xs);
+  font-weight: var(--sigehu-font-weight-bold);
+  padding: var(--sigehu-space-1) var(--sigehu-space-3);
+  border-radius: var(--sigehu-radius-pill);
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.kpi-badge--info {
+  background: var(--sigehu-badge-pending-bg);
+  color: var(--sigehu-badge-pending-text);
+}
+
+.kpi-badge--success {
+  background: var(--sigehu-badge-success-bg);
+  color: var(--sigehu-badge-success-text);
+}
+
+.kpi-badge--warning {
+  background: var(--sigehu-badge-warning-bg);
+  color: var(--sigehu-badge-warning-text);
+}
+
+/* Icono flecha para badge success */
+.kpi-badge--success::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%2310B981' stroke-width='2'%3E%3Cpolyline points='18 15 12 9 6 15'/%3E%3C/svg%3E");
+  background-size: contain;
+  margin-right: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .kpi-card--primary {
+    max-width: 100%;
+    flex: 1;
+  }
+}

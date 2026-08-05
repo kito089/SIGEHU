@@ -1,0 +1,9 @@
+<div class="kanban-board" role="region" aria-label="Tablero Kanban">
+  @for (column of columns(); track column.id) {
+    <app-kanban-column
+      [column]="column"
+      (cardClick)="onCardClick($event)"
+      (addCardClick)="onAddCard($event)"
+    ></app-kanban-column>
+  }
+</div>

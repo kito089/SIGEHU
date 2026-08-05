@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
@@ -16,7 +16,8 @@ export interface SearchResult {
 
 @Injectable({ providedIn: 'root' })
 export class SearchService {
-  constructor(private api: ApiService) {}
+  private api = inject(ApiService);
+
 
   searchGlobal(query: string): Observable<SearchResult[]> {
     const q = query.trim();

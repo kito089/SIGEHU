@@ -1,0 +1,72 @@
+<div class="page">
+  <app-entity-form
+    [title]="esEdicion ? 'Editar Obra' : 'Agregar Nueva Obra'"
+    subtitle="Registra los datos generales de la obra, medidas aproximadas y fotos iniciales"
+    badgeText="Obra"
+    [loading]="loading"
+    [submitting]="guardando"
+    submitLabel="Guardar Obra"
+    (submitRequested)="onSubmit()"
+    (cancelRequested)="cancelar()"
+  >
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <div class="field">
+        <label for="idCliente">Cliente (obligatorio)</label>
+        <select id="idCliente" formControlName="idCliente">
+          <option [ngValue]="null" disabled>Selecciona el cliente</option>
+          <option *ngFor="let c of clientes" [ngValue]="c.idCliente">{{ c.nombre }}</option>
+        </select>
+        <span class="field-error" *ngIf="form.get('idCliente')?.touched && form.get('idCliente')?.invalid">
+          Selecciona un cliente
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="nombre">Nombre de la Obra (obligatorio)</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          placeholder="Ej. Portón corredizo 4x3">
+        <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+          Ingresa el nombre de la obra
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="direccion">Dirección específica</label>
+        <input
+          id="direccion"
+          type="text"
+          formControlName="direccion"
+          placeholder="Calle, número, colonia, ciudad">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="ancho">Ancho (m)</label>
+          <input id="ancho" type="number" step="0.01" formControlName="ancho" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label for="alto">Alto (m)</label>
+          <input id="alto" type="number" step="0.01" formControlName="alto" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label for="profundidad">Profundidad (m)</label>
+          <input id="profundidad" type="number" step="0.01" formControlName="profundidad" placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="observaciones">Observaciones</label>
+        <textarea
+          id="observaciones"
+          rows="3"
+          formControlName="observaciones"
+          placeholder="Notas, características del material, fotos iniciales…"></textarea>
+      </div>
+
+    </form>
+  </app-entity-form>
+</div>

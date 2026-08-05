@@ -1,18 +1,17 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { User, AuthResponse, LoginCredentials } from '../models/user.model';
+import { User, AuthResponse, LoginCredentials } from '../core/models/user.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  constructor(
-    private api: ApiService,
-    private router: Router
-  ) {}
+  private api = inject(ApiService);
+  private router = inject(Router);
+
 
   login(credentials: LoginCredentials, remember = false): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('/Trabajadores/login', credentials).pipe(
@@ -73,4 +72,4 @@ export class AuthService {
   }
 }
 
-export { User } from '../models/user.model';
+export { User } from '../core/models/user.model';

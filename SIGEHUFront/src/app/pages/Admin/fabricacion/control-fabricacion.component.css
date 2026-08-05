@@ -1,10 +1,10 @@
 :host {
-  --bg-card: #161f30;
-  --text-main: #f1f5f9;
-  --text-muted: #64748b;
-  --border-color: #1e293b;
+  --bg-card: var(--sigehu-card-bg, #161f30);
+  --text-main: var(--sigehu-text-primary, #f1f5f9);
+  --text-muted: var(--sigehu-text-secondary, #64748b);
+  --border-color: var(--sigehu-border-divider, #1e293b);
   display: block;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--sigehu-font-family, system-ui, -apple-system, sans-serif);
   color: var(--text-main);
 }
 

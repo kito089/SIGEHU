@@ -1,0 +1,33 @@
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 100vh;
+  background-color: var(--bg-deep);
+  padding: var(--spacing-xl);
+}
+
+.error__code {
+  font-size: 8rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--bg-card);
+  letter-spacing: -0.03em;
+}
+
+.error__title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.error__message {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 440px;
+  margin-bottom: var(--spacing-xl);
+}

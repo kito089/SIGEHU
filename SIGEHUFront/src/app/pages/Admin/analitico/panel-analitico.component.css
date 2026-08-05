@@ -1,15 +1,15 @@
 :host {
-  --bg-card: #161f30;
-  --bg-input: #0f172a;
-  --text-main: #f1f5f9;
-  --text-muted: #64748b;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
-  --accent-orange: #f59e0b;
-  --accent-red: #ef4444;
-  --border-color: #1e293b;
+  --bg-card: var(--sigehu-card-bg, #161f30);
+  --bg-input: var(--sigehu-search-bg, #0f172a);
+  --text-main: var(--sigehu-text-primary, #f1f5f9);
+  --text-muted: var(--sigehu-text-secondary, #64748b);
+  --accent-blue: var(--sigehu-accent, #3b82f6);
+  --accent-green: var(--sigehu-success, #10b981);
+  --accent-orange: var(--sigehu-warning, #f59e0b);
+  --accent-red: var(--sigehu-danger, #ef4444);
+  --border-color: var(--sigehu-border-divider, #1e293b);
   display: block;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--sigehu-font-family, system-ui, -apple-system, sans-serif);
   color: var(--text-main);
 }
 

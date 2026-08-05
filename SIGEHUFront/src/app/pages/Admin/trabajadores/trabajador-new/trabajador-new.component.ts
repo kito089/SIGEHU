@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -7,6 +7,7 @@ import { ApiService } from '../../../../services/api.service';
 import { EnvService } from '../../../../services/env.service';
 import { TrabajadoresRefreshService } from '../../../../services/trabajadores-refresh.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
 
 /* =========================================================================
    SIGEHU — Nuevo / Actualizar Trabajador (componente Angular standalone)
@@ -25,11 +26,19 @@ import { ToastService } from '../../../../core/services/toast.service';
 @Component({
   selector: 'app-trabajador-new',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './trabajadornew.component.html',
-  styleUrls: ['./trabajadornew.component.css'],
+  imports: [CommonModule, ReactiveFormsModule, EntityFormComponent],
+  templateUrl: './trabajador-new.component.html',
+  styleUrls: ['./trabajador-new.component.css'],
 })
 export class TrabajadorNewComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private api = inject(ApiService);
+  private env = inject(EnvService);
+  private refreshService = inject(TrabajadoresRefreshService);
+  private toast = inject(ToastService);
+
 
   // Si viene con id (por @Input o por queryParam), es edición.
   @Input() trabajadorId: number | null = null;
@@ -53,15 +62,7 @@ export class TrabajadorNewComponent implements OnInit {
     'Otro',
   ];
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private route: ActivatedRoute,
-    private api: ApiService,
-    private env: EnvService,
-    private refreshService: TrabajadoresRefreshService,
-    private toast: ToastService
-  ) {
+  constructor() {
     this.form = this.fb.group({
       usuario: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-Z0-9._-]+$/)]],
       nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -259,7 +260,7 @@ export class TrabajadorNewComponent implements OnInit {
       if (!mensajeBackend) {
         this.toast.error('Error de comunicación: no se pudo completar la transacción de datos.');
       }
-      console.error('[trabajadornew] Error al guardar:', err);
+      console.error('[trabajador-new] Error al guardar:', err);
     } finally {
       this.guardando = false;
     }

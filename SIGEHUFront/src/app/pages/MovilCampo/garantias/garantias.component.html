@@ -1,55 +1,76 @@
-<div class="mobile-wrapper">
-  <header class="mobile-header">
-    <span class="back-icon">←</span>
+<ion-content class="ion-padding">
+
+  <div class="mobile-header">
+    <ion-button fill="clear" class="back-btn" (click)="volver()" aria-label="Volver">
+      <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+    </ion-button>
     <h2>Garantías y Postventa</h2>
-  </header>
+  </div>
 
-  <main class="mobile-content">
-    <!-- Formulario de Nuevo Reporte -->
-    <div class="card">
-      <h3>Registrar Atención de Garantía</h3>
-      <form class="mobile-form">
-        <div class="form-group">
-          <label>Obra / Proyecto (Automático)</label>
-          <input type="text" value="OB-0014 - Portón Corredizo" readonly class="input-readonly" />
-        </div>
+  <!-- Nuevo Reporte (RF-24) -->
+  <ion-card class="sigehu-card">
+    <ion-card-header>
+      <ion-card-title>Registrar Atención de Garantía</ion-card-title>
+    </ion-card-header>
+    <ion-card-content class="ion-no-padding">
+      <ion-list>
+        <ion-item class="sigehu-field">
+          <ion-label position="stacked">Obra / Proyecto</ion-label>
+          <ion-input [value]="obra" readonly></ion-input>
+        </ion-item>
+        <ion-item class="sigehu-field">
+          <ion-label position="stacked">Fecha del Reporte</ion-label>
+          <ion-input type="date" [(ngModel)]="fechaReporte"></ion-input>
+        </ion-item>
+        <ion-item class="sigehu-field">
+          <ion-label position="stacked">Técnico Asignado</ion-label>
+          <ion-select placeholder="Selecciona un técnico…">
+            <ion-select-option *ngFor="let t of tecnicos" [value]="t.id">
+              {{ t.nombre }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item class="sigehu-field">
+          <ion-label position="stacked">Observaciones de la Falla</ion-label>
+          <ion-textarea
+            rows="3"
+            placeholder="Chapa, pintura, bisagra…"></ion-textarea>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
 
-        <div class="form-group">
-          <label>Fecha del Reporte</label>
-          <input type="date" />
-        </div>
+  <ion-button
+    expand="block"
+    size="large"
+    class="sigehu-submit sigehu-submit--danger"
+    (click)="guardarTicket()"
+  >
+    Guardar Ticket de Garantía
+  </ion-button>
 
-        <div class="form-group">
-          <label>Técnico / Trabajador Asignado</label>
-          <select>
-            <option value="">Selecciona un técnico...</option>
-            <option value="1">Saúl Rodríguez (Soldador)</option>
-            <option value="2">Juan Martínez (Instalador)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Observaciones de la Falla</label>
-          <textarea rows="3" placeholder="Detalla el problema (chapa, pintura, bisagra)..."></textarea>
-        </div>
-
-        <button type="button" class="btn btn-red btn-full">
-          Guardar Ticket de Garantía
-        </button>
-      </form>
-    </div>
-
-    <!-- Lista de Reportes Activos -->
-    <div class="card">
-      <h3>Tickets en Seguimiento</h3>
-      <div class="ticket-item">
-        <div class="ticket-header">
-          <span class="ticket-id">GAR-008</span>
-          <span class="badge badge-orange">En atención</span>
-        </div>
-        <p class="ticket-desc">Falla en ajuste de chapa principal</p>
-        <span class="ticket-tech">Técnico: Saúl Rodríguez</span>
-      </div>
-    </div>
-  </main>
-</div>
+  <!-- Tickets en seguimiento (RF-25) -->
+  <ion-card class="sigehu-card">
+    <ion-card-header>
+      <ion-card-title>Tickets en Seguimiento</ion-card-title>
+    </ion-card-header>
+    <ion-card-content class="ion-no-padding">
+      <ion-list>
+        <ion-item
+          *ngFor="let ticket of tickets"
+          lines="full"
+          class="sigehu-ticket"
+        >
+          <ion-label>
+            <h3>{{ ticket.id }}</h3>
+            <p>{{ ticket.descripcion }}</p>
+            <small>Técnico: {{ ticket.tecnico }}</small>
+          </ion-label>
+          <ion-badge slot="end" color="warning" class="ticket-badge">
+            {{ ticket.estado }}
+          </ion-badge>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

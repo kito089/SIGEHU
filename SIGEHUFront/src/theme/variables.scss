@@ -1,2 +1,181 @@
-// For information on how to create your own theme, please refer to:
-// https://ionicframework.com/docs/theming/
+// =============================================================================
+// SIGEHU DESIGN SYSTEM - Variables CSS Globales
+// Basado en: docs/LAYOUT_ANALISIS.md y docs/DASHBOARD_ANALISIS.md
+// =============================================================================
+
+:root {
+  // -----------------------------------------------------------------------------
+  // COLORES BASE - LAYOUT_ANALISIS.md Paleta
+  // -----------------------------------------------------------------------------
+  --sigehu-sidebar-bg: #0F172A;           // Sidebar fondo principal
+  --sigehu-topbar-bg: #1E293B;            // Topbar + Content fondo
+  --sigehu-content-bg: #1E293B;           // Área contenido principal
+  --sigehu-active-bg: #1E3A8A;            // Item activo fondo
+  --sigehu-active-text: #3B82F6;          // Item activo texto/icono
+  --sigehu-text-primary: #F8FAFC;         // Títulos, texto destacado
+  --sigehu-text-secondary: #94A3B8;       // Subtítulos, placeholders, items inactivos
+  --sigehu-text-tertiary: #64748B;        // Texto terciario, metadata
+  --sigehu-primary-btn-bg: #3B82F6;       // Botón primario fondo
+  --sigehu-primary-btn-text: #FFFFFF;     // Botón primario texto
+  --sigehu-search-bg: #0F172A;            // Buscador fondo
+  --sigehu-border-divider: #334155;       // Bordes, divisores, inputs
+  --sigehu-notification-dot: #EF4444;     // Indicador notificación
+  --sigehu-avatar-bg: #3B82F6;            // Avatar fondo
+
+  // -----------------------------------------------------------------------------
+  // COLORES DASHBOARD - DASHBOARD_ANALISIS.md Paleta
+  // -----------------------------------------------------------------------------
+  --sigehu-dashboard-bg: #1E293B;         // Fondo dashboard
+  --sigehu-card-bg: #0F172A;              // Fondo tarjeta Kanban
+  --sigehu-card-border: #334155;          // Bordes tarjetas
+  --sigehu-kpi-border: #334155;           // Borde tarjetas KPI
+
+  // Estados Kanban - Puntos de color
+  --sigehu-estado-solicitud: #94A3B8;     // Gris - Solicitud Recibida
+  --sigehu-estado-levantamiento: #F59E0B; // Amarillo - Levantamiento
+  --sigehu-estado-fabricacion: #3B82F6;   // Azul - En Fabricación
+  --sigehu-estado-instalacion: #A855F7;   // Morado - Instalación Programada
+  --sigehu-estado-instalado: #10B981;     // Verde - Instalado
+  --sigehu-estado-garantias: #EF4444;     // Rojo - Garantías
+
+  // Badges y etiquetas
+  --sigehu-badge-pending-bg: #1E3A8A;     // Badge "+3 este mes" fondo
+  --sigehu-badge-pending-text: #60A5FA;   // Badge "+3 este mes" texto
+  --sigehu-badge-success-bg: #064E3B;     // Badge verde fondo
+  --sigehu-badge-success-text: #10B981;   // Badge verde texto
+  --sigehu-badge-warning-bg: #452703;     // Badge amarillo/pendiente fondo
+  --sigehu-badge-warning-text: #F59E0B;   // Badge amarillo texto
+  --sigehu-badge-danger-bg: #450A0A;      // Badge rojo/alta fondo
+  --sigehu-badge-danger-text: #EF4444;    // Badge rojo texto
+
+  // -----------------------------------------------------------------------------
+  // SEMÁNTICOS (alias para uso en componentes)
+  // -----------------------------------------------------------------------------
+  --sigehu-accent: #3B82F6;
+  --sigehu-accent-soft: rgba(59, 130, 246, 0.12);
+  --sigehu-success: #10B981;
+  --sigehu-success-soft: rgba(16, 185, 129, 0.14);
+  --sigehu-warning: #F59E0B;
+  --sigehu-warning-soft: rgba(245, 158, 11, 0.14);
+  --sigehu-danger: #EF4444;
+  --sigehu-danger-soft: rgba(239, 68, 68, 0.14);
+
+  // -----------------------------------------------------------------------------
+  // TIPOGRAFÍA
+  // -----------------------------------------------------------------------------
+  --sigehu-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --sigehu-font-size-xs: 10px;      // Etiquetas módulos, badges
+  --sigehu-font-size-sm: 11px;      // IDs tareas, nombres usuario
+  --sigehu-font-size-base: 12px;    // Subtítulos, fechas, badges
+  --sigehu-font-size-md: 14px;      // Títulos tarjetas, columnas, métricas
+  --sigehu-font-size-lg: 16px;      // Textos principales
+  --sigehu-font-size-xl: 18px;      // Logo sidebar
+  --sigehu-font-size-2xl: 24px;     // Título página, números KPI
+  --sigehu-font-size-3xl: 32px;     // Números métricas grandes
+
+  --sigehu-font-weight-regular: 400;
+  --sigehu-font-weight-medium: 500;
+  --sigehu-font-weight-semibold: 600;
+  --sigehu-font-weight-bold: 700;
+
+  --sigehu-line-height: 1.5;
+  --sigehu-letter-spacing-wide: 0.05em;  // Etiquetas mayúsculas
+
+  // -----------------------------------------------------------------------------
+  // ESPACIADO (base 4px/8px)
+  // -----------------------------------------------------------------------------
+  --sigehu-space-1: 4px;
+  --sigehu-space-2: 8px;
+  --sigehu-space-3: 12px;
+  --sigehu-space-4: 16px;
+  --sigehu-space-5: 20px;
+  --sigehu-space-6: 24px;
+  --sigehu-space-8: 32px;
+  --sigehu-space-10: 40px;
+
+  // -----------------------------------------------------------------------------
+  // BORDES Y RADIOS
+  // -----------------------------------------------------------------------------
+  --sigehu-radius-sm: 6px;
+  --sigehu-radius-md: 8px;      // Botones, inputs, items menú
+  --sigehu-radius-lg: 12px;     // Tarjetas KPI
+  --sigehu-radius-xl: 14px;     // Contenedores grandes
+  --sigehu-radius-pill: 999px;  // Badges pill
+  --sigehu-border-width: 1px;
+  --sigehu-border-color: var(--sigehu-border-divider);
+
+  // -----------------------------------------------------------------------------
+  // SOMBRAS (Flat design - sin sombras pronunciadas)
+  // -----------------------------------------------------------------------------
+  --sigehu-shadow-none: none;
+  --sigehu-shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+  // -----------------------------------------------------------------------------
+  // LAYOUT DIMENSIONES
+  // -----------------------------------------------------------------------------
+  --sigehu-sidebar-width: 240px;
+  --sigehu-sidebar-width-collapsed: 64px;
+  --sigehu-topbar-height: 80px;
+  --sigehu-kanban-column-width: 300px;
+  --sigehu-kanban-gap: 16px;
+
+  // -----------------------------------------------------------------------------
+  // Z-INDEX
+  // -----------------------------------------------------------------------------
+  --sigehu-z-dropdown: 100;
+  --sigehu-z-modal: 200;
+  --sigehu-z-toast: 300;
+  --sigehu-z-tooltip: 400;
+}
+
+// =============================================================================
+// RESET GLOBAL BASE
+// =============================================================================
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--sigehu-font-family);
+  font-size: var(--sigehu-font-size-md);
+  line-height: var(--sigehu-line-height);
+  color: var(--sigehu-text-primary);
+  background-color: var(--sigehu-content-bg);
+  min-height: 100vh;
+}
+
+// Scrollbar personalizado (dark mode)
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--sigehu-sidebar-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sigehu-border-divider);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sigehu-text-tertiary);
+}
+
+// Focus visible para accesibilidad
+:focus-visible {
+  outline: 2px solid var(--sigehu-accent);
+  outline-offset: 2px;
+}
+
+// Selection
+::selection {
+  background: var(--sigehu-accent-soft);
+  color: var(--sigehu-accent);
+}

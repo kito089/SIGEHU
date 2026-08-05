@@ -54,7 +54,7 @@ export function blockFinancialForWorker(req, res, next) {
     const path = req.originalUrl.toLowerCase();
     const isFinancial = FINANCIAL_ENDPOINTS.some(ep => path.includes(ep));
 
-    if (isFinancial && req.user?.tipo === 'Trabajador') {
+    if (isFinancial && req.user?.rol === 'Trabajador') {
         return res.status(403).json({
             error: 'Los trabajadores no pueden acceder a información financiera o fiscal'
         });

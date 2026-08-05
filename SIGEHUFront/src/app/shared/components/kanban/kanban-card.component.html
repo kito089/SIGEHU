@@ -1,0 +1,41 @@
+<article class="kanban-card" tabindex="0" role="button" aria-label="Ver detalles de {{ card().title }}">
+  <div class="card-header">
+    <span class="card-id">{{ card().code }}</span>
+    @if (card().badges.length > 0) {
+      <div class="card-badges-top">
+        @for (badge of card().badges; track badge.text) {
+          <span class="{{ getBadgeClass(badge.type) }}">{{ badge.text }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  <p class="card-client">{{ card().client }}</p>
+  <h4 class="card-title">{{ card().title }}</h4>
+
+  @if (card().badges.length > 0) {
+    <div class="card-badges-bottom">
+      @for (badge of card().badges; track badge.text) {
+        <span class="{{ getBadgeClass(badge.type) }}">{{ badge.text }}</span>
+      }
+    </div>
+  }
+
+  <footer class="card-footer">
+    <div class="card-date">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      {{ card().date }}
+    </div>
+    <div class="card-assignee">
+      <div class="assignee-avatar" [style.background-color]="card().avatarColor">
+        {{ card().avatarInitials }}
+      </div>
+      <span class="assignee-name">{{ card().assigneeName }}</span>
+    </div>
+  </footer>
+</article>

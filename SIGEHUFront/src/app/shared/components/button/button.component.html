@@ -1,0 +1,19 @@
+<button
+  [type]="type"
+  [class]="'btn ' + hostClasses"
+  [disabled]="disabled || loading"
+  [attr.aria-label]="ariaLabel || (icon ? 'Botón de acción' : null)"
+  (click)="buttonClick.emit($event)"
+>
+  <span class="btn__spinner" *ngIf="loading" aria-hidden="true">
+    <ion-spinner name="crescent"></ion-spinner>
+  </span>
+  <span class="btn__content" [class.btn__content--hidden]="loading">
+    <span class="btn__icon" *ngIf="icon && !loading">
+      <ion-icon [name]="icon" aria-hidden="true"></ion-icon>
+    </span>
+    <span class="btn__label" *ngIf="!(icon && variant === 'icon')">
+      <ng-content></ng-content>
+    </span>
+  </span>
+</button>

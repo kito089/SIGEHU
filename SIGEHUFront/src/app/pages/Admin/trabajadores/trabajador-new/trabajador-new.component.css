@@ -1,24 +1,24 @@
 :host{
-  --bg: #0a0e1a;
-  --panel: #141c30;
-  --panel-border: #232d47;
-  --field-bg: #1a2338;
-  --field-border: #2a3552;
-  --accent: #2f8fef;
-  --accent-soft: rgba(47,143,239,0.12);
+  --bg: var(--sigehu-content-bg, #0a0e1a);
+  --panel: var(--sigehu-panel-bg, #141c30);
+  --panel-border: var(--sigehu-border-subtle, #232d47);
+  --field-bg: var(--sigehu-surface-input, #1a2338);
+  --field-border: var(--sigehu-border-subtle, #2a3552);
+  --accent: var(--sigehu-accent, #2f8fef);
+  --accent-soft: var(--sigehu-accent-soft, rgba(47,143,239,0.12));
 
-  --text-primary: #eef1f7;
-  --text-secondary: #8992a8;
-  --text-tertiary: #5c6580;
+  --text-primary: var(--sigehu-text-primary, #eef1f7);
+  --text-secondary: var(--sigehu-text-secondary, #8992a8);
+  --text-tertiary: var(--sigehu-text-tertiary, #5c6580);
 
-  --danger: #f4574f;
-  --danger-soft: rgba(244,87,79,0.12);
+  --danger: var(--sigehu-danger, #f4574f);
+  --danger-soft: var(--sigehu-danger-soft, rgba(244,87,79,0.12));
 
   display: block;
   min-height: 100vh;
   background: var(--bg);
   color: var(--text-primary);
-  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: var(--sigehu-font-family, "Inter", "Segoe UI", system-ui, -apple-system, sans-serif);
 }
 
 *{ box-sizing: border-box; }

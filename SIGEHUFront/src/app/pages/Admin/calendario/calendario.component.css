@@ -1,15 +1,15 @@
 :host{
-  --bg: #0a0e1a;
-  --panel: #0e1424;
-  --panel-border: #1c2438;
-  --field-bg: #131a2c;
-  --field-border: #232d47;
-  --accent: #2f8fef;
-  --accent-soft: rgba(47,143,239,0.12);
+  --bg: var(--sigehu-content-bg, #0a0e1a);
+  --panel: var(--sigehu-panel-bg, #0e1424);
+  --panel-border: var(--sigehu-border-subtle, #1c2438);
+  --field-bg: var(--sigehu-surface-input, #131a2c);
+  --field-border: var(--sigehu-border-subtle, #232d47);
+  --accent: var(--sigehu-accent, #2f8fef);
+  --accent-soft: var(--sigehu-accent-soft, rgba(47,143,239,0.12));
 
-  --text-primary: #eef1f7;
-  --text-secondary: #8992a8;
-  --text-tertiary: #5c6580;
+  --text-primary: var(--sigehu-text-primary, #eef1f7);
+  --text-secondary: var(--sigehu-text-secondary, #8992a8);
+  --text-tertiary: var(--sigehu-text-tertiary, #5c6580);
 
   --levantamiento: #f0d24a;
   --levantamiento-soft: rgba(240,210,74,0.16);
@@ -18,8 +18,8 @@
   --instalacion: #34d399;
   --instalacion-soft: rgba(52,211,153,0.16);
 
-  --radius: 10px;
-  --radius-lg: 14px;
+  --radius: var(--sigehu-radius-md, 10px);
+  --radius-lg: var(--sigehu-radius-xl, 14px);
 
   display: block;
   min-height: 100vh;

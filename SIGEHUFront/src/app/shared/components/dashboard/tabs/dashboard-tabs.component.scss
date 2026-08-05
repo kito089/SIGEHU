@@ -1,0 +1,48 @@
+.dashboard-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--sigehu-space-2);
+  margin-bottom: var(--sigehu-space-6);
+  padding-bottom: var(--sigehu-space-3);
+  border-bottom: var(--sigehu-border-width) solid var(--sigehu-border-divider);
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sigehu-space-2);
+  padding: var(--sigehu-space-2) var(--sigehu-space-4);
+  border: none;
+  background: transparent;
+  border-radius: var(--sigehu-radius-md);
+  font-size: var(--sigehu-font-size-md);
+  font-weight: var(--sigehu-font-weight-medium);
+  color: var(--sigehu-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  background: var(--sigehu-active-bg);
+  color: var(--sigehu-active-text);
+}
+
+.tab-btn.active {
+  background: var(--sigehu-border-divider);
+  color: var(--sigehu-text-primary);
+}
+
+.tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+}
+
+.tab-icon svg {
+  width: 100%;
+  height: 100%;
+}

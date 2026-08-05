@@ -1,24 +1,19 @@
 /*
- * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
+ * App Global CSS - SIGEHU
+ * Importa Ionic core + Design System variables
  */
 
-/* Core CSS required for Ionic components to work properly */
-@import "@ionic/angular/css/core.css";
+// SIGEHU Design System Variables (DEBE ir antes que dark palette)
+@use './theme/variables.scss';
 
-/* Basic CSS for apps built with Ionic */
+// Core CSS required for Ionic components
+@import "@ionic/angular/css/core.css";
 @import "@ionic/angular/css/normalize.css";
 @import "@ionic/angular/css/structure.css";
 @import "@ionic/angular/css/typography.css";
 @import "@ionic/angular/css/display.css";
 
-/* Optional CSS utils that can be commented out */
+// Optional CSS utils
 @import "@ionic/angular/css/padding.css";
 @import "@ionic/angular/css/float-elements.css";
 @import "@ionic/angular/css/text-alignment.css";
@@ -26,12 +21,37 @@
 @import "@ionic/angular/css/flex-utils.css";
 
 /**
- * Ionic Dark Mode
- * -----------------------------------------------------
- * For more info, please see:
- * https://ionicframework.com/docs/theming/dark-mode
+ * Ionic Dark Mode - Usar system para respetar preferencia OS
+ * Nuestro design system ya define colores dark mode en :root
  */
-
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
+
+// Override Ionic CSS variables para usar nuestro design system
+:root {
+  // Mapear variables Ionic a nuestro design system
+  --ion-background-color: var(--sigehu-content-bg);
+  --ion-background-color-rgb: 30, 41, 59;
+  --ion-text-color: var(--sigehu-text-primary);
+  --ion-text-color-rgb: 248, 250, 252;
+  --ion-primary: var(--sigehu-accent);
+  --ion-primary-rgb: 59, 130, 246;
+  --ion-primary-contrast: #FFFFFF;
+  --ion-primary-contrast-rgb: 255, 255, 255;
+  --ion-primary-shade: #2563EB;
+  --ion-primary-tint: #60A5FA;
+  --ion-secondary: var(--sigehu-text-tertiary);
+  --ion-success: var(--sigehu-success);
+  --ion-warning: var(--sigehu-warning);
+  --ion-danger: var(--sigehu-danger);
+  --ion-light: #F8FAFC;
+  --ion-medium: #94A3B8;
+  --ion-dark: #0F172A;
+  --ion-border-color: var(--sigehu-border-divider);
+
+  // Componentes Ionic
+  --ion-item-background: transparent;
+  --ion-input-background: var(--sigehu-search-bg);
+  --ion-input-border-color: var(--sigehu-border-divider);
+  --ion-input-border-color-focused: var(--sigehu-accent);
+  --ion-button-border-radius: var(--sigehu-radius-md);
+}

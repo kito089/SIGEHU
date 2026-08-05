@@ -1,16 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import { Router, NavigationEnd } from '@angular/router';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
-import { ToastContainerComponent } from './core/components/toast-container/toast-container.component';
+import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
-  imports: [IonApp, IonRouterOutlet, ToastContainerComponent],
+  imports: [RouterOutlet, ToastContainerComponent],
 })
 export class AppComponent implements OnInit {
-  constructor(private router: Router) {}
+  private router = inject(Router);
+
 
   ngOnInit(): void {
     this.router.events

@@ -1,51 +1,76 @@
-<div class="mobile-wrapper">
-  <header class="mobile-header">
-    <span class="back-icon">←</span>
+<ion-content class="ion-padding">
+
+  <div class="mobile-header">
+    <ion-button fill="clear" class="back-btn" (click)="volver()" aria-label="Volver">
+      <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+    </ion-button>
     <h2>Hoja de Ruta e Instalación</h2>
-  </header>
+  </div>
 
-  <main class="mobile-content">
-    <!-- Información de Destino -->
-    <div class="card">
-      <h3>Datos de Entrega</h3>
-      <p class="data-row"><strong>Cliente:</strong> María Elena Gómez</p>
-      <p class="data-row"><strong>Teléfono:</strong> 449-123-4567</p>
-      <p class="data-row"><strong>Dirección:</strong> Av. de la Cruz #405, Col. Rey Xolotl</p>
+  <!-- Datos de Entrega (RF-19) -->
+  <ion-card class="sigehu-card">
+    <ion-card-header>
+      <ion-card-title>Datos de Entrega</ion-card-title>
+    </ion-card-header>
+    <ion-card-content class="ion-no-padding">
+      <ion-list>
+        <ion-item lines="none" class="sigehu-item">
+          <ion-label>Cliente</ion-label>
+          <strong slot="end">{{ entrega.cliente }}</strong>
+        </ion-item>
+        <ion-item lines="none" class="sigehu-item">
+          <ion-label>Teléfono</ion-label>
+          <strong slot="end">{{ entrega.telefono }}</strong>
+        </ion-item>
+        <ion-item lines="none" class="sigehu-item">
+          <ion-label>Dirección</ion-label>
+          <strong slot="end">{{ entrega.direccion }}</strong>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
 
-      <!-- Contenedor API Google Maps -->
-      <div class="maps-container">
-        <div class="maps-placeholder">
-          <span class="pin-icon">📍</span>
-          <span>Google Maps API (Espacio Reservado)</span>
-        </div>
-      </div>
-    </div>
+  <!-- Mapa (Google Maps API - espacio reservado) -->
+  <ion-card class="sigehu-card">
+    <ion-card-content class="maps-placeholder">
+      <ion-icon name="location-outline"></ion-icon>
+      <span>Google Maps API (Espacio Reservado)</span>
+    </ion-card-content>
+  </ion-card>
 
-    <!-- Checklist de Salida -->
-    <div class="card">
-      <h3>Checklist de Herramientas e Insumos</h3>
-      <div class="checklist-group">
-        <label class="checkbox-item">
-          <input type="checkbox" />
-          <span>Planta de soldar portátil</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" />
-          <span>Paquete de electrodos 6013</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" />
-          <span>Rotomartillo y brocas para concreto</span>
-        </label>
-        <label class="checkbox-item">
-          <input type="checkbox" />
-          <span>Careta y equipo de protección</span>
-        </label>
-      </div>
+  <!-- Checklist de Kit (RF-23) -->
+  <ion-card class="sigehu-card">
+    <ion-card-header>
+      <ion-card-title>Checklist de Herramientas e Insumos</ion-card-title>
+      <ion-card-subtitle>{{ porcentajeVerificado }}% verificado</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content class="ion-no-padding">
+      <ion-list>
+        <ion-item
+          *ngFor="let item of checklist"
+          lines="none"
+          class="sigehu-check"
+        >
+          <ion-checkbox
+            [(ngModel)]="item.verificado"
+            color="primary"
+            slot="start"></ion-checkbox>
+          <ion-label [class.checked]="item.verificado">{{ item.nombre }}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
 
-      <button type="button" class="btn btn-blue btn-full">
-        Confirmar Entrega e Instalación
-      </button>
-    </div>
-  </main>
-</div>
+  <ion-button
+    expand="block"
+    size="large"
+    class="sigehu-submit"
+    [disabled]="confirmando || porcentajeVerificado < 100"
+    (click)="confirmarEntrega()"
+  >
+    {{ confirmando ? 'Enviando…' : 'Confirmar Entrega e Instalación' }}
+  </ion-button>
+  <p class="hint" *ngIf="porcentajeVerificado < 100">
+    Verifica el 100% del checklist para continuar.
+  </p>
+</ion-content>

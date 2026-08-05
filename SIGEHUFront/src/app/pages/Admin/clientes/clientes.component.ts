@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-// import { ClientesService } from '../../services/clientes.service';
+import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
+import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 
 /* =========================================================================
    SIGEHU — Gestión de Clientes (componente Angular standalone)
@@ -26,16 +26,31 @@ interface Cliente {
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent],
   templateUrl: './clientes.component.html',
-  styleUrls: ['./clientes.component.css'],
+  styleUrl: './clientes.component.scss',
 })
 export class ClientesComponent implements OnInit {
-  constructor(private router: Router) {}
+  private router = inject(Router);
+
   clientes: Cliente[] = [];
   searchTerm = '';
   filtro: FiltroClientes = 'todos';
   selectedCliente: Cliente | null = null;
+
+  columns: DataTableColumn[] = [
+    { key: 'nombre', label: 'Nombre / Razón social' },
+    { key: 'telefono', label: 'Teléfono' },
+    { key: 'obrasActivas', label: 'Obras activas' },
+    { key: 'datosSat', label: 'Datos SAT' },
+  ];
+
+  filterOptions = [
+    { value: 'todos', label: 'Todos los clientes' },
+    { value: 'con_obras', label: 'Con obras activas' },
+    { value: 'con_sat', label: 'Con datos SAT' },
+    { value: 'sin_sat', label: 'Sin datos SAT' },
+  ];
 
   ngOnInit(): void {
     this.fetchClientes().then(clientes => {
@@ -80,6 +95,14 @@ export class ClientesComponent implements OnInit {
     });
   }
 
+  onSearchChange(term: string): void {
+    this.searchTerm = term;
+  }
+
+  onFilterChange(value: string): void {
+    this.filtro = value as FiltroClientes;
+  }
+
   obrasLabel(cantidad: number): string {
     if (cantidad === 0) return 'Sin obras';
     return `${cantidad} ${cantidad === 1 ? 'Activa' : 'Activas'}`;
@@ -87,7 +110,6 @@ export class ClientesComponent implements OnInit {
 
   verCliente(cliente: Cliente): void {
     this.selectedCliente = cliente;
-   ;
   }
 
   editarCliente(cliente: Cliente): void {

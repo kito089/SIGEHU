@@ -1,0 +1,63 @@
+<div class="data-table__wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        @for (col of columns; track col.key) {
+          <th
+            [class.data-table__th--right]="col.align === 'right'"
+            [class.data-table__th--center]="col.align === 'center'"
+            [style.width]="col.width"
+          >
+            {{ col.label }}
+          </th>
+        }
+        @if (actionsTemplate) {
+          <th class="data-table__th--right">Acciones</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @if (loading) {
+        <tr>
+          <td [attr.colspan]="colspan" class="data-table__empty">
+            Cargando…
+          </td>
+        </tr>
+      } @else if (data.length === 0) {
+        <tr>
+          <td [attr.colspan]="colspan" class="data-table__empty">
+            {{ emptyMessage }}
+          </td>
+        </tr>
+      } @else {
+        @for (row of data; track $index) {
+          <tr class="data-table__row" (click)="onRowClick(row)">
+            @for (col of columns; track col.key) {
+              <td
+                [class.data-table__cell--right]="col.align === 'right'"
+                [class.data-table__cell--center]="col.align === 'center'"
+              >
+                @if (cellTemplate) {
+                  <ng-container
+                    [ngTemplateOutlet]="cellTemplate"
+                    [ngTemplateOutletContext]="cellContext(row, col)"
+                  ></ng-container>
+                } @else {
+                  {{ cellValue(row, col.key) }}
+                }
+              </td>
+            }
+            @if (actionsTemplate) {
+              <td class="data-table__cell--right">
+                <ng-container
+                  [ngTemplateOutlet]="actionsTemplate"
+                  [ngTemplateOutletContext]="actionsContext(row)"
+                ></ng-container>
+              </td>
+            }
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

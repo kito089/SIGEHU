@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
@@ -9,13 +9,15 @@ import { EnvService } from './env.service';
   providedIn: 'root'
 })
 export class ApiService {
+  private http = inject(HttpClient);
+  private env = inject(EnvService);
+  private router = inject(Router);
+
   private baseUrl: string;
 
-  constructor(
-    private http: HttpClient,
-    private env: EnvService,
-    private router: Router
-  ) {
+  constructor() {
+    const env = this.env;
+
     this.baseUrl = env.getBaseUrl();
   }
 

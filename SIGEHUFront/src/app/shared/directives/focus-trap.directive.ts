@@ -1,15 +1,17 @@
-import { Directive, ElementRef, AfterContentInit, OnDestroy, Inject, Renderer2 } from '@angular/core';
+import { Directive, ElementRef, AfterContentInit, inject, Renderer2 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 
 @Directive({
   selector: '[appFocusTrap]',
   standalone: true
 })
-export class FocusTrapDirective implements AfterContentInit, OnDestroy {
+export class FocusTrapDirective implements AfterContentInit {
+  private el = inject(ElementRef);
+  private renderer = inject(Renderer2);
+  private document = inject(DOCUMENT);
+
   private firstFocusable?: HTMLElement;
   private lastFocusable?: HTMLElement;
-
-  constructor(private el: ElementRef, private renderer: Renderer2, @Inject(DOCUMENT) private document: Document) {}
 
   ngAfterContentInit(): void {
     const focusable = this.el.nativeElement.querySelectorAll(
@@ -22,12 +24,12 @@ export class FocusTrapDirective implements AfterContentInit, OnDestroy {
     this.renderer.listen(this.el.nativeElement, 'keydown', (e: KeyboardEvent) => {
       if (e.key === 'Tab') {
         if (e.shiftKey) {
-          if (document.activeElement === this.firstFocusable) {
+          if (this.document.activeElement === this.firstFocusable) {
             e.preventDefault();
             this.lastFocusable?.focus();
           }
         } else {
-          if (document.activeElement === this.lastFocusable) {
+          if (this.document.activeElement === this.lastFocusable) {
             e.preventDefault();
             this.firstFocusable?.focus();
           }
@@ -35,6 +37,4 @@ export class FocusTrapDirective implements AfterContentInit, OnDestroy {
       }
     });
   }
-
-  ngOnDestroy(): void {}
 }

@@ -1,0 +1,28 @@
+<div class="feed">
+  <h3 class="feed__title">Actividad Reciente</h3>
+  @if (activities().length === 0) {
+    <div class="feed__empty">
+      <span>No hay actividad reciente</span>
+    </div>
+  } @else {
+    <div class="feed__list">
+      @for (item of activities(); track item.id) {
+        <div class="feed__item">
+          <div class="feed__avatar" [style.background-color]="avatarColor(item.user)">
+            {{ iniciales(item.user) }}
+          </div>
+          <div class="feed__body">
+            <p class="feed__text">
+              <strong>{{ item.user }}</strong>
+              {{ item.action }} en {{ item.entity }}
+              @if (item.detail) {
+                <span class="feed__detalles">— {{ item.detail }}</span>
+              }
+            </p>
+            <span class="feed__time">{{ item.time }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

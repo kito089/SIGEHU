@@ -1,0 +1,40 @@
+<div class="input" [class.input--error]="hasError">
+  <label class="input__label" *ngIf="label">
+    {{ label }}
+    <span class="input__required" *ngIf="required">*</span>
+  </label>
+  <div class="input__wrapper">
+    <ion-icon *ngIf="icon" [name]="icon" class="input__icon"></ion-icon>
+    <input
+      [type]="inputType"
+      [class]="inputClasses"
+      [placeholder]="placeholder"
+      [value]="value"
+      [disabled]="disabled"
+      [attr.autocomplete]="autocomplete"
+      [attr.min]="min"
+      [attr.max]="max"
+      [attr.step]="step"
+      [attr.maxlength]="maxlength"
+      [attr.minlength]="minlength"
+      [attr.required]="required || null"
+      (input)="onInput($event)"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+    />
+    <button
+      *ngIf="togglable && type === 'password'"
+      type="button"
+      class="input__toggle"
+      (click)="togglePassword()"
+      [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+      [attr.title]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+    >
+      <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+    </button>
+  </div>
+  <span class="input__error" *ngIf="hasError && errorMessage">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    {{ errorMessage }}
+  </span>
+</div>

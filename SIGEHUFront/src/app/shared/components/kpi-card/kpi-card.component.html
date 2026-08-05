@@ -1,0 +1,10 @@
+<div class="{{ containerClass }}">
+  <div class="kpi-card__icon" [style.background-color]="iconBgColor()" [style.color]="iconColor()" [innerHTML]="safeIconSvg" aria-hidden="true"></div>
+  <div class="kpi-card__content">
+    <p class="kpi-card__value">{{ value() }}</p>
+    <p class="kpi-card__label">{{ label() }}</p>
+  </div>
+  @if (badgeText()) {
+    <span class="kpi-badge {{ badgeClass }}">{{ badgeText() }}</span>
+  }
+</div>

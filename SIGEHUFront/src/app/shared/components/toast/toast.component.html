@@ -1,0 +1,7 @@
+<div class="toast toast--{{ toast.type }}">
+  <ion-icon [name]="icon" class="toast__icon"></ion-icon>
+  <span class="toast__message">{{ toast.message }}</span>
+  <button class="toast__close" (click)="dismissed.emit(toast.id)" aria-label="Cerrar notificación">
+    <ion-icon name="close"></ion-icon>
+  </button>
+</div>

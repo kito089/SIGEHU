@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { EnvironmentDetector } from './environment-detector.service';
 
@@ -6,12 +6,16 @@ import { EnvironmentDetector } from './environment-detector.service';
   providedIn: 'root'
 })
 export class EnvService {
+  private detector = inject(EnvironmentDetector);
+
   readonly isElectron: boolean;
   readonly isCapacitor: boolean;
   readonly isWeb: boolean;
   readonly apiUrl: string;
 
-  constructor(private detector: EnvironmentDetector) {
+  constructor() {
+    const detector = this.detector;
+
     this.isElectron = detector.isElectron;
     this.isCapacitor = detector.isCapacitor;
     this.isWeb = detector.isWeb;

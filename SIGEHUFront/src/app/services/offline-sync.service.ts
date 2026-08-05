@@ -1,4 +1,4 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { EnvService } from './env.service';
@@ -16,15 +16,15 @@ interface QueuedRequest {
   providedIn: 'root'
 })
 export class OfflineSyncService {
+  private api = inject(ApiService);
+  private env = inject(EnvService);
+  private ngZone = inject(NgZone);
+
   private queue: QueuedRequest[] = [];
   private isOnline = navigator.onLine;
   private syncing = false;
 
-  constructor(
-    private api: ApiService,
-    private env: EnvService,
-    private ngZone: NgZone
-  ) {
+  constructor() {
     this.loadQueue();
     window.addEventListener('online', () => this.onlineHandler());
     window.addEventListener('offline', () => this.offlineHandler());

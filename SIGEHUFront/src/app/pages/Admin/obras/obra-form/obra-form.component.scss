@@ -1,0 +1,88 @@
+:host {
+  --field-bg: var(--sigehu-search-bg, #0F172A);
+  --field-border: var(--sigehu-border-divider, #334155);
+  --text-primary: var(--sigehu-text-primary, #F8FAFC);
+  --text-secondary: var(--sigehu-text-secondary, #94A3B8);
+  --text-tertiary: var(--sigehu-text-tertiary, #64748B);
+  --accent: var(--sigehu-accent, #3B82F6);
+  --danger: var(--sigehu-danger, #EF4444);
+
+  display: block;
+  min-height: 100vh;
+  background: var(--sigehu-content-bg, #1E293B);
+  color: var(--text-primary);
+  font-family: var(--sigehu-font-family, "Inter", "Segoe UI", system-ui, sans-serif);
+}
+
+* { box-sizing: border-box; }
+
+.page {
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* Scrollbar con el tema oscuro de SIGEHU */
+.page::-webkit-scrollbar { width: 10px; }
+.page::-webkit-scrollbar-track { background: transparent; }
+.page::-webkit-scrollbar-thumb {
+  background: var(--field-border);
+  border-radius: 999px;
+  border: 2px solid var(--sigehu-content-bg, #1E293B);
+}
+.page { scrollbar-width: thin; scrollbar-color: var(--field-border) transparent; }
+
+.field { margin-bottom: 16px; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.field-row .field { margin-bottom: 0; }
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: var(--sigehu-radius-md, 8px);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+  resize: vertical;
+}
+
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+select { cursor: pointer; }
+select option { background: var(--field-bg); }
+
+.field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--danger);
+}
+
+/* Responsive (O3.2) */
+@media (max-width: 560px) {
+  .page { padding: 24px 14px; }
+  .field-row { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,52 @@
+<header class="topbar" role="banner">
+  <div class="topbar-left">
+    <h1 class="page-title">{{ pageTitle() }}</h1>
+    @if (pageSubtitle()) {
+      <p class="page-subtitle">{{ pageSubtitle() }}</p>
+    }
+  </div>
+
+  <div class="topbar-right">
+    <!-- Buscador Global (Omnibox) - RF-31 -->
+    <app-omnibox
+      class="topbar-search"
+    ></app-omnibox>
+
+    <!-- Notificaciones -->
+    <button
+      class="icon-btn notification-btn"
+      (click)="onNotification()"
+      aria-label="Notificaciones"
+      type="button"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      @if (notificationCount() > 0) {
+        <span class="notification-dot" aria-label="{{ notificationCount() }} notificaciones"></span>
+      }
+    </button>
+
+    <!-- Botón Nueva Obra -->
+    <button
+      class="btn btn-primary new-work-btn"
+      (click)="onNewWork()"
+      type="button"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Nueva obra</span>
+    </button>
+
+    <!-- Avatar Usuario -->
+    <div class="user-menu" (click)="onProfile()">
+      <div class="user-avatar" [style.background-color]="'var(--sigehu-avatar-bg)'">
+        {{ userInitials() }}
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron-down" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+  </div>
+</header>

@@ -13,84 +13,62 @@
       </button>
     </div>
 
-    <label class="search-box">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input
-        type="text"
-        [(ngModel)]="searchTerm"
-        placeholder="Buscar por usuario, nombre o teléfono…">
-    </label>
+    <app-filter-bar
+      [searchTerm]="searchTerm"
+      [searchPlaceholder]="'Buscar por usuario, nombre o teléfono…'"
+      (searchTermChange)="onSearchChange($event)"
+    ></app-filter-bar>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Trabajador</th>
-            <th>Teléfono</th>
-            <th>Obra(s) asignada(s)</th>
-            <th class="col-acciones">IMSS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let t of trabajadoresFiltrados">
-            <!-- 1. USUARIO (Lado izquierdo) -->
-            <td>
-              <span class="user-badge">@{{ t.usuario }}</span>
-            </td>
+    <app-data-table
+      [columns]="columns"
+      [data]="trabajadoresFiltrados"
+      [emptyMessage]="'No se encontraron trabajadores con ese criterio.'"
+      rowKey="id"
+    >
+      <ng-template #cell let-row let-col="column">
+        @switch (col.key) {
+          @case ('usuario') {
+            <span class="user-badge">@{{ row.usuario }}</span>
+          }
+          @case ('nombre') {
+            <div class="td-nombre">{{ row.nombre }}</div>
+          }
+          @case ('telefono') {
+            <span class="td-muted">{{ row.telefono }}</span>
+          }
+          @case ('totalObras') {
+            <span class="tag" [ngClass]="row.totalObras > 0 ? 'tag-obras' : 'tag-obras-empty'">
+              {{ obrasLabel(row.totalObras) }}
+            </span>
+          }
+        }
+      </ng-template>
 
-            <!-- 2. TRABAJADOR (Sin oficio) -->
-            <td>
-              <div class="nombre">{{ t.nombre }}</div>
-            </td>
+      <ng-template #actions let-row>
+        <div class="acciones-group">
+          <button class="icon-btn" (click)="verTrabajador(row)" aria-label="Ver trabajador" title="Ver Detalle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
 
-            <!-- 3. TELÉFONO -->
-            <td class="muted">{{ t.telefono }}</td>
+          <button
+            class="btn-imss"
+            [disabled]="!row.documentoImssUrl"
+            (click)="abrirDocumentoImss(row.documentoImssUrl)"
+            [title]="row.documentoImssUrl ? 'Ver Documento IMSS' : 'Sin documento registrado'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Ver IMSS
+          </button>
 
-            <!-- 4. OBRAS ASIGNADAS (texto dinámico según la cantidad) -->
-            <td>
-              <span class="tag" [ngClass]="t.totalObras > 0 ? 'tag-obras' : 'tag-obras-empty'">
-                {{ obrasLabel(t.totalObras) }}
-              </span>
-            </td>
+          <button class="btn-update" (click)="actualizarDatos(row)">
+            Actualizar Datos
+          </button>
 
-            <!-- 5. IMSS Y ACCIONES -->
-            <td class="col-acciones">
-              <div class="acciones-group">
-                <!-- Botón Ver Detalle -->
-                <button class="icon-btn" (click)="verTrabajador(t)" aria-label="Ver trabajador" title="Ver Detalle">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-
-                <!-- Botón Documento IMSS -->
-                <button 
-                  class="btn-imss" 
-                  [disabled]="!t.documentoImssUrl" 
-                  (click)="abrirDocumentoImss(t.documentoImssUrl)"
-                  [title]="t.documentoImssUrl ? 'Ver Documento IMSS' : 'Sin documento registrado'">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  Ver IMSS
-                </button>
-
-                <!-- Botón Actualizar Datos -->
-                <button class="btn-update" (click)="actualizarDatos(t)">
-                  Actualizar Datos
-                </button>
-
-                <!-- Botón Eliminar -->
-                <button class="icon-btn icon-btn-danger" (click)="eliminarTrabajador(t)" aria-label="Eliminar trabajador" title="Eliminar">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <tr *ngIf="trabajadoresFiltrados.length === 0">
-            <td colspan="5" class="empty-state">No se encontraron trabajadores con ese criterio.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+          <button class="icon-btn icon-btn-danger" (click)="eliminarTrabajador(row)" aria-label="Eliminar trabajador" title="Eliminar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+          </button>
+        </div>
+      </ng-template>
+    </app-data-table>
 
   </section>
 
@@ -99,7 +77,7 @@
 <!-- MODAL DE DETALLES REDISEÑADO -->
 <div class="modal-overlay" [class.open]="selectedTrabajador" (click)="cerrarDetalle()">
   <div class="modal" *ngIf="selectedTrabajador" (click)="$event.stopPropagation()">
-    
+
     <div class="modal-header">
       <div>
         <div class="trabajador-tag">Ficha de Trabajador</div>
@@ -109,7 +87,6 @@
     </div>
 
     <div class="modal-body">
-      <!-- Grid de Labels Informativos -->
       <div class="info-labels-grid">
         <div class="field-label-group">
           <label>Nombre de Usuario</label>
@@ -132,7 +109,6 @@
         </div>
       </div>
 
-      <!-- Obra(s) Asignada(s) -->
       <div class="field-label-group mt-3">
         <label>Obra(s) asignada(s)</label>
         <div class="obras-container">
@@ -148,7 +124,6 @@
         </div>
       </div>
 
-      <!-- Documento de Afiliación IMSS (solo visualización / apertura) -->
       <div class="field-label-group mt-3">
         <label>Documento de Afiliación IMSS</label>
 

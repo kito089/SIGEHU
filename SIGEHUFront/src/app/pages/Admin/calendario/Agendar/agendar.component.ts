@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 // import { Router } from '@angular/router';
@@ -39,6 +39,8 @@ interface TrabajadorOpcion {
   styleUrls: ['./agendar.component.css'],
 })
 export class AgendarComponent implements OnInit {
+  private fb = inject(FormBuilder);
+
 
   @Input() fechaInicial: string | null = null;
 
@@ -55,12 +57,7 @@ export class AgendarComponent implements OnInit {
   obras: ObraOpcion[] = [];
   trabajadores: TrabajadorOpcion[] = [];
 
-  constructor(
-    private fb: FormBuilder,
-    // private router: Router,
-    // private obrasService: ObrasService,
-    // private trabajadoresService: TrabajadoresService,
-  ) {
+  constructor() {
     this.form = this.fb.group({
       tipo: ['levantamiento', [Validators.required]],
       obraId: ['', [Validators.required]],
