@@ -15,10 +15,10 @@
 }
 
 .panel-frame {
-  border: 1.5px solid var(--sigehu-accent, #2f8fef);
-  border-radius: var(--sigehu-radius-lg, 14px);
+  background: var(--sigehu-panel-bg, #0e1424);
+  border: 1px solid var(--sigehu-border-divider, #334155);
+  border-radius: var(--sigehu-radius-lg, 12px);
   padding: 22px;
-  background: linear-gradient(180deg, rgba(47, 143, 239, 0.04), transparent 20%);
 }
 
 .panel-header {
@@ -44,8 +44,8 @@
 }
 
 .btn-primary {
-  background: var(--sigehu-accent, #2f8fef);
-  color: #071022;
+  background: var(--sigehu-primary-btn-bg, #3b82f6);
+  color: var(--sigehu-primary-btn-text, #ffffff);
   border: none;
   font-weight: 700;
   font-size: 13px;

@@ -135,34 +135,34 @@
       @if (nuevoMaterialAbierto) {
         <div class="nuevo-material-panel">
           <div class="nuevo-material-head">
-          <h3>Nuevo Material</h3>
-          <button type="button" class="icon-btn" (click)="cerrarNuevoMaterial()" aria-label="Cerrar">X</button>
-        </div>
+            <h3>Nuevo Material</h3>
+            <button type="button" class="icon-btn" (click)="cerrarNuevoMaterial()" aria-label="Cerrar">X</button>
+          </div>
 
-        <div class="field">
-          <label for="matNombre">Nombre del Material</label>
-          <input type="text" id="matNombre" [formControl]="matNombreControl" maxlength="150" placeholder="Ej. PTR 2x2 Cal14">
-          <span class="field-error" *ngIf="nuevoMaterialForm.get('nombre')?.touched && nuevoMaterialForm.get('nombre')?.invalid">Ingresa el nombre del material</span>
-        </div>
+          <div class="field">
+            <label for="matNombre">Nombre del Material</label>
+            <input type="text" id="matNombre" [formControl]="matNombreControl" maxlength="150" placeholder="Ej. PTR 2x2 Cal14">
+            <span class="field-error" *ngIf="nuevoMaterialForm.get('nombre')?.touched && nuevoMaterialForm.get('nombre')?.invalid">Ingresa el nombre del material</span>
+          </div>
 
-        <div class="field">
-          <label for="matUnidad">Unidad de Medida</label>
-          <input type="text" id="matUnidad" [formControl]="matUnidadControl" maxlength="20" placeholder="Tramo, Pieza, Litro">
-          <span class="field-error" *ngIf="nuevoMaterialForm.get('unidadMedida')?.touched && nuevoMaterialForm.get('unidadMedida')?.invalid">Ingresa la unidad de medida</span>
-        </div>
+          <div class="field">
+            <label for="matUnidad">Unidad de Medida</label>
+            <input type="text" id="matUnidad" [formControl]="matUnidadControl" maxlength="20" placeholder="Tramo, Pieza, Litro">
+            <span class="field-error" *ngIf="nuevoMaterialForm.get('unidadMedida')?.touched && nuevoMaterialForm.get('unidadMedida')?.invalid">Ingresa la unidad de medida</span>
+          </div>
 
-        <div class="field">
-          <label for="matDesc">Descripción (opcional)</label>
-          <textarea id="matDesc" rows="2" [formControl]="matDescripcionControl" placeholder="Características…"></textarea>
-        </div>
+          <div class="field">
+            <label for="matDesc">Descripción (opcional)</label>
+            <textarea id="matDesc" rows="2" [formControl]="matDescripcionControl" placeholder="Características…"></textarea>
+          </div>
 
-        <div class="nuevo-material-actions">
-          <button type="button" class="btn-secondary" (click)="cerrarNuevoMaterial()">Cancelar</button>
-          <button type="button" class="btn-primary" [disabled]="guardandoMaterial" (click)="guardarNuevoMaterial()">
-            {{ guardandoMaterial ? 'Guardando…' : 'Guardar Material' }}
-          </button>
+          <div class="nuevo-material-actions">
+            <button type="button" class="btn-secondary" (click)="cerrarNuevoMaterial()">Cancelar</button>
+            <button type="button" class="btn-primary" [disabled]="guardandoMaterial" (click)="guardarNuevoMaterial()">
+              {{ guardandoMaterial ? 'Guardando…' : 'Guardar Material' }}
+            </button>
+          </div>
         </div>
-      </div>
       }
 
     </form>
