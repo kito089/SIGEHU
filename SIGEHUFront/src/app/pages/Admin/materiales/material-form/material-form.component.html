@@ -1,0 +1,51 @@
+<div class="page">
+  <app-entity-form
+    [title]="esEdicion ? 'Editar Material / Herramienta' : 'Nuevo Material / Herramienta'"
+    subtitle="Registra los datos del material o herramienta que se usa en el taller"
+    badgeText="Materiales"
+    [loading]="loading"
+    [submitting]="guardando"
+    [submitLabel]="esEdicion ? 'Guardar Cambios' : 'Guardar Material'"
+    (submitRequested)="onSubmit()"
+    (cancelRequested)="cancelar()"
+  >
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <div class="field">
+        <label for="nombre">Nombre del Material / Herramienta</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          maxlength="150"
+          placeholder="Ej. PTR Verde 2x2 Cal14">
+        <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+          Ingresa el nombre del material (mín. 2 caracteres)
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="unidadMedida">Unidad de Medida</label>
+        <input
+          id="unidadMedida"
+          type="text"
+          formControlName="unidadMedida"
+          maxlength="20"
+          placeholder="Ej. Tramo, Pieza, Litro, Metro">
+        <span class="field-error" *ngIf="form.get('unidadMedida')?.touched && form.get('unidadMedida')?.invalid">
+          Ingresa la unidad de medida (máx. 20 caracteres)
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="descripcion">Descripción (opcional)</label>
+        <textarea
+          id="descripcion"
+          rows="3"
+          formControlName="descripcion"
+          placeholder="Características, especificaciones o notas internas…"></textarea>
+      </div>
+
+    </form>
+  </app-entity-form>
+</div>

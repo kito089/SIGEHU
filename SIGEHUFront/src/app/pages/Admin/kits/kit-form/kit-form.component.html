@@ -1,0 +1,170 @@
+<div class="page">
+  <app-entity-form
+    [title]="esEdicion ? 'Editar Kit de Instalación' : 'Nuevo Kit de Instalación'"
+    subtitle="Agrupa herramientas y materiales que se asignan por obra"
+    [loading]="loading"
+    [submitting]="guardando"
+    badgeText="Kit de Instalación"
+    [submitLabel]="esEdicion ? 'Guardar Cambios' : 'Guardar Kit'"
+    (submitRequested)="onSubmit()"
+    (cancelRequested)="cancelar()"
+  >
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <div class="field">
+        <label for="nombre">Nombre del Kit</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          maxlength="100"
+          placeholder="Ej. Kit Herrería Básico">
+        <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+          Ingresa el nombre del kit (mín. 2 caracteres)
+        </span>
+      </div>
+
+      <div class="field">
+        <label for="descripcion">Descripción (opcional)</label>
+        <textarea
+          id="descripcion"
+          rows="2"
+          formControlName="descripcion"
+          placeholder="Herramienta y consumibles incluidos en el kit…"></textarea>
+      </div>
+
+      <!-- ── Materiales del kit ─────────────────────────────────────────── -->
+      <div class="kit-materiales">
+        <div class="section-title">
+          <h2>Materiales del kit</h2>
+          <span class="section-count" *ngIf="materialesSeleccionados.length">
+            {{ materialesSeleccionados.length }} material{{ materialesSeleccionados.length !== 1 ? 'es' : '' }} en el kit
+          </span>
+        </div>
+
+        <div class="selector" #buscarWrap>
+          <div class="selector-input-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input
+              type="text"
+              [value]="busquedaMaterial"
+              (input)="onBusquedaMaterial($event)"
+              (focus)="onFocoBuscador()"
+              (keydown.escape)="cerrarSelector()"
+              placeholder="Buscar y agregar materiales…"
+              autocomplete="off"
+              role="combobox"
+              aria-label="Buscar materiales para el kit"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="selectorAbierto">
+          </div>
+
+          @if (selectorAbierto) {
+            <div class="selector-lista" role="listbox">
+              @for (m of materialesFiltradosBuscador; track m.idMaterial) {
+                <button
+                  type="button"
+                  class="selector-item"
+                  role="option"
+                  [attr.aria-selected]="yaEstaEnKit(m.idMaterial)"
+                  (click)="seleccionarMaterial(m)">
+                  <span class="selector-item-nombre">{{ m.nombre }}</span>
+                  <span class="selector-item-unidad">{{ m.unidadMedida }}</span>
+                  <span class="selector-item-estado" *ngIf="yaEstaEnKit(m.idMaterial)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+                    Agregado
+                  </span>
+                </button>
+              } @empty {
+                <div class="selector-empty">No se encontraron materiales.</div>
+              }
+
+              <div class="selector-divider"></div>
+
+              <button type="button" class="selector-item selector-item--nuevo" (click)="abrirNuevoMaterial()">
+                + Agregar nuevo material
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (materialesSeleccionados.length > 0) {
+          <div class="mat-table">
+            <div class="mat-table-head">
+              <span>Material</span>
+              <span>Unidad</span>
+              <span class="w-cant">Cantidad</span>
+              <span class="w-notas">Notas</span>
+              <span class="w-acc"></span>
+            </div>
+            @for (mat of materialesSeleccionados; track mat.idMaterial; let i = $index) {
+              <div class="mat-table-row">
+                <span class="mat-nombre">{{ mat.nombre }}</span>
+                <span class="mat-unidad">{{ mat.unidadMedida }}</span>
+                <span class="w-cant">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    [value]="mat.cantidad ?? ''"
+                    (input)="onCantidadChange(i, $event)"
+                    placeholder="0">
+                </span>
+                <span class="w-notas">
+                  <input
+                    type="text"
+                    [value]="mat.notasKit ?? ''"
+                    (input)="onNotasChange(i, $event)"
+                    placeholder="Opcionales">
+                </span>
+                <span class="w-acc">
+                  <button type="button" class="icon-btn icon-btn--danger" (click)="quitarMaterial(i)" aria-label="Quitar material">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2z"/></svg>
+                  </button>
+                </span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="hint">
+            Aún no has agregado materiales al kit. Busca y selecciona materiales arriba.
+          </p>
+        }
+      </div>
+
+      @if (nuevoMaterialAbierto) {
+        <div class="nuevo-material-panel">
+          <div class="nuevo-material-head">
+          <h3>Nuevo Material</h3>
+          <button type="button" class="icon-btn" (click)="cerrarNuevoMaterial()" aria-label="Cerrar">X</button>
+        </div>
+
+        <div class="field">
+          <label for="matNombre">Nombre del Material</label>
+          <input type="text" id="matNombre" [formControl]="matNombreControl" maxlength="150" placeholder="Ej. PTR 2x2 Cal14">
+          <span class="field-error" *ngIf="nuevoMaterialForm.get('nombre')?.touched && nuevoMaterialForm.get('nombre')?.invalid">Ingresa el nombre del material</span>
+        </div>
+
+        <div class="field">
+          <label for="matUnidad">Unidad de Medida</label>
+          <input type="text" id="matUnidad" [formControl]="matUnidadControl" maxlength="20" placeholder="Tramo, Pieza, Litro">
+          <span class="field-error" *ngIf="nuevoMaterialForm.get('unidadMedida')?.touched && nuevoMaterialForm.get('unidadMedida')?.invalid">Ingresa la unidad de medida</span>
+        </div>
+
+        <div class="field">
+          <label for="matDesc">Descripción (opcional)</label>
+          <textarea id="matDesc" rows="2" [formControl]="matDescripcionControl" placeholder="Características…"></textarea>
+        </div>
+
+        <div class="nuevo-material-actions">
+          <button type="button" class="btn-secondary" (click)="cerrarNuevoMaterial()">Cancelar</button>
+          <button type="button" class="btn-primary" [disabled]="guardandoMaterial" (click)="guardarNuevoMaterial()">
+            {{ guardandoMaterial ? 'Guardando…' : 'Guardar Material' }}
+          </button>
+        </div>
+      </div>
+      }
+
+    </form>
+  </app-entity-form>
+</div>

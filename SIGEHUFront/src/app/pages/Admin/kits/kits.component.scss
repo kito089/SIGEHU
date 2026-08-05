@@ -74,8 +74,14 @@
   border-radius: 6px;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
   background: var(--sigehu-accent-soft, rgba(47,143,239,0.12));
   color: var(--sigehu-accent, #2f8fef);
+}
+
+.td-count--success {
+  background: var(--sigehu-success-soft, rgba(16,185,129,0.12));
+  color: var(--sigehu-success, #10b981);
 }
 
 .badge-estado {
@@ -128,6 +134,8 @@
 }
 
 .icon-btn:hover { color: var(--sigehu-accent, #2f8fef); border-color: var(--sigehu-accent, #2f8fef); }
+
+.icon-btn--danger:hover { color: var(--sigehu-danger, #f4574f); border-color: var(--sigehu-danger, #f4574f); }
 
 @media (max-width: 720px) {
   .page { padding: 20px 16px 50px; }

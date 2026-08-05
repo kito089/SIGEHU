@@ -40,6 +40,8 @@ export class MainLayoutComponent {
     '/admin/calendario': { title: 'Calendario Operativo', subtitle: 'Programación de actividades' },
     '/admin/calendario/agendar': { title: 'Agendar Actividad', subtitle: 'Nueva cita programada' },
     '/admin/materiales': { title: 'Materiales / Herramientas', subtitle: 'Catálogo de insumos, materiales y suministros' },
+    '/admin/materiales/nuevo': { title: 'Nuevo Material', subtitle: 'Alta de material o herramienta' },
+    '/admin/materiales/editar': { title: 'Editar Material', subtitle: 'Modificar material o herramienta' },
     '/admin/kits': { title: 'Kits de Instalación', subtitle: 'Paquetes de herramientas y materiales por obra' },
     '/admin/reportes': { title: 'Reportes', subtitle: 'Consultas generales e indicadores del negocio' },
     '/admin/catalogo': { title: 'Materiales / Herramientas', subtitle: 'Catálogo de insumos, materiales y suministros' },

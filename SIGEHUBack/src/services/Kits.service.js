@@ -14,7 +14,8 @@ const getKits = async () => {
     const db = await getConnection();
     return await db.query(
         `SELECT k.*,
-            (SELECT COUNT(*) FROM Kits_has_Materiales km WHERE km.Kits_Instalacion_idKit = k.idKit) AS TotalMateriales
+            (SELECT COUNT(*) FROM Kits_has_Materiales km WHERE km.Kits_Instalacion_idKit = k.idKit) AS TotalMateriales,
+            (SELECT COALESCE(SUM(km.Cantidad), 0) FROM Kits_has_Materiales km WHERE km.Kits_Instalacion_idKit = k.idKit) AS TotalUnidades
          FROM Kits_Instalacion k
          WHERE k.Activo = TRUE`,
         []

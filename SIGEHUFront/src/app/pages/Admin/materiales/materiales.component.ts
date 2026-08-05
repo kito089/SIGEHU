@@ -1,76 +1,73 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { MaterialesService } from '../../../services/materiales.service';
+import { Material } from '../../../core/models/material.model';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 /* =========================================================================
-   SIGEHU — Gestión de Materiales / Herramientas (componente Angular standalone)
-   Módulo M9 / RF-16 (Asignación de Insumos/Materiales) y catálogo base.
-   Sustituye fetchMateriales() por tu llamada real (GET /api/materiales)
-   cuando conectes el backend.
-   ========================================================================= */
+   SIGEHU — Gestión de Materiales / Herramientas.
 
-type CategoriaMaterial = 'Estructural' | 'Lamina' | 'Tubular' | 'Consumible' | 'Herramienta' | 'Acabado' | null;
-
-interface MaterialRow {
-  id: number;
-  clave: string;
-  descripcion: string;
-  categoria: CategoriaMaterial;
-  unidad: string;
-  precio: number;
-}
+   La tabla refleja la estructura real de la entidad `Materiales` del backend:
+   IDMaterial, Nombre, UnidadMedida, Descripcion, Activo (soft-delete).
+   Operaciones: listar (GET /Materiales), editar (naviga al formulario con
+   queryParam id) y desactivar (DELETE /Materiales/:id, soft-delete con modal
+   de confirmación RNF-07).
+   ======================================================================== */
 
 @Component({
   selector: 'app-materiales',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
   templateUrl: './materiales.component.html',
   styleUrl: './materiales.component.scss',
 })
 export class MaterialesComponent implements OnInit {
+  private router = inject(Router);
+  private service = inject(MaterialesService);
 
-  materiales: MaterialRow[] = [];
+  materiales: Material[] = [];
   searchTerm = '';
+  cargando = false;
+
+  // Modal de confirmación para desactivación (soft-delete).
+  materialAEliminar: Material | null = null;
+  confirmarEliminacion = false;
+  desactivando = false;
 
   columns: DataTableColumn[] = [
-    { key: 'clave', label: 'Código' },
+    { key: 'nombre', label: 'Material' },
+    { key: 'unidadMedida', label: 'Unidad de Medida' },
     { key: 'descripcion', label: 'Descripción' },
-    { key: 'categoria', label: 'Categoría' },
-    { key: 'unidad', label: 'U. Medida' },
-    { key: 'precio', label: 'Precio', align: 'right' },
   ];
 
   ngOnInit(): void {
-    this.fetchMateriales().then(materiales => {
-      this.materiales = materiales;
-    });
+    this.cargarMateriales();
   }
 
-  // Ajusta esto a tu endpoint real cuando conectes el backend, p. ej.:
-  // constructor(private materialesService: MaterialesService) {}
-  // private fetchMateriales(): Promise<MaterialRow[]> {
-  //   return firstValueFrom(this.materialesService.listar());
-  // }
-  private async fetchMateriales(): Promise<MaterialRow[]> {
-    return [
-      { id: 1, clave: 'PTR-200-14', descripcion: 'PTR Verde 2x2 Cal14', categoria: 'Estructural', unidad: 'Tramo', precio: 1200 },
-      { id: 2, clave: 'LAM-14N', descripcion: 'Lámina Negra Cal14', categoria: 'Lamina', unidad: 'Pieza', precio: 2500 },
-      { id: 3, clave: 'ANG-100-18', descripcion: 'Ángulo 1x1/8', categoria: 'Tubular', unidad: 'Tramo', precio: 530 },
-      { id: 4, clave: 'DIS-COR-45', descripcion: 'Disco Corte 4.5"', categoria: 'Consumible', unidad: 'Pieza', precio: 35 },
-      { id: 5, clave: 'TLZ-CIN-100', descripcion: 'Cinta métrica 100 m', categoria: 'Herramienta', unidad: 'Pieza', precio: 480 },
-      { id: 6, clave: 'PNT-ANT-19', descripcion: 'Pintura anticorrosiva', categoria: 'Acabado', unidad: 'Litro', precio: 190 },
-    ];
+  async cargarMateriales(): Promise<void> {
+    this.cargando = true;
+    try {
+      this.materiales = await firstValueFrom(this.service.listar());
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
+      this.materiales = [];
+    } finally {
+      this.cargando = false;
+    }
   }
 
-  get materialesFiltrados(): MaterialRow[] {
+  get materialesFiltrados(): Material[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) return this.materiales;
 
     return this.materiales.filter(m =>
-      m.descripcion.toLowerCase().includes(term) ||
-      m.clave.toLowerCase().includes(term) ||
-      (m.categoria ?? '').toLowerCase().includes(term)
+      m.nombre.toLowerCase().includes(term) ||
+      (m.unidadMedida ?? '').toLowerCase().includes(term) ||
+      (m.descripcion ?? '').toLowerCase().includes(term)
     );
   }
 
@@ -78,21 +75,42 @@ export class MaterialesComponent implements OnInit {
     this.searchTerm = term;
   }
 
-  categoriaLabel(cat: CategoriaMaterial): string {
-    return cat ?? '—';
+  get mensajeConfirmacion(): string {
+    return this.materialAEliminar
+      ? `¿Estás seguro de eliminar "${this.materialAEliminar.nombre}"? Esta acción lo desactivará del catálogo.`
+      : '';
   }
 
-  formatoPrecio(precio: number): string {
-    return `$${precio.toLocaleString('es-MX')}`;
+  editar(material: Material): void {
+    this.router.navigate(['/admin/materiales/nuevo'], { queryParams: { id: material.idMaterial } });
+  }
+
+  eliminar(material: Material): void {
+    this.materialAEliminar = material;
+    this.confirmarEliminacion = true;
+  }
+
+  cancelarEliminacion(): void {
+    this.confirmarEliminacion = false;
+    this.materialAEliminar = null;
+  }
+
+  async confirmarDesactivacion(): Promise<void> {
+    if (!this.materialAEliminar) return;
+    this.desactivando = true;
+    try {
+      await firstValueFrom(this.service.desactivar(this.materialAEliminar.idMaterial!));
+      this.materiales = this.materiales.filter(m => m.idMaterial !== this.materialAEliminar!.idMaterial);
+      this.confirmarEliminacion = false;
+      this.materialAEliminar = null;
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.desactivando = false;
+    }
   }
 
   nuevoMaterial(): void {
-    // this.router.navigate(['/materiales/nuevo']);
-    alert('Aquí se abriría el formulario para registrar un nuevo material.');
-  }
-
-  editarMaterial(material: MaterialRow): void {
-    // this.router.navigate(['/materiales/editar', material.id]);
-    alert(`Aquí se abriría el formulario de edición para "${material.descripcion}".`);
+    this.router.navigate(['/admin/materiales/nuevo']);
   }
 }

@@ -61,25 +61,8 @@
 
 .btn-primary:hover { filter: brightness(1.08); }
 
-.td-clave {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: 12px;
-  color: var(--sigehu-text-secondary, #8992a8);
-}
-
-.td-desc { font-weight: 600; color: var(--sigehu-text-primary, #eef1f7); }
+.td-nombre { font-weight: 600; color: var(--sigehu-text-primary, #eef1f7); }
 .td-muted { color: var(--sigehu-text-secondary, #8992a8); }
-.td-precio { color: var(--sigehu-success, #34d399); font-weight: 600; }
-
-.tag {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--sigehu-accent-soft, rgba(47,143,239,0.12));
-  color: var(--sigehu-accent, #2f8fef);
-}
 
 .acciones-group {
   display: flex;
@@ -103,6 +86,11 @@
 }
 
 .icon-btn:hover { color: var(--sigehu-accent, #2f8fef); border-color: var(--sigehu-accent, #2f8fef); }
+
+.icon-btn--danger:hover {
+  color: var(--sigehu-danger, #ef4444);
+  border-color: var(--sigehu-danger, #ef4444);
+}
 
 @media (max-width: 720px) {
   .page { padding: 20px 16px 50px; }
