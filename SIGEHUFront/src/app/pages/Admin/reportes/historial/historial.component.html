@@ -1,0 +1,124 @@
+<div class="page">
+
+  <section class="panel-frame">
+    <div class="panel-header">
+      <div class="panel-header__title">
+        <button class="back-btn" (click)="volver()" aria-label="Volver a Reportes">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Volver
+        </button>
+        <div>
+          <h1>Historial completo de auditorías</h1>
+          <p>Filtra por día o busca por descripción, usuario o entidad</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel-frame">
+    <app-filter-bar
+      [searchPlaceholder]="'Buscar por descripción, usuario o entidad…'"
+      [searchTerm]="busqueda"
+      [options]="diaOpciones"
+      [filterValue]="filtroDia"
+      (searchTermChange)="onBusqueda($event)"
+      (filterValueChange)="onFiltroDia($event)"
+    ></app-filter-bar>
+
+    @if (cargando) {
+      <app-skeleton type="table" [lines]="8"></app-skeleton>
+    } @else if (error) {
+      <app-empty-state
+        title="No se pudo cargar el historial"
+        subtitle="Verifica la conexión con el servidor e inténtalo de nuevo"
+        icon="cloud-offline-outline"
+      ></app-empty-state>
+    } @else {
+      <app-data-table
+        [columns]="columnas"
+        [data]="paginaSlice"
+        [loading]="false"
+        [rowKey]="'id'"
+        emptyMessage="No hay registros para el día o búsqueda seleccionada"
+      >
+        <ng-template #cell let-row let-col="column">
+          @switch (col.key) {
+            @case ('accion') {
+              <span class="badge" [class]="badgeClass(row.accion)">{{ etiquetaAccion(row.accion) }}</span>
+            }
+            @case ('descripcion') {
+              <span class="td-descripcion">{{ row.descripcion }}</span>
+            }
+            @case ('fecha') {
+              <span class="td-fecha">{{ fechaHora(row.fecha) }}</span>
+            }
+            @default {
+              <span>{{ row[col.key] }}</span>
+            }
+          }
+        </ng-template>
+        <ng-template #actions let-row>
+          @if (row.accion === 'UPDATE') {
+            <button class="icon-btn" (click)="verDetalles(row)" aria-label="Ver detalles" title="Ver detalles">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          }
+        </ng-template>
+      </app-data-table>
+
+      @if (historialFiltrado.length > 0) {
+        <div class="paginacion">
+          <span class="paginacion__info">{{ rangoPagina }}</span>
+          <button class="btn-ghost" [disabled]="paginaActual === 1" (click)="irAPagina(paginaActual - 1)">
+            Anterior
+          </button>
+          <button class="btn-ghost" [disabled]="paginaActual === paginasTotales" (click)="irAPagina(paginaActual + 1)">
+            Siguiente
+          </button>
+        </div>
+      }
+    }
+  </section>
+
+  <!-- Modal de detalles de una actualización (AuditoriasDetalles) -->
+  @if (detalleRegistro) {
+    <app-detail-modal
+      tag="Detalles de la actualización"
+      [title]="detalleRegistro.descripcion"
+      [loading]="detalleCargando"
+      (cerrar)="cerrarDetalles()"
+    >
+      <div class="detail-modal__section">
+        <span class="detail-modal__label">Cambios por campo</span>
+      </div>
+      <div class="detalle-tabla-wrap">
+        <table class="detalle-tabla">
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Cambio</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of detalleCampos; track d.id) {
+              <tr>
+                <td class="detalle-tabla__campo">{{ d.campo }}</td>
+                <td class="detalle-tabla__cambio">
+                  <span class="d-old">{{ d.valorAnterior || '—' }}</span>
+                  <span class="d-arrow">→</span>
+                  <span class="d-new">{{ d.valorNuevo || '—' }}</span>
+                </td>
+              </tr>
+            }
+            @if (detalleCampos.length === 0 && !detalleCargando) {
+              <tr>
+                <td colspan="2" class="detalle-tabla__empty">No hay cambios de campo registrados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </app-detail-modal>
+  }
+
+</div>
