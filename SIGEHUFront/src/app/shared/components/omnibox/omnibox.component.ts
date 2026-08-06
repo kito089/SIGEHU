@@ -4,21 +4,47 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { SearchService, SearchResult } from '../../../core/services/search.service';
+import { SearchService, SearchResult, EntidadBusqueda } from '../../../core/services/search.service';
 
 interface GroupedResults {
-  tipo: 'Cliente' | 'Obra' | 'Proveedor';
+  tipo: EntidadBusqueda;
   icon: string;
+  label: string;
   items: SearchResult[];
 }
 
-const ICONOS: Record<SearchResult['tipo'], string> = {
+const ICONOS: Record<EntidadBusqueda, string> = {
   Cliente: 'people-outline',
   Obra: 'construct-outline',
-  Proveedor: 'cube-outline'
+  Trabajador: 'person-outline',
+  Proveedor: 'cube-outline',
+  Material: 'layers-outline',
+  Kit: 'albums-outline',
+  Garantia: 'shield-checkmark-outline',
+  OrdenCompra: 'cart-outline'
 };
 
-const ORDEN: SearchResult['tipo'][] = ['Cliente', 'Obra', 'Proveedor'];
+const ETIQUETAS: Record<EntidadBusqueda, string> = {
+  Cliente: 'Clientes',
+  Obra: 'Obras',
+  Trabajador: 'Trabajadores',
+  Proveedor: 'Proveedores',
+  Material: 'Materiales',
+  Kit: 'Kits',
+  Garantia: 'Garantías',
+  OrdenCompra: 'Órdenes de Compra'
+};
+
+const ORDEN: EntidadBusqueda[] = [
+  'Cliente',
+  'Obra',
+  'Trabajador',
+  'Proveedor',
+  'Material',
+  'Kit',
+  'Garantia',
+  'OrdenCompra'
+];
 
 @Component({
   selector: 'app-omnibox',
@@ -70,6 +96,7 @@ export class OmniboxComponent implements OnInit, OnDestroy {
             .map(tipo => ({
               tipo,
               icon: ICONOS[tipo],
+              label: ETIQUETAS[tipo],
               items: results.filter(r => r.tipo === tipo)
             }))
             .filter(g => g.items.length > 0);
@@ -93,7 +120,9 @@ export class OmniboxComponent implements OnInit, OnDestroy {
     this.query = '';
     this.open = false;
     this.groups = [];
-    this.router.navigate([r.ruta, r.id]);
+    // Navega al listado con `?ver=<id>`; la página abre automáticamente la
+    // vista de detalle ("Ver Detalle") del registro seleccionado.
+    this.router.navigate([r.ruta], { queryParams: { ver: r.id } });
   }
 
   cerrar(): void {

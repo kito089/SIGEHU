@@ -12,7 +12,7 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
       <div class="field">
-        <label for="nombre">Nombre del Kit</label>
+        <label for="nombre">Nombre del Kit <span class="req" aria-hidden="true">*</span></label>
         <input
           id="nombre"
           type="text"
@@ -20,7 +20,7 @@
           maxlength="100"
           placeholder="Ej. Kit Herrería Básico">
         <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
-          Ingresa el nombre del kit (mín. 2 caracteres)
+          {{ form.get('nombre')?.hasError('required') ? 'Ingresa el nombre del kit' : form.get('nombre')?.hasError('minlength') ? 'Mínimo 2 caracteres' : 'El nombre no puede contener solo espacios' }}
         </span>
       </div>
 
@@ -98,8 +98,13 @@
               <span class="w-acc"></span>
             </div>
             @for (mat of materialesSeleccionados; track mat.idMaterial; let i = $index) {
-              <div class="mat-table-row">
-                <span class="mat-nombre">{{ mat.nombre }}</span>
+              <div class="mat-table-row" [class.mat-table-row--eliminado]="esMaterialEliminado(mat)">
+                <span class="mat-nombre">
+                  {{ mat.nombre }}
+                  <span class="mat-historic" *ngIf="esMaterialEliminado(mat)">
+                    Este material ha sido eliminado del sistema.
+                  </span>
+                </span>
                 <span class="mat-unidad">{{ mat.unidadMedida }}</span>
                 <span class="w-cant">
                   <input
@@ -108,17 +113,24 @@
                     step="any"
                     [value]="mat.cantidad ?? ''"
                     (input)="onCantidadChange(i, $event)"
-                    placeholder="0">
+                    placeholder="0"
+                    [disabled]="esMaterialEliminado(mat)">
                 </span>
                 <span class="w-notas">
                   <input
                     type="text"
                     [value]="mat.notasKit ?? ''"
                     (input)="onNotasChange(i, $event)"
-                    placeholder="Opcionales">
+                    placeholder="Opcionales"
+                    [disabled]="esMaterialEliminado(mat)">
                 </span>
                 <span class="w-acc">
-                  <button type="button" class="icon-btn icon-btn--danger" (click)="quitarMaterial(i)" aria-label="Quitar material">
+                  <button
+                    type="button"
+                    class="icon-btn icon-btn--danger"
+                    (click)="quitarMaterial(i)"
+                    aria-label="Quitar material"
+                    [disabled]="esMaterialEliminado(mat)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2z"/></svg>
                   </button>
                 </span>
@@ -140,15 +152,15 @@
           </div>
 
           <div class="field">
-            <label for="matNombre">Nombre del Material</label>
+            <label for="matNombre">Nombre del Material <span class="req" aria-hidden="true">*</span></label>
             <input type="text" id="matNombre" [formControl]="matNombreControl" maxlength="150" placeholder="Ej. PTR 2x2 Cal14">
-            <span class="field-error" *ngIf="nuevoMaterialForm.get('nombre')?.touched && nuevoMaterialForm.get('nombre')?.invalid">Ingresa el nombre del material</span>
+            <span class="field-error" *ngIf="nuevoMaterialForm.get('nombre')?.touched && nuevoMaterialForm.get('nombre')?.invalid">{{ nuevoMaterialForm.get('nombre')?.hasError('required') ? 'Ingresa el nombre del material' : 'El nombre no puede contener solo espacios' }}</span>
           </div>
 
           <div class="field">
-            <label for="matUnidad">Unidad de Medida</label>
+            <label for="matUnidad">Unidad de Medida <span class="req" aria-hidden="true">*</span></label>
             <input type="text" id="matUnidad" [formControl]="matUnidadControl" maxlength="20" placeholder="Tramo, Pieza, Litro">
-            <span class="field-error" *ngIf="nuevoMaterialForm.get('unidadMedida')?.touched && nuevoMaterialForm.get('unidadMedida')?.invalid">Ingresa la unidad de medida</span>
+            <span class="field-error" *ngIf="nuevoMaterialForm.get('unidadMedida')?.touched && nuevoMaterialForm.get('unidadMedida')?.invalid">{{ nuevoMaterialForm.get('unidadMedida')?.hasError('required') ? 'Ingresa la unidad de medida' : 'La unidad no puede contener solo espacios' }}</span>
           </div>
 
           <div class="field">

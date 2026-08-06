@@ -1,0 +1,25 @@
+<div class="detail-modal__backdrop" (click)="onBackdropClick($event)">
+  <div class="detail-modal__panel" role="dialog" aria-modal="true" [attr.aria-label]="title || 'Detalle del registro'">
+    <header class="detail-modal__header">
+      <div class="detail-modal__heading">
+        <div class="detail-modal__tag" *ngIf="tag">{{ tag }}</div>
+        <h2 class="detail-modal__title">{{ title }}</h2>
+      </div>
+      <button type="button" class="detail-modal__close" (click)="cerrar.emit()" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </header>
+
+    <div class="detail-modal__body">
+      @if (loading) {
+        <div class="detail-modal__loading">
+          <span class="detail-modal__skeleton"></span>
+          <span class="detail-modal__skeleton detail-modal__skeleton--short"></span>
+          <span class="detail-modal__skeleton"></span>
+        </div>
+      } @else {
+        <ng-content></ng-content>
+      }
+    </div>
+  </div>
+</div>

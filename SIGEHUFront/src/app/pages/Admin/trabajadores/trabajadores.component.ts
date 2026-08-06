@@ -1,12 +1,14 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { EnvService } from '../../../services/env.service';
 import { TrabajadoresRefreshService } from '../../../services/trabajadores-refresh.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 
 export interface Trabajador {
   id: number;
@@ -23,12 +25,13 @@ export interface Trabajador {
 @Component({
   selector: 'app-trabajadores',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './trabajadores.component.html',
   styleUrl: './trabajadores.component.scss',
 })
 export class TrabajadoresComponent implements OnInit, OnDestroy {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private env = inject(EnvService);
   private refreshService = inject(TrabajadoresRefreshService);
@@ -37,7 +40,9 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
   trabajadores: Trabajador[] = [];
   searchTerm = '';
   selectedTrabajador: Trabajador | null = null;
+  pendienteEliminar: Trabajador | null = null;
   private refreshSub: Subscription | null = null;
+  private detallePendienteId: number | null = null;
 
   columns: DataTableColumn[] = [
     { key: 'usuario', label: 'Usuario' },
@@ -53,6 +58,13 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
     this.refreshSub = this.refreshService.cambios$.subscribe(() => {
       this.cargarTrabajadores();
     });
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
   }
 
   ngOnDestroy(): void {
@@ -62,7 +74,17 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
   cargarTrabajadores(): void {
     this.fetchTrabajadores().then(trabajadores => {
       this.trabajadores = trabajadores;
+      this.abrirDetallePendiente();
     });
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const trabajador = this.trabajadores.find(t => t.id === id);
+    if (!trabajador) return;
+    this.detallePendienteId = null;
+    this.verTrabajador(trabajador);
   }
 
   private mapTrabajador(raw: any): Trabajador {
@@ -135,9 +157,23 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
     window.open(base + '/' + url.replace(/^\/+/, ''), '_blank');
   }
 
-  async eliminarTrabajador(trabajador: Trabajador): Promise<void> {
-    const confirmado = confirm(`¿Eliminar a "${trabajador.nombre}"? Esta acción no se puede deshacer.`);
-    if (!confirmado) return;
+  eliminarTrabajador(trabajador: Trabajador): void {
+    this.pendienteEliminar = trabajador;
+  }
+
+  get mensajeEliminacion(): string {
+    return this.pendienteEliminar
+      ? `¿Eliminar a "${this.pendienteEliminar.nombre}"? Esta acción no se puede deshacer.`
+      : '';
+  }
+
+  cancelarEliminacion(): void {
+    this.pendienteEliminar = null;
+  }
+
+  async confirmarEliminacion(): Promise<void> {
+    const trabajador = this.pendienteEliminar;
+    if (!trabajador) return;
 
     try {
       await firstValueFrom(this.api.delete('/Trabajadores/' + trabajador.id));
@@ -147,6 +183,8 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
       }
     } catch {
       // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.pendienteEliminar = null;
     }
   }
 

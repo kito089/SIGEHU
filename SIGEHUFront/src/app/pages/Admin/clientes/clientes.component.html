@@ -1,11 +1,11 @@
-<div class="page">
+﻿<div class="page">
 
   <section class="panel-frame">
 
     <div class="panel-header">
       <div>
-        <h1>Gestión de Clientes</h1>
-        <p>Directorio maestro, historial de obras y configuraciones de facturación SAT</p>
+        <h1>GestiÃ³n de Clientes</h1>
+        <p>Directorio maestro, historial de obras y configuraciones de facturaciÃ³n SAT</p>
       </div>
       <button class="btn-primary" (click)="nuevoCliente()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -63,7 +63,7 @@
 
       <ng-template #actions let-row>
         <div class="acciones-group">
-          <button class="icon-btn" (click)="verCliente(row); $event.stopPropagation()" aria-label="Ver cliente" title="Ver">
+          <button class="icon-btn" (click)="verCliente(row); $event.stopPropagation()" aria-label="Ver detalle" title="Ver Detalle">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
           <button class="icon-btn" (click)="editarCliente(row); $event.stopPropagation()" aria-label="Editar cliente" title="Editar">
@@ -89,19 +89,13 @@
       </div>
       <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
     </div>
-    <div class="modal-row"><span class="k">Teléfono</span><span class="v">{{ selectedCliente.telefono }}</span></div>
-    <div class="modal-row"><span class="k">Correo</span><span class="v">{{ selectedCliente.correo }}</span></div>
-    <div class="modal-row"><span class="k">Dirección</span><span class="v">{{ selectedCliente.direccion }}</span></div>
-    <div class="modal-row"><span class="k">RFC</span><span class="v">{{ selectedCliente.rfc }}</span></div>
-    <div class="modal-row"><span class="k">Obras activas</span><span class="v">{{ selectedCliente.obrasActivas }}</span></div>
-    <div class="modal-row"><span class="k">Datos SAT</span><span class="v">{{ selectedCliente.datosSat ? 'Registrados' : 'No Provistos' }}</span></div>
   </div>
-</div>
+</app-detail-modal>
 
 <app-confirm-modal
   *ngIf="confirmarEliminacion"
   [title]="'Desactivar cliente'"
-  [message]="'¿Estás seguro de desactivar a “' + (clienteAEliminar?.nombre ?? '') + '”? Esta acción no se puede deshacer.'"
+  [message]="'Â¿EstÃ¡s seguro de desactivar a â€œ' + (clienteAEliminar?.nombre ?? '') + 'â€? Esta acciÃ³n no se puede deshacer.'"
   confirmLabel="Desactivar"
   [loading]="eliminando"
   (confirmed)="confirmarEliminar()"

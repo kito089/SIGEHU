@@ -1,7 +1,6 @@
 import { Component, OnInit, inject, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ProveedoresService } from '../../../services/proveedores.service';
 import { Proveedor, ProveedorMaterial } from '../../../core/models/proveedor.model';
@@ -9,7 +8,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
-import { MaterialDetailComponent, MaterialDetailData } from '../../../shared/components/material-detail/material-detail.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 
 /* =========================================================================
    SIGEHU — Proveedores (listado).
@@ -23,12 +22,13 @@ import { MaterialDetailComponent, MaterialDetailData } from '../../../shared/com
 @Component({
   selector: 'app-proveedores',
   standalone: true,
-  imports: [CommonModule, IonicModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, MaterialDetailComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './proveedores.component.html',
   styleUrl: './proveedores.component.scss',
 })
 export class ProveedoresComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private service = inject(ProveedoresService);
   private toast = inject(ToastService);
 
@@ -37,10 +37,7 @@ export class ProveedoresComponent implements OnInit {
   cargando = false;
 
   selectedProveedor: Proveedor | null = null;
-
-  selectedMaterialForDetail: MaterialDetailData | null = null;
-
-  @Output() materialDetailClick = new EventEmitter<ProveedorMaterial>();
+  private detallePendienteId: number | null = null;
 
   proveedorAEliminar: Proveedor | null = null;
   confirmarEliminacion = false;
@@ -55,17 +52,34 @@ export class ProveedoresComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarProveedores();
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
   }
 
   async cargarProveedores(): Promise<void> {
     this.cargando = true;
     try {
       this.proveedores = await firstValueFrom(this.service.listar());
+      this.abrirDetallePendiente();
     } catch {
       this.proveedores = [];
     } finally {
       this.cargando = false;
     }
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const proveedor = this.proveedores.find(p => p.idProveedor === id);
+    if (!proveedor) return;
+    this.detallePendienteId = null;
+    this.verCatalogo(proveedor);
   }
 
   get proveedoresFiltrados(): Proveedor[] {

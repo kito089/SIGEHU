@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { NotificationService } from './notification.service';
 
 export type ToastType = 'success' | 'warning' | 'error' | 'info';
 
@@ -13,6 +14,8 @@ export interface ToastItem {
 
 @Injectable({ providedIn: 'root' })
 export class ToastService {
+  private notificationService = inject(NotificationService);
+
   private toastsSubject = new BehaviorSubject<ToastItem[]>([]);
   toasts$: Observable<ToastItem[]> = this.toastsSubject.asObservable();
   private counter = 0;
@@ -23,6 +26,12 @@ export class ToastService {
   info(message: string, duration = 4000): void { this.push('info', message, duration); }
 
   private push(type: ToastType, message: string, duration: number): void {
+    // El centro de notificaciones SIEMPRE registra (incluso con mute activo).
+    this.notificationService.push(type, message);
+
+    // El toast visual solo se muestra cuando no está silenciado.
+    if (this.notificationService.isMuted) return;
+
     const id = ++this.counter;
     const toast: ToastItem = { id, type, message, duration, createdAt: Date.now() };
     const current = this.toastsSubject.value;

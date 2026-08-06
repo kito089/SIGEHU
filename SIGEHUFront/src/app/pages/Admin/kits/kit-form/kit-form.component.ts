@@ -9,6 +9,7 @@ import { Material } from '../../../../core/models/material.model';
 import { KitMaterial, KitInstalacion } from '../../../../core/models/kit.model';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
+import { noWhitespaceValidator } from '../../../../core/validators/no-whitespace.validator';
 
 /* =========================================================================
    SIGEHU — Nuevo / Actualizar Kit de Instalación (RF-22).
@@ -69,14 +70,14 @@ export class KitFormComponent implements OnInit {
 
   constructor() {
     this.form = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      descripcion: [''],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100), noWhitespaceValidator()]],
+      descripcion: ['', [Validators.maxLength(500)]],
     });
 
     this.nuevoMaterialForm = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      unidadMedida: ['', [Validators.required, Validators.maxLength(20)]],
-      descripcion: [''],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150), noWhitespaceValidator()]],
+      unidadMedida: ['', [Validators.required, Validators.maxLength(20), noWhitespaceValidator()]],
+      descripcion: ['', [Validators.maxLength(500)]],
     });
   }
 
@@ -137,6 +138,7 @@ export class KitFormComponent implements OnInit {
         unidadMedida: m.unidadMedida ?? '',
         cantidad: m.cantidad ?? null,
         notasKit: m.notasKit ?? null,
+        activo: m.activo ?? true,
       }));
       return true;
     } catch {
@@ -204,16 +206,27 @@ export class KitFormComponent implements OnInit {
     return idMaterial != null && this.materialesSeleccionados.some(m => m.idMaterial === idMaterial);
   }
 
+  /** True cuando el material fue eliminado del sistema (soft-delete). */
+  esMaterialEliminado(mat: KitMaterial): boolean {
+    return mat.activo === false;
+  }
+
   quitarMaterial(index: number): void {
+    const mat = this.materialesSeleccionados[index];
+    if (mat && this.esMaterialEliminado(mat)) return;
     this.materialesSeleccionados.splice(index, 1);
   }
 
   onCantidadChange(index: number, event: Event): void {
+    const mat = this.materialesSeleccionados[index];
+    if (!mat || this.esMaterialEliminado(mat)) return;
     const value = (event.target as HTMLInputElement).value;
     this.materialesSeleccionados[index].cantidad = value === '' ? null : Number(value);
   }
 
   onNotasChange(index: number, event: Event): void {
+    const mat = this.materialesSeleccionados[index];
+    if (!mat || this.esMaterialEliminado(mat)) return;
     this.materialesSeleccionados[index].notasKit = (event.target as HTMLInputElement).value;
   }
 

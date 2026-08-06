@@ -15,6 +15,7 @@ import {
   filtrarTelefonoInput,
   sanitizarTelefono,
 } from '../../../../core/utils/telefono.util';
+import { noWhitespaceValidator } from '../../../../core/validators/no-whitespace.validator';
 
 /* =========================================================================
    SIGEHU — Nuevo / Actualizar Proveedor.
@@ -73,19 +74,19 @@ export class ProveedorNewComponent implements OnInit {
 
   constructor() {
     this.form = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100), noWhitespaceValidator()]],
       giroPrincipal: ['', [Validators.maxLength(100)]],
       contactoCompras: ['', [Validators.maxLength(150)]],
       telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN)]],
       correo: ['', [Validators.email, Validators.maxLength(254)]],
-      direccion: [''],
-      notas: [''],
+      direccion: ['', [Validators.maxLength(250)]],
+      notas: ['', [Validators.maxLength(500)]],
     });
 
     this.nuevoMaterialForm = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      unidadMedida: ['', [Validators.required, Validators.maxLength(20)]],
-      descripcion: [''],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150), noWhitespaceValidator()]],
+      unidadMedida: ['', [Validators.required, Validators.maxLength(20), noWhitespaceValidator()]],
+      descripcion: ['', [Validators.maxLength(500)]],
     });
   }
 

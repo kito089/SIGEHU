@@ -91,6 +91,7 @@ label{
 input[type="text"],
 input[type="tel"],
 input[type="email"],
+input[type="password"],
 textarea,
 select{
   width: 100%;
@@ -109,6 +110,39 @@ input:focus, textarea:focus, select:focus{ border-color: var(--accent); }
 input::placeholder, textarea::placeholder{ color: var(--text-tertiary); }
 
 select{ cursor: pointer; }
+
+/* Campo contraseña: contenedor para el botón mostrar/ocultar */
+.password-wrap{
+  position: relative;
+}
+.password-wrap input{
+  padding-right: 40px;
+}
+.password-toggle{
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: color .15s ease, background-color .15s ease;
+}
+.password-toggle:hover{
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.password-toggle ion-icon{
+  font-size: 18px;
+  pointer-events: none;
+}
 
 .field-error{
   display: block;
@@ -289,7 +323,11 @@ select{ cursor: pointer; }
 .btn-primary:hover:not(:disabled){ filter: brightness(1.08); }
 .btn-primary:disabled{ opacity: .65; cursor: not-allowed; }
 
-@media (max-width: 560px){
-  .form-card{ padding: 22px 18px 18px; }
+@media (max-width: 720px){
+  .page{ padding: 24px 14px; }
   .field-row{ grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px){
+  .page{ padding: 16px 10px; }
 }

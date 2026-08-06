@@ -1,12 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MaterialesService } from '../../../services/materiales.service';
 import { Material } from '../../../core/models/material.model';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 
 /* =========================================================================
    SIGEHU — Gestión de Materiales / Herramientas.
@@ -21,17 +22,22 @@ import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/
 @Component({
   selector: 'app-materiales',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './materiales.component.html',
   styleUrl: './materiales.component.scss',
 })
 export class MaterialesComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private service = inject(MaterialesService);
 
   materiales: Material[] = [];
   searchTerm = '';
   cargando = false;
+
+  // Modal de detalle ("Ver Detalle").
+  selectedMaterial: Material | null = null;
+  private detallePendienteId: number | null = null;
 
   // Modal de confirmación para desactivación (soft-delete).
   materialAEliminar: Material | null = null;
@@ -46,18 +52,35 @@ export class MaterialesComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarMateriales();
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
   }
 
   async cargarMateriales(): Promise<void> {
     this.cargando = true;
     try {
       this.materiales = await firstValueFrom(this.service.listar());
+      this.abrirDetallePendiente();
     } catch {
       // El interceptor de errores ya notifica el fallo vía toast.
       this.materiales = [];
     } finally {
       this.cargando = false;
     }
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const material = this.materiales.find(m => m.idMaterial === id);
+    if (!material) return;
+    this.detallePendienteId = null;
+    this.verDetalle(material);
   }
 
   get materialesFiltrados(): Material[] {
@@ -83,6 +106,14 @@ export class MaterialesComponent implements OnInit {
 
   editar(material: Material): void {
     this.router.navigate(['/admin/materiales/nuevo'], { queryParams: { id: material.idMaterial } });
+  }
+
+  verDetalle(material: Material): void {
+    this.selectedMaterial = material;
+  }
+
+  cerrarDetalle(): void {
+    this.selectedMaterial = null;
   }
 
   eliminar(material: Material): void {

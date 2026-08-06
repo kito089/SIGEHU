@@ -40,18 +40,31 @@
         </div>
       </div>
 
-      <div class="field">
-        <label for="oficio">Oficio / Especialidad <span class="req" aria-hidden="true">*</span></label>
-        <select id="oficio" formControlName="oficio">
-          <option value="" disabled>Selecciona el oficio del trabajador</option>
-          <option *ngFor="let oficio of oficios" [value]="oficio">{{ oficio }}</option>
-        </select>
-        <span class="field-error" *ngIf="form.get('oficio')?.touched && form.get('oficio')?.invalid">
-          Selecciona el oficio del trabajador
-        </span>
-      </div>
-
       <div class="field-row">
+        <div class="field">
+          <label for="contra">Contraseña <span class="req" *ngIf="!esEdicion" aria-hidden="true">*</span></label>
+          <div class="password-wrap">
+            <input
+              id="contra"
+              [type]="mostrarContrasena ? 'text' : 'password'"
+              formControlName="contra"
+              autocomplete="new-password"
+              placeholder="Mín. 4 caracteres">
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="toggleContrasena()"
+              [attr.aria-label]="mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              [attr.title]="mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              [attr.aria-pressed]="mostrarContrasena">
+              <ion-icon [name]="mostrarContrasena ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+            </button>
+          </div>
+          <span class="field-error" *ngIf="form.get('contra')?.touched && form.get('contra')?.invalid">
+            {{ esEdicion ? 'Mínimo 4 caracteres' : 'En alta, la contraseña es obligatoria (mín. 4 caracteres)' }}
+          </span>
+        </div>
+
         <div class="field">
           <label for="telefono">Teléfono <span class="req" aria-hidden="true">*</span></label>
           <input
@@ -67,18 +80,18 @@
             Teléfono inválido: usa "+", números y espacios (máx. 15 caracteres)
           </span>
         </div>
+      </div>
 
-        <div class="field">
-          <label for="correo">Correo Electrónico</label>
-          <input
-            id="correo"
-            type="email"
-            formControlName="correo"
-            placeholder="correo@ejemplo.com">
-          <span class="field-error" *ngIf="form.get('correo')?.touched && form.get('correo')?.invalid">
-            Ingresa un correo válido
-          </span>
-        </div>
+      <div class="field">
+        <label for="correo">Correo Electrónico</label>
+        <input
+          id="correo"
+          type="email"
+          formControlName="correo"
+          placeholder="correo@ejemplo.com">
+        <span class="field-error" *ngIf="form.get('correo')?.touched && form.get('correo')?.invalid">
+          Ingresa un correo válido
+        </span>
       </div>
 
       <div class="field">

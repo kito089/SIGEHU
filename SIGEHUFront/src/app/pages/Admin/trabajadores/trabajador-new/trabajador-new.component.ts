@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -31,7 +32,7 @@ import {
 @Component({
   selector: 'app-trabajador-new',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, EntityFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, EntityFormComponent],
   templateUrl: './trabajador-new.component.html',
   styleUrls: ['./trabajador-new.component.css'],
 })
@@ -57,23 +58,19 @@ export class TrabajadorNewComponent implements OnInit {
   rutaDocumentoExistente = '';
   documentoExistenteVisible = false;
 
+  // Toggle mostrar/ocultar contraseña.
+  mostrarContrasena = false;
+
   private previewUrl: string | null = null;
   private tipoUsuarioActual: number | null = null;
-
-  oficios = [
-    'Especialista en Corte y Soldadura',
-    'Especialista en Pintura',
-    'Levantamiento y medidas',
-    'Ayudante General',
-    'Otro',
-  ];
 
   constructor() {
     this.form = this.fb.group({
       usuario: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-Z0-9._-]+$/)]],
       nombre: ['', [Validators.required, Validators.minLength(3)]],
-      oficio: ['', [Validators.required]],
-      // Permite "+", números y espacios (máx. 15 dígitos). Se sanea antes de enviar.
+      // Contraseña: obligatoria en alta (RF-27, hash bcrypt); opcional en edición.
+      contra: [''],
+      // Permite "+", números y espacios (máx. 15 caracteres). Se sanea antes de enviar.
       telefono: ['', [Validators.required, Validators.pattern(TELEFONO_REACTIVO_PATTERN)]],
       correo: ['', [Validators.email]],
       observaciones: [''],
@@ -84,6 +81,11 @@ export class TrabajadorNewComponent implements OnInit {
     const qId = this.route.snapshot.queryParamMap.get('id');
     if (qId) {
       this.trabajadorId = Number(qId) || null;
+    }
+
+    // En alta la contraseña es obligatoria; en edición se conserva la existente.
+    if (!this.trabajadorId) {
+      this.form.get('contra')?.setValidators([Validators.required, Validators.minLength(4)]);
     }
 
     if (this.trabajadorId) {
@@ -99,6 +101,10 @@ export class TrabajadorNewComponent implements OnInit {
 
   get esEdicion(): boolean {
     return this.trabajadorId !== null;
+  }
+
+  toggleContrasena(): void {
+    this.mostrarContrasena = !this.mostrarContrasena;
   }
 
   formatearTamano(bytes: number): string {
@@ -237,10 +243,14 @@ export class TrabajadorNewComponent implements OnInit {
       if (this.trabajadorId) {
         // El tipo de usuario es inmutable: se conserva el valor actual del registro.
         payload['Tipo'] = this.tipoUsuarioActual ?? 2; // TiposUsuarios: 1 = Propietario, 2 = Trabajador
+        // Si se capturó una nueva contraseña en edición, se actualiza.
+        if (raw.contra) {
+          payload['Contra'] = String(raw.contra).trim();
+        }
         await firstValueFrom(this.api.put('/Trabajadores/' + this.trabajadorId, payload));
         id = this.trabajadorId;
       } else {
-        payload['Contra'] = this.contraPorDefecto();
+        payload['Contra'] = (raw.contra ?? '').trim() || this.contraPorDefecto();
         payload['Tipo'] = 2; // TiposUsuarios: 1 = Propietario, 2 = Trabajador
         const created: any = await firstValueFrom(this.api.post('/Trabajadores', payload));
         id = Number(created?.idTrabajador ?? 0);

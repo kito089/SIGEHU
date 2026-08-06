@@ -91,6 +91,22 @@
   gap: 8px;
 }
 
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--sigehu-border-subtle, #232d47);
+  color: var(--sigehu-text-secondary, #8992a8);
+  border-radius: 7px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.icon-btn:hover { color: var(--sigehu-accent, #2f8fef); border-color: var(--sigehu-accent, #2f8fef); }
+
 .btn-ghost {
   background: transparent;
   border: 1px solid var(--sigehu-border-subtle, #232d47);

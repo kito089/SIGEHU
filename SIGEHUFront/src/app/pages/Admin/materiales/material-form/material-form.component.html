@@ -12,7 +12,7 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
       <div class="field">
-        <label for="nombre">Nombre del Material / Herramienta</label>
+        <label for="nombre">Nombre del Material / Herramienta <span class="req" aria-hidden="true">*</span></label>
         <input
           id="nombre"
           type="text"
@@ -20,12 +20,12 @@
           maxlength="150"
           placeholder="Ej. PTR Verde 2x2 Cal14">
         <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
-          Ingresa el nombre del material (mín. 2 caracteres)
+          {{ form.get('nombre')?.hasError('required') ? 'Ingresa el nombre del material' : form.get('nombre')?.hasError('minlength') ? 'Mínimo 2 caracteres' : 'El nombre no puede contener solo espacios' }}
         </span>
       </div>
 
       <div class="field">
-        <label for="unidadMedida">Unidad de Medida</label>
+        <label for="unidadMedida">Unidad de Medida <span class="req" aria-hidden="true">*</span></label>
         <input
           id="unidadMedida"
           type="text"
@@ -33,7 +33,7 @@
           maxlength="20"
           placeholder="Ej. Tramo, Pieza, Litro, Metro">
         <span class="field-error" *ngIf="form.get('unidadMedida')?.touched && form.get('unidadMedida')?.invalid">
-          Ingresa la unidad de medida (máx. 20 caracteres)
+          {{ form.get('unidadMedida')?.hasError('required') ? 'Ingresa la unidad de medida' : 'La unidad no puede contener solo espacios' }}
         </span>
       </div>
 

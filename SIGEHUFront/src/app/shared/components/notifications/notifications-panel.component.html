@@ -1,0 +1,67 @@
+<div class="notif-panel" role="dialog" aria-label="Centro de notificaciones">
+  <header class="notif-header">
+    <div>
+      <h2 class="notif-title">Notificaciones</h2>
+      <p class="notif-subtitle" *ngIf="count">{{ count }} notificacion{{ count !== 1 ? 'es' : '' }}</p>
+    </div>
+    <div class="notif-actions">
+      <button
+        type="button"
+        class="notif-action"
+        [class.notif-action--active]="muted()"
+        (click)="silenciar()"
+        [title]="muted() ? 'Reanudar notificaciones' : 'Silenciar notificaciones'"
+        [attr.aria-pressed]="muted()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          <line x1="3" y1="3" x2="21" y2="21"/>
+        </svg>
+        <span>{{ muted() ? 'Silenciado' : 'Silenciar' }}</span>
+      </button>
+      <button
+        type="button"
+        class="notif-action"
+        (click)="eliminarTodas()"
+        [disabled]="isEmpty"
+        title="Eliminar todas las notificaciones">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        <span>Eliminar todas</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="notif-list" *ngIf="!isEmpty; else vacio">
+    <article
+      class="notif-item"
+      *ngFor="let n of notificaciones$ | async; trackBy: trackByFn"
+      [class.notif-item--danger]="n.type === 'error'"
+      [class.notif-item--warning]="n.type === 'warning'"
+      [class.notif-item--success]="n.type === 'success'">
+      <span class="notif-icon" [class.notif-icon--danger]="n.type === 'error'" [class.notif-icon--warning]="n.type === 'warning'" [class.notif-icon--success]="n.type === 'success'" [innerHTML]="icono(n.type)" aria-hidden="true"></span>
+      <div class="notif-body">
+        <p class="notif-msg">{{ n.message }}</p>
+        <p class="notif-meta">
+          <span class="notif-type">{{ tipoLabel(n.type) }}</span>
+          <span class="notif-time">{{ formatearFecha(n.createdAt) }}</span>
+        </p>
+      </div>
+      <button
+        type="button"
+        class="notif-delete"
+        (click)="eliminar(n.id)"
+        aria-label="Eliminar notificación"
+        title="Eliminar">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </article>
+  </div>
+
+  <ng-template #vacio>
+    <div class="notif-empty">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <p>No hay notificaciones</p>
+    </div>
+  </ng-template>
+</div>
