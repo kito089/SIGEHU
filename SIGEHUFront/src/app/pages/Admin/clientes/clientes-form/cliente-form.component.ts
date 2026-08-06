@@ -1,19 +1,31 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { ApiService } from '../../../../services/api.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
-// import { Router, ActivatedRoute } from '@angular/router';
-// import { ClientesService } from '../../services/clientes.service';
 
 /* =========================================================================
    SIGEHU — Agregar / Editar Cliente (componente Angular standalone)
 
-   Sirve tanto para alta como para edición: si recibe [clienteId] carga los
-   datos existentes y cambia el título/botón a modo edición.
+   Sirve tanto para alta como para edición: si recibe [clienteId] (por
+   @Input o por queryParam `id`) carga los datos existentes y cambia el
+   título/botón a modo edición.
 
-   Conexión al backend: reemplaza fetchCliente() y guardar() por tus
-   llamadas reales (GET/POST/PUT /api/clientes).
+   Conexión al backend:
+     - GET    /Clientes/RegimenesFiscales  → catálogo de regímenes
+     - GET    /Clientes/UsosCFDI           → catálogo de usos de CFDI
+     - GET    /Clientes/:id                → carga datos para edición
+     - POST   /Clientes                    → alta
+     - PUT    /Clientes/:id                → edición
    ========================================================================= */
+
+interface OpcionCatalogo {
+  value: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-cliente-form',
@@ -24,35 +36,25 @@ import { EntityFormComponent } from '../../../../shared/components/entity-form/e
 })
 export class ClienteFormComponent implements OnInit {
   private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private api = inject(ApiService);
+  private toast = inject(ToastService);
 
-
-  // Si viene con id (por @Input o por parámetro de ruta), es edición.
+  // Si viene con id (por @Input o por queryParam), es edición.
   @Input() clienteId: number | null = null;
 
   form: FormGroup;
   loading = false;
   guardando = false;
 
-  regimenesFiscales = [
-    { value: '601', label: '601 · General de Ley Personas Morales' },
-    { value: '603', label: '603 · Personas Morales con Fines no Lucrativos' },
-    { value: '605', label: '605 · Sueldos y Salarios' },
-    { value: '612', label: '612 · Personas Físicas con Actividades Empresariales' },
-    { value: '621', label: '621 · Incorporación Fiscal' },
-    { value: '626', label: '626 · Régimen Simplificado de Confianza (RESICO)' },
-  ];
-
-  usosCfdi = [
-    { value: 'G01', label: 'G01 · Adquisición de mercancías' },
-    { value: 'G03', label: 'G03 · Gastos en general' },
-    { value: 'I08', label: 'I08 · Otra maquinaria y equipo' },
-    { value: 'P01', label: 'P01 · Por definir' },
-  ];
+  regimenesFiscales: OpcionCatalogo[] = [];
+  usosCfdi: OpcionCatalogo[] = [];
 
   constructor() {
     this.form = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
-      telefono: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      telefono: ['', [Validators.required, Validators.pattern(/^\d{10,15}$/)]],
       correo: ['', [Validators.required, Validators.email]],
       direccion: ['', [Validators.required]],
       observaciones: [''],
@@ -74,20 +76,29 @@ export class ClienteFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Si tu ruta usa /clientes/editar/:id en vez de @Input, descomenta:
-    // this.clienteId = Number(this.route.snapshot.paramMap.get('id')) || null;
+    const qId = this.route.snapshot.queryParamMap.get('id');
+    if (qId) {
+      this.clienteId = Number(qId) || null;
+    }
+
+    this.cargarCatalogos();
+    // En alta se parte con un contacto vacío para capturar; en edición el
+    // contacto principal se gestiona con los campos superiores (tel/correo)
+    // y el backend solo actualiza esos datos (PUT /Clientes/:id).
+    if (!this.clienteId) {
+      this.agregarContacto();
+    }
 
     if (this.clienteId) {
       this.loading = true;
       this.fetchCliente(this.clienteId).then(cliente => {
         this.form.patchValue(cliente);
-        cliente.contactos.forEach((c: { nombre: string; telefono: string }) => this.agregarContacto(c.nombre, c.telefono));
         if (cliente.datosFiscales) this.onToggleDatosFiscales(true);
         this.loading = false;
+      }).catch(() => {
+        this.loading = false;
+        this.toast.error('No se pudo cargar la información del cliente.');
       });
-    } else {
-      // Al menos un contacto vacío por defecto para no arrancar en cero.
-      this.agregarContacto();
     }
   }
 
@@ -103,11 +114,32 @@ export class ClienteFormComponent implements OnInit {
     return this.form.get('fiscal') as FormGroup;
   }
 
+  private async cargarCatalogos(): Promise<void> {
+    try {
+      const res = await Promise.all([
+        firstValueFrom(this.api.get('/Clientes/RegimenesFiscales')),
+        firstValueFrom(this.api.get('/Clientes/UsosCFDI')),
+      ]);
+      const regs: any[] = res[0] as any[] ?? [];
+      const usos: any[] = res[1] as any[] ?? [];
+      this.regimenesFiscales = (regs || []).map(r => ({
+        value: String(r.IDREGIMENFISCAL ?? r.idRegimenFiscal),
+        label: `${r.CODIGO ?? r.Codigo ?? ''} · ${r.DESCRIPCION ?? r.Descripcion ?? ''}`,
+      }));
+      this.usosCfdi = (usos || []).map(u => ({
+        value: String(u.IDUSOCFDI ?? u.idUsoCFDI),
+        label: `${u.USOCFDI ?? u.UsoCFDI ?? ''} · ${u.DESCRIPCION ?? u.Descripcion ?? ''}`,
+      }));
+    } catch {
+      // Catálogos opcionales: si fallan se conservan los valores por defecto.
+    }
+  }
+
   agregarContacto(nombre = '', telefono = ''): void {
     this.contactos.push(
       this.fb.group({
         nombre: [nombre, Validators.required],
-        telefono: [telefono, [Validators.required, Validators.pattern(/^\d{10}$/)]],
+        telefono: [telefono, [Validators.required, Validators.pattern(/^\d{10,15}$/)]],
       }),
     );
   }
@@ -137,56 +169,89 @@ export class ClienteFormComponent implements OnInit {
   async onSubmit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toast.warning('Corrige los campos marcados antes de guardar');
       return;
     }
 
     this.guardando = true;
-    const payload = this.form.getRawValue();
 
     try {
-      await this.guardar(payload);
-      // this.router.navigate(['/clientes']);
-      console.log('Cliente guardado', payload);
+      await this.guardar();
+      this.toast.success(this.esEdicion ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente');
+      this.router.navigate(['/admin/clientes']);
+    } catch (err) {
+      const mensajeBackend = (err as any)?.error?.error;
+      if (!mensajeBackend) {
+        this.toast.error('Error de comunicación: no se pudo completar la transacción de datos.');
+      }
+      console.error('[cliente-form] Error al guardar:', err);
     } finally {
       this.guardando = false;
     }
   }
 
   cancelar(): void {
-    // this.router.navigate(['/clientes']);
-    console.log('Cancelado');
+    this.router.navigate(['/admin/clientes']);
   }
 
   // ---------------------------------------------------------------------
-  // Mocks — reemplázalos por tus llamadas reales al backend.
+  // Persistencia — llamadas reales al backend.
   // ---------------------------------------------------------------------
+
+  private async guardar(): Promise<void> {
+    const raw = this.form.getRawValue();
+    const datosFiscalesActivos = !!raw.datosFiscales;
+    const contactos = raw.contactos
+      .filter((c: any) => c.nombre && c.telefono)
+      .map((c: any) => ({
+        NombreCompleto: c.nombre,
+        Telefono: String(c.telefono).replace(/\D/g, ''),
+      }));
+
+    const payload: Record<string, unknown> = {
+      Nombre: raw.nombre,
+      Direccion: raw.direccion || null,
+      Telefono: String(raw.telefono || '').replace(/\D/g, ''),
+      Correo: raw.correo || null,
+      Observaciones: raw.observaciones || null,
+      RFC: datosFiscalesActivos ? (raw.fiscal.rfc || null) : null,
+      idRegimenFiscal: datosFiscalesActivos && raw.fiscal.regimenFiscal ? Number(raw.fiscal.regimenFiscal) : null,
+      idUsoCFDI: datosFiscalesActivos && raw.fiscal.usoCfdi ? Number(raw.fiscal.usoCfdi) : null,
+      CodigoPostal: datosFiscalesActivos ? (raw.fiscal.codigoPostalFiscal || null) : null,
+    };
+
+    if (this.clienteId) {
+      await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, payload));
+    } else {
+      // El principal se envía como primer contacto; el resto se agrega al array.
+      payload['contactos'] = [
+        { NombreCompleto: raw.nombre, Telefono: payload['Telefono'], Correo: payload['Correo'] },
+        ...contactos,
+      ];
+      await firstValueFrom(this.api.post('/Clientes', payload));
+    }
+  }
 
   private async fetchCliente(id: number): Promise<any> {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          nombre: 'Carlos Utrilla',
-          telefono: '3312345678',
-          correo: 'carlos.utrilla@correo.com',
-          direccion: 'Colonia Rey Xolotl, Tonalá, Jal.',
-          observaciones: 'Cliente frecuente, prefiere contacto por WhatsApp.',
-          requiereFactura: true,
-          datosFiscales: true,
-          fiscal: {
-            rfc: 'UTCA850101AB1',
-            razonSocialFiscal: 'Carlos Eduardo Utrilla Canal',
-            regimenFiscal: '612',
-            usoCfdi: 'G03',
-            codigoPostalFiscal: '45400',
-            direccionFiscal: 'Colonia Rey Xolotl, Tonalá, Jalisco',
-          },
-          contactos: [{ nombre: 'Carlos Utrilla', telefono: '3312345678' }],
-        });
-      }, 400);
-    });
-  }
+    const raw: any = await firstValueFrom(this.api.get('/Clientes/' + id));
+    const tieneFiscales = !!(raw.RFC ?? raw.rfc);
 
-  private async guardar(payload: unknown): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, 500));
+    return {
+      nombre: raw.NOMBRE ?? raw.nombre ?? '',
+      telefono: raw.TELEFONO ?? raw.telefono ?? '',
+      correo: raw.CORREO ?? raw.correo ?? '',
+      direccion: raw.DIRECCION ?? raw.direccion ?? '',
+      observaciones: raw.OBSERVACIONES ?? raw.observaciones ?? '',
+      requiereFactura: tieneFiscales,
+      datosFiscales: tieneFiscales,
+      fiscal: {
+        rfc: raw.RFC ?? raw.rfc ?? '',
+        razonSocialFiscal: raw.NOMBRE ?? raw.nombre ?? '',
+        regimenFiscal: raw.IDREGIMENFISCAL != null ? String(raw.IDREGIMENFISCAL) : '',
+        usoCfdi: raw.IDUSOCFDI != null ? String(raw.IDUSOCFDI) : '',
+        codigoPostalFiscal: raw.CODIGOPOSTAL ?? raw.codigoPostal ?? '',
+        direccionFiscal: raw.DIRECCION ?? raw.direccion ?? '',
+      },
+    };
   }
 }

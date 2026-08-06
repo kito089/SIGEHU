@@ -1,13 +1,18 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 /* =========================================================================
-   SIGEHU — Gestión de Clientes (componente Angular standalone)
-   Sustituye fetchClientes() por tu llamada real (GET /api/clientes) cuando
-   conectes el backend.
+   SIGEHU — Gestión de Clientes (listado)
+   Datos reales vía GET /Clientes. Acciones: Ver detalle (GET /Clientes/:id),
+   Editar (navega al formulario con queryParam id) y Eliminar (soft-delete
+   con modal de confirmación reutilizable).
    ========================================================================= */
 
 type FiltroClientes = 'todos' | 'con_obras' | 'con_sat' | 'sin_sat';
@@ -26,17 +31,24 @@ interface Cliente {
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
 })
 export class ClientesComponent implements OnInit {
   private router = inject(Router);
+  private api = inject(ApiService);
+  private toast = inject(ToastService);
 
   clientes: Cliente[] = [];
   searchTerm = '';
   filtro: FiltroClientes = 'todos';
   selectedCliente: Cliente | null = null;
+  cargando = false;
+
+  clienteAEliminar: Cliente | null = null;
+  confirmarEliminacion = false;
+  eliminando = false;
 
   columns: DataTableColumn[] = [
     { key: 'nombre', label: 'Nombre / Razón social' },
@@ -53,27 +65,36 @@ export class ClientesComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.fetchClientes().then(clientes => {
-      this.clientes = clientes;
-    });
+    this.cargarClientes();
   }
 
-  // Ajusta esto a tu endpoint real cuando conectes el backend, p. ej.:
-  // constructor(private clientesService: ClientesService) {}
-  // private fetchClientes(): Promise<Cliente[]> {
-  //   return firstValueFrom(this.clientesService.listar());
-  // }
+  async cargarClientes(): Promise<void> {
+    this.cargando = true;
+    try {
+      this.clientes = await this.fetchClientes();
+    } catch {
+      this.clientes = [];
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  private mapCliente(raw: any): Cliente {
+    return {
+      id: raw.IDCLIENTE ?? raw.idCliente,
+      nombre: raw.NOMBRE ?? raw.Nombre ?? raw.nombre ?? '',
+      telefono: raw.TELEFONO ?? raw.Telefono ?? raw.telefono ?? '',
+      rfc: raw.RFC ?? raw.rfc ?? '',
+      obrasActivas: Number(raw.TOTALOBRASACTIVAS ?? raw.TotalObrasActivas ?? raw.totalObrasActivas ?? 0),
+      datosSat: Boolean(raw.TIENEDATOSFISCALES ?? raw.TieneDatosFiscales ?? raw.tieneDatosFiscales ?? false),
+      direccion: raw.DIRECCION ?? raw.Direccion ?? raw.direccion ?? '',
+      correo: raw.CORREO ?? raw.Correo ?? raw.correo ?? '',
+    };
+  }
+
   private async fetchClientes(): Promise<Cliente[]> {
-    return [
-      { id: 1, nombre: 'Carlos Utrilla', telefono: '3312345678', rfc: 'UTCA850101AB1',
-        obrasActivas: 3, datosSat: true, direccion: 'Colonia Rey Xolotl, Tonalá, Jal.', correo: 'carlos.utrilla@correo.com' },
-      { id: 2, nombre: 'María Elena Gómez', telefono: '3398765432', rfc: '—',
-        obrasActivas: 1, datosSat: false, direccion: 'Av. Vallarta 1500, Guadalajara, Jal.', correo: 'maria.gomez@correo.com' },
-      { id: 3, nombre: 'Inmobiliaria Viste S.A. de C.V.', telefono: '3315556677', rfc: 'IVI160303CD2',
-        obrasActivas: 2, datosSat: true, direccion: 'Periférico Norte 890, Zapopan, Jal.', correo: 'contacto@inmobiliariaviste.com' },
-      { id: 4, nombre: 'Restaurante El Asador', telefono: '3311223344', rfc: '—',
-        obrasActivas: 0, datosSat: false, direccion: 'Calle Hidalgo 45, Tonalá, Jal.', correo: 'admin@elasador.mx' },
-    ];
+    const rows: unknown[] = await firstValueFrom(this.api.get<any[]>('/Clientes'));
+    return (rows || []).map(row => this.mapCliente(row));
   }
 
   get clientesFiltrados(): Cliente[] {
@@ -108,25 +129,17 @@ export class ClientesComponent implements OnInit {
     return `${cantidad} ${cantidad === 1 ? 'Activa' : 'Activas'}`;
   }
 
-  verCliente(cliente: Cliente): void {
+  async verCliente(cliente: Cliente): Promise<void> {
     this.selectedCliente = cliente;
-  }
-
-  editarCliente(cliente: Cliente): void {
-    // Conectar con la ruta del formulario, en modo edición, p. ej.:
-    // this.router.navigate(['/clientes/editar', cliente.id]);
-    alert(`Aquí se abriría el formulario de edición para "${cliente.nombre}".`);
-  }
-
-  eliminarCliente(cliente: Cliente): void {
-    const confirmado = confirm(`¿Eliminar a "${cliente.nombre}"? Esta acción no se puede deshacer.`);
-    if (!confirmado) return;
-
-    // Sustituir por la llamada real, p. ej.:
-    // this.clientesService.eliminar(cliente.id).subscribe(() => { ... });
-    this.clientes = this.clientes.filter(c => c.id !== cliente.id);
-    if (this.selectedCliente?.id === cliente.id) {
-      this.selectedCliente = null;
+    try {
+      const detalle: any = await firstValueFrom(this.api.get('/Clientes/' + cliente.id));
+      this.selectedCliente = {
+        ...cliente,
+        direccion: detalle.DIRECCION ?? detalle.Direccion ?? detalle.direccion ?? '',
+        correo: detalle.CORREO ?? detalle.Correo ?? detalle.correo ?? cliente.correo,
+      };
+    } catch {
+      // El modal conserva los datos del listado; el interceptor ya notifica fallos.
     }
   }
 
@@ -134,9 +147,42 @@ export class ClientesComponent implements OnInit {
     this.selectedCliente = null;
   }
 
+  editarCliente(cliente: Cliente): void {
+    this.router.navigate(['/admin/clientes/form'], {
+      queryParams: { id: cliente.id }
+    });
+  }
+
+  eliminarCliente(cliente: Cliente): void {
+    this.clienteAEliminar = cliente;
+    this.confirmarEliminacion = true;
+  }
+
+  cancelarEliminacion(): void {
+    this.confirmarEliminacion = false;
+    this.clienteAEliminar = null;
+  }
+
+  async confirmarEliminar(): Promise<void> {
+    if (!this.clienteAEliminar) return;
+    this.eliminando = true;
+    try {
+      await firstValueFrom(this.api.delete('/Clientes/' + this.clienteAEliminar.id));
+      this.clientes = this.clientes.filter(c => c.id !== this.clienteAEliminar!.id);
+      if (this.selectedCliente?.id === this.clienteAEliminar.id) {
+        this.selectedCliente = null;
+      }
+      this.toast.success('Cliente desactivado correctamente');
+      this.confirmarEliminacion = false;
+      this.clienteAEliminar = null;
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.eliminando = false;
+    }
+  }
+
   nuevoCliente(): void {
-    // Conectar con la ruta del formulario de alta de cliente.
-    // this.router.navigate(['/clientes/nuevo']);
-    this.router.navigate(['/clientes/form']);
+    this.router.navigate(['/admin/clientes/form']);
   }
 }

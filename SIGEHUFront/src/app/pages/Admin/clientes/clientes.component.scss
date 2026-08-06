@@ -1,8 +1,4 @@
 :host {
-  --ok: #34d399;
-  --ok-soft: rgba(52, 211, 153, 0.14);
-  --danger: #f4574f;
-
   display: block;
   min-height: 100vh;
   background: var(--sigehu-content-bg, #0a0e1a);
@@ -19,10 +15,10 @@
 }
 
 .panel-frame {
-  border: 1.5px solid var(--sigehu-accent, #2f8fef);
+  background: var(--sigehu-panel-bg, #0e1424);
+  border: 1px solid var(--sigehu-border-subtle, #1c2438);
   border-radius: var(--sigehu-radius-lg, 14px);
   padding: 22px;
-  background: linear-gradient(180deg, rgba(47, 143, 239, 0.04), transparent 20%);
 }
 
 .panel-header {
@@ -48,8 +44,8 @@
 }
 
 .btn-primary {
-  background: var(--sigehu-accent, #2f8fef);
-  color: #071022;
+  background: var(--sigehu-primary-btn-bg, #3b82f6);
+  color: var(--sigehu-primary-btn-text, #ffffff);
   border: none;
   font-weight: 700;
   font-size: 13px;
@@ -78,7 +74,7 @@
 
 .tag-obras { background: var(--sigehu-accent-soft, rgba(47,143,239,0.12)); color: var(--sigehu-accent, #2f8fef); }
 .tag-obras-empty { background: var(--sigehu-surface-input, #131a2c); color: var(--sigehu-text-tertiary, #5c6580); }
-.tag-sat-ok { background: var(--ok-soft); color: var(--ok); }
+.tag-sat-ok { background: var(--sigehu-success-soft, rgba(16,185,129,0.14)); color: var(--sigehu-success, #10b981); }
 .tag-sat-empty { background: var(--sigehu-surface-input, #131a2c); color: var(--sigehu-text-tertiary, #5c6580); }
 
 .acciones-group {
@@ -103,12 +99,12 @@
 }
 
 .icon-btn:hover { color: var(--sigehu-accent, #2f8fef); border-color: var(--sigehu-accent, #2f8fef); }
-.icon-btn-danger:hover { color: var(--danger); border-color: var(--danger); }
+.icon-btn-danger:hover { color: var(--sigehu-danger, #ef4444); border-color: var(--sigehu-danger, #ef4444); }
 
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(3, 6, 14, 0.7);
+  background: rgba(0, 0, 0, 0.5);
   display: none;
   align-items: center;
   justify-content: center;
