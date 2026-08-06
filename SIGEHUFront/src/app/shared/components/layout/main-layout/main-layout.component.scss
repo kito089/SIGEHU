@@ -1,25 +1,27 @@
 .main-layout {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   background: var(--sigehu-content-bg);
   font-family: var(--sigehu-font-family);
+  overflow: hidden;
 }
 
 .content-wrapper {
   flex: 1;
   margin-left: var(--sigehu-sidebar-width);
   min-width: 0;
+  min-height: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
   background: var(--sigehu-content-bg);
 }
 
 .main-content {
   flex: 1;
-  padding: var(--sigehu-space-6) var(--sigehu-space-8);
-  min-height: calc(100vh - var(--sigehu-topbar-height));
+  min-height: 0;
   overflow-y: auto;
+  padding: var(--sigehu-space-6) var(--sigehu-space-8);
 
   // Container max-width para contenido centrado
   > * {

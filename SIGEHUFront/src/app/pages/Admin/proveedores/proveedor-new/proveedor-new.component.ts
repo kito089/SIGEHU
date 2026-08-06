@@ -9,6 +9,12 @@ import { Material } from '../../../../core/models/material.model';
 import { Proveedor, ProveedorMaterial } from '../../../../core/models/proveedor.model';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
+import {
+  TELEFONO_REACTIVO_PATTERN,
+  TELEFONO_ERROR_ENVIO,
+  filtrarTelefonoInput,
+  sanitizarTelefono,
+} from '../../../../core/utils/telefono.util';
 
 /* =========================================================================
    SIGEHU — Nuevo / Actualizar Proveedor.
@@ -67,11 +73,11 @@ export class ProveedorNewComponent implements OnInit {
 
   constructor() {
     this.form = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(3)]],
-      giroPrincipal: [''],
-      contactoCompras: [''],
-      telefono: ['', [Validators.pattern(/^[0-9()\s\-+]{7,20}$/)]],
-      correo: ['', [Validators.email]],
+      nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      giroPrincipal: ['', [Validators.maxLength(100)]],
+      contactoCompras: ['', [Validators.maxLength(150)]],
+      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN)]],
+      correo: ['', [Validators.email, Validators.maxLength(254)]],
       direccion: [''],
       notas: [''],
     });
@@ -223,7 +229,25 @@ export class ProveedorNewComponent implements OnInit {
 
   onPrecioChange(index: number, event: Event): void {
     const value = (event.target as HTMLInputElement).value;
-    this.materialesSeleccionados[index].precio = value === '' ? null : Number(value);
+    if (value === '') {
+      this.materialesSeleccionados[index].precio = null;
+      return;
+    }
+    const num = Number(value);
+    if (!Number.isFinite(num)) return;
+    // Columna DECIMAL(10,2): rango [0 .. 99999999.99].
+    this.materialesSeleccionados[index].precio = Math.min(Math.max(num, 0), 99999999.99);
+  }
+
+  // ── Teléfono (igual que Trabajadores) ───────────────────────────────────
+  // Filtra en vivo: solo "+", números y espacios.
+  onTelefonoInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const limpio = filtrarTelefonoInput(input.value);
+    if (limpio !== input.value) {
+      input.value = limpio;
+      this.form.get('telefono')?.setValue(limpio);
+    }
   }
 
   onNotasChange(index: number, event: Event): void {
@@ -305,17 +329,24 @@ export class ProveedorNewComponent implements OnInit {
     }
 
     const raw = this.form.getRawValue();
+    const telefono = sanitizarTelefono(raw.telefono || '');
+    if (telefono === null && raw.telefono) {
+      this.toast.error(TELEFONO_ERROR_ENVIO);
+      return;
+    }
+
     const payload: ProveedorPayloadForm = {
       nombre: String(raw.nombre ?? '').trim(),
       direccion: raw.direccion ? String(raw.direccion).trim() : null,
-      telefono: raw.telefono ? String(raw.telefono).trim() : null,
+      telefono,
       correo: raw.correo ? String(raw.correo).trim() : null,
       giroPrincipal: raw.giroPrincipal ? String(raw.giroPrincipal).trim() : null,
       contactoCompras: raw.contactoCompras ? String(raw.contactoCompras).trim() : null,
       notas: raw.notas ? String(raw.notas).trim() : null,
       materiales: this.materialesSeleccionados.map(m => ({
         idMaterial: m.idMaterial as number,
-        precio: m.precio ?? null,
+        precio: m.precio == null ? null
+          : Math.min(Math.max(m.precio, 0), 99999999.99),
         notas: m.notasProveedor ?? null,
       })),
     };

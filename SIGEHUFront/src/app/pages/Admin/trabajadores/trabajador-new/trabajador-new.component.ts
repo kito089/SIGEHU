@@ -8,6 +8,11 @@ import { EnvService } from '../../../../services/env.service';
 import { TrabajadoresRefreshService } from '../../../../services/trabajadores-refresh.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
+import {
+  TELEFONO_REACTIVO_PATTERN,
+  filtrarTelefonoInput,
+  sanitizarTelefono,
+} from '../../../../core/utils/telefono.util';
 
 /* =========================================================================
    SIGEHU — Nuevo / Actualizar Trabajador (componente Angular standalone)
@@ -69,7 +74,7 @@ export class TrabajadorNewComponent implements OnInit {
       nombre: ['', [Validators.required, Validators.minLength(3)]],
       oficio: ['', [Validators.required]],
       // Permite "+", números y espacios (máx. 15 dígitos). Se sanea antes de enviar.
-      telefono: ['', [Validators.required, Validators.pattern(/^\+?[\d\s]{7,16}$/)]],
+      telefono: ['', [Validators.required, Validators.pattern(TELEFONO_REACTIVO_PATTERN)]],
       correo: ['', [Validators.email]],
       observaciones: [''],
     });
@@ -106,17 +111,11 @@ export class TrabajadorNewComponent implements OnInit {
   // Filtra en vivo: solo "+", números y espacios.
   onTelefonoInput(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const limpio = input.value.replace(/[^\d+ ]/g, '');
+    const limpio = filtrarTelefonoInput(input.value);
     if (limpio !== input.value) {
       input.value = limpio;
       this.form.get('telefono')?.setValue(limpio);
     }
-  }
-
-  private sanitizarTelefono(telefono: string): string | null {
-    if (!telefono) return null;
-    const comprimido = telefono.replace(/[\s\-()]/g, '');
-    return /^\+?\d{1,15}$/.test(comprimido) ? comprimido : null;
   }
 
   // ── Drag & Drop ──────────────────────────────────────────────────────────
@@ -210,7 +209,7 @@ export class TrabajadorNewComponent implements OnInit {
     }
 
     const raw = this.form.getRawValue();
-    const telefono = this.sanitizarTelefono(raw.telefono || '');
+    const telefono = sanitizarTelefono(raw.telefono || '');
     if (raw.telefono && telefono === null) {
       this.toast.error('Teléfono inválido: usa solo "+" y números, máximo 15 dígitos');
       return;

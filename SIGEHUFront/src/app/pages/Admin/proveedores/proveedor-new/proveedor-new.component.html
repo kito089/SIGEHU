@@ -20,7 +20,7 @@
           maxlength="100"
           placeholder="Ej. Aceros Monterrey">
         <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
-          Ingresa el nombre de la empresa
+          Ingresa el nombre de la empresa (mín. 3 caracteres)
         </span>
       </div>
 
@@ -50,11 +50,12 @@
           <input
             id="telefono"
             type="tel"
+            inputmode="tel"
             formControlName="telefono"
-            maxlength="15"
-            placeholder="Ej. 3312345678">
+            placeholder="+52 449 000 00 00"
+            (input)="onTelefonoInput($event)">
           <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-            Ingresa un teléfono válido
+            Teléfono inválido: solo "+", números y espacios
           </span>
         </div>
       </div>

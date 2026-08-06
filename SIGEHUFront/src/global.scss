@@ -55,3 +55,31 @@
   --ion-input-border-color-focused: var(--sigehu-accent);
   --ion-button-border-radius: var(--sigehu-radius-md);
 }
+
+/* ===========================================================================
+   SISTEMA ÚNICO DE SCROLL (Pickup del Layout)
+   ---------------------------------------------------------------------------
+   El Layout (main-layout) es el ÚNICO dueño del scroll de las páginas Admin
+   a través de .main-content. Las páginas internas NO deben imponer sus
+   propias alturas (`min-height: 100vh`) ni scrolls propios (`height: 100vh +
+   overflow-y: auto`): eso crea cajas de scroll duplicadas que compiten y
+   rompen el comportamiento común de la aplicación.
+
+   Para que todas las pantallas hereden exactamente el comportamiento del
+   Layout, se neutralizan de forma global (una sola regla, no por página) los
+   patrones heredados de altura/scroll sobre el host de la página y su wrapper
+   `.page`. El scroll queda gestionado exclusivamente por .main-content.
+
+   Nota: el selector usa el elemento <main> y rutas de descendencia para
+   superar la especificidad de los estilos scoped de cada componente.
+   =========================================================================== */
+main.main-content > * {
+  min-height: 0 !important;
+}
+
+main.main-content > * .page,
+main.main-content > * .page-scroll {
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}

@@ -16,23 +16,13 @@
 
 * { box-sizing: border-box; }
 
+/* El scroll lo gestiona de forma única el Layout (.main-content); la página no
+   impone altura ni scroll propios (no crear cajas de scroll duplicadas). */
 .page {
-  height: 100vh;
-  overflow-y: auto;
   display: flex;
   justify-content: center;
   padding: 40px 20px;
 }
-
-/* Scrollbar con el tema oscuro de SIGEHU */
-.page::-webkit-scrollbar { width: 10px; }
-.page::-webkit-scrollbar-track { background: transparent; }
-.page::-webkit-scrollbar-thumb {
-  background: var(--field-border);
-  border-radius: 999px;
-  border: 2px solid var(--sigehu-content-bg, #1E293B);
-}
-.page { scrollbar-width: thin; scrollbar-color: var(--field-border) transparent; }
 
 .field { margin-bottom: 16px; }
 
