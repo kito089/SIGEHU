@@ -32,10 +32,12 @@ const findTiposUsuarios = async (_req, res) => {
 };
 
 // GET /Trabajadores/
-// Obtiene todos los trabajadores
-const findTrabajadores = async (_req, res) => {
+// Obtiene todos los trabajadores. Con ?asignables=true excluye al Propietario
+// (TiposUsuarios_idTipoUsuario = 1) para listas de trabajadores asignables.
+const findTrabajadores = async (req, res) => {
     try {
-        const trabajadores = await service.getTrabajadores();
+        const asignables = req.query?.asignables === 'true';
+        const trabajadores = await service.getTrabajadores({ asignables });
         res.json(trabajadores);
     } catch (e) {
         res.status(500).json({ error: e.message });

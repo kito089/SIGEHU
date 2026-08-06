@@ -37,14 +37,22 @@ const getTiposUsuarios = async () => {
 
 // ─── GET todos los trabajadores ───────────────────────────────────────────────
 // Trae Correo/Observaciones (campos opcionales) y el conteo de obras asignadas.
-const getTrabajadores = async () => {
+// Cuando `asignables = true` excluye al Propietario (TiposUsuarios_idTipoUsuario
+// = 1) porque no debe aparecer como opción seleccionable (p. ej. compras).
+// El endpoint base NO filtra para no afectar otros módulos que lo consumen.
+const getTrabajadores = async ({ asignables = false } = {}) => {
     const db = await getConnection();
+
+    const filtroTipo = asignables
+        ? 'AND TiposUsuarios_idTipoUsuario <> 1'
+        : '';
 
     const result = await db.query(
         `SELECT idTrabajador, NombreUsuario, NombreCompleto, Telefono, RutaDocumentoIMSS,
                 TiposUsuarios_idTipoUsuario, Activo, Correo, Observaciones, TotalObras
          FROM VW_TRABAJADORES_CON_COUNT_OBRAS
          WHERE Activo = TRUE
+         ${filtroTipo}
          ORDER BY NombreCompleto`,
         []
     );

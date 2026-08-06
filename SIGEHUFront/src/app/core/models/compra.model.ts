@@ -1,16 +1,38 @@
-export interface Compra {
-  idCompra?: number;
+export interface DetalleCompra {
+  idDetalleCompra?: number;
   idProveedor: number;
-  idChofer?: number;
-  fecha: string;
-  estado: 'Pendiente' | 'En ruta' | 'Recibida' | 'Cancelada';
+  idMaterial: number;
+  nombreMaterial: string;
+  unidadMedida?: string;
+  nombreProveedor: string;
+  direccionProveedor?: string | null;
+  telefonoProveedor?: string | null;
+  cantidad: number;
+  medida?: string | null;
+}
+
+export interface Compra {
+  idCompra: number;
+  trabajadoresIdTrabajador: number;
+  nombreTrabajador: string;
+  fechaCompra: string;
+  fechaCreacion: string;
+  notas: string | null;
+  recibida: boolean;
+  activo?: boolean;
   detalles?: DetalleCompra[];
 }
 
-export interface DetalleCompra {
-  idDetalle?: number;
-  idCompra: number;
+export interface CompraDetalleInput {
+  idProveedor: number;
   idMaterial: number;
   cantidad: number;
-  precioUnitario: number;
+  medida?: string | null;
+}
+
+export interface CompraPayload {
+  idTrabajador: number;
+  FechaCompra?: string | null;
+  Notas?: string | null;
+  detalles: CompraDetalleInput[];
 }

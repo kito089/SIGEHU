@@ -5,69 +5,147 @@
     <div class="panel-header">
       <div>
         <h1>Órdenes de Compra</h1>
-        <p>Cotización, autorización y recepción de compras de insumos (RF-17 / RF-19)</p>
+        <p>Compras de insumos asociadas a un trabajador asignado (chipero / compras)</p>
       </div>
-      <button class="btn-primary" (click)="nuevaOrden()">
+      <button class="btn-primary" (click)="nuevaCompra()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        Nueva Orden
+        Nueva Compra
       </button>
     </div>
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por folio, proveedor o estado…'"
+      [searchPlaceholder]="'Buscar por compra, trabajador o notas…'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
     <app-data-table
       [columns]="columns"
-      [data]="ordenesFiltradas"
-      [emptyMessage]="'No se encontraron órdenes con ese criterio.'"
-      rowKey="id"
+      [data]="comprasFiltradas"
+      [loading]="cargando"
+      [emptyMessage]="'No se encontraron órdenes de compra con ese criterio.'"
+      rowKey="idCompra"
     >
       <ng-template #cell let-row let-col="column">
         @switch (col.key) {
-          @case ('folio') {
-            <span class="td-folio">{{ row.folio }}</span>
+          @case ('idCompra') {
+            <span class="td-folio">#{{ row.idCompra }}</span>
           }
-          @case ('proveedor') {
-            <span class="td-nombre">{{ row.proveedor }}</span>
+          @case ('nombreTrabajador') {
+            <span class="td-nombre">{{ row.nombreTrabajador }}</span>
           }
-          @case ('descripcion') {
-            <span class="td-muted">{{ row.descripcion }}</span>
+          @case ('fechaCompra') {
+            <span class="td-muted">{{ formatoFecha(row.fechaCompra) }}</span>
           }
-          @case ('total') {
-            <span class="td-total">{{ formatoTotal(row.total) }}</span>
+          @case ('recibida') {
+            <span class="badge-estado" [class.badge-estado--ok]="row.recibida" [class.badge-estado--warning]="!row.recibida">
+              {{ row.recibida ? 'Recibida' : 'Pendiente' }}
+            </span>
           }
-          @case ('estado') {
-            <span class="badge-estado" [class]="estadoClass(row.estado)">{{ row.estado }}</span>
+          @case ('notas') {
+            <span class="td-muted td-notas">{{ row.notas || '—' }}</span>
           }
         }
       </ng-template>
 
       <ng-template #actions let-row>
         <div class="acciones-group">
-          @if (row.estado === 'Cotizada' || row.estado === 'Enviada') {
-            <button class="btn-ghost" (click)="autorizar(row)" title="Autorizar compra">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-              Autorizar
-            </button>
-          }
+          <button class="icon-btn" (click)="verDetalle(row)" aria-label="Ver detalle" title="Ver Detalle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button class="icon-btn" (click)="editarCompra(row)" aria-label="Editar compra" title="Editar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
+          <button class="icon-btn icon-btn-danger" (click)="eliminarCompra(row)" aria-label="Eliminar compra" title="Eliminar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+          </button>
         </div>
       </ng-template>
     </app-data-table>
 
-    <app-confirm-modal
-      *ngIf="pendienteAutorizar"
-      variant="default"
-      title="Autorizar orden de compra"
-      [message]="mensajeAutorizacion"
-      confirmLabel="Autorizar"
-      cancelLabel="Cancelar"
-      (confirmed)="confirmarAutorizacion()"
-      (cancelled)="cancelarAutorizacion()"
-    ></app-confirm-modal>
-
   </section>
 
 </div>
+
+<!-- MODAL DE DETALLES DE COMPRA -->
+<div class="modal-overlay" [class.open]="selectedCompra" (click)="cerrarDetalle()">
+  <div class="modal" *ngIf="selectedCompra" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div>
+        <div class="compra-tag">Orden de Compra</div>
+        <h2>Compra #{{ selectedCompra.idCompra }}</h2>
+      </div>
+      <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="modal-body">
+      @if (cargandoDetalle) {
+        <div class="cargando-detalle">Cargando información…</div>
+      } @else {
+        <div class="info-labels-grid">
+          <div class="field-label-group">
+            <label>Trabajador asignado</label>
+            <div class="field-value">{{ selectedCompra.nombreTrabajador }}</div>
+          </div>
+
+          <div class="field-label-group">
+            <label>Fecha de compra</label>
+            <div class="field-value">{{ formatoFecha(selectedCompra.fechaCompra) }}</div>
+          </div>
+
+          <div class="field-label-group">
+            <label>Estado</label>
+            <div class="field-value">{{ selectedCompra.recibida ? 'Recibida' : 'Pendiente' }}</div>
+          </div>
+
+          <div class="field-label-group">
+            <label>Fecha de registro</label>
+            <div class="field-value">{{ formatoFecha(selectedCompra.fechaCreacion) }}</div>
+          </div>
+
+          <div class="field-label-group span-2">
+            <label>Notas</label>
+            <div class="field-value">{{ selectedCompra.notas || 'Sin notas' }}</div>
+          </div>
+        </div>
+
+        <div class="field-label-group span-2">
+          <label>Materiales ({{ totalMateriales(selectedCompra) }})</label>
+          <div class="mat-container" *ngIf="totalMateriales(selectedCompra) > 0; else sinMateriales">
+            <div class="mat-head">
+              <span>Material</span>
+              <span>Proveedor</span>
+              <span>Unidad</span>
+              <span class="w-cant">Cantidad</span>
+              <span class="w-med">Medida</span>
+            </div>
+            <div class="mat-row" *ngFor="let d of selectedCompra.detalles; trackBy: trackDetalle">
+              <span class="mat-nombre">{{ d.nombreMaterial }}</span>
+              <span class="mat-prov">{{ d.nombreProveedor }}</span>
+              <span class="mat-unidad">{{ d.unidadMedida || '—' }}</span>
+              <span class="w-cant mat-cant">{{ d.cantidad }}</span>
+              <span class="w-med mat-med">{{ d.medida || '—' }}</span>
+            </div>
+          </div>
+          <ng-template #sinMateriales>
+            <div class="mat-empty">Esta compra no tiene materiales asociados.</div>
+          </ng-template>
+        </div>
+      }
+    </div>
+
+  </div>
+</div>
+
+<app-confirm-modal
+  *ngIf="confirmarEliminacion"
+  [title]="'Eliminar compra'"
+  [message]="'¿Estás seguro de eliminar la compra #' + (compraAEliminar?.idCompra ?? '') + '? Esta acción no se puede deshacer.'"
+  confirmLabel="Eliminar"
+  cancelLabel="Cancelar"
+  [loading]="eliminando"
+  (confirmed)="confirmarEliminar()"
+  (cancelled)="cancelarEliminacion()"
+  variant="danger"
+></app-confirm-modal>

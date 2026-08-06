@@ -1,0 +1,186 @@
+<div class="page">
+  <app-entity-form
+    [title]="esEdicion ? 'Editar Compra' : 'Nueva Compra'"
+    subtitle="Registra la compra de insumos y los materiales que la componen"
+    badgeText="Orden de Compra"
+    [loading]="loading"
+    [submitting]="guardando"
+    [submitLabel]="esEdicion ? 'Guardar Cambios' : 'Guardar Compra'"
+    (submitRequested)="onSubmit()"
+    (cancelRequested)="cancelar()"
+  >
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <!-- ── Trabajador asignado (selección única) ─────────────────────── -->
+      <div class="field">
+        <label for="idTrabajador">Trabajador asignado <span class="req" aria-hidden="true">*</span></label>
+
+        <div class="selector" #buscarTrabajadorWrap>
+          <div class="selector-input-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input
+              id="idTrabajador"
+              type="text"
+              [value]="busquedaTrabajador"
+              (input)="onBusquedaTrabajador($event)"
+              (focus)="onFocoTrabajador()"
+              (keydown.escape)="cerrarSelectorTrabajador()"
+              placeholder="Buscar trabajador por nombre…"
+              autocomplete="off"
+              role="combobox"
+              aria-label="Buscar trabajador asignado"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="selectorTrabajadorAbierto">
+          </div>
+
+          @if (selectorTrabajadorAbierto) {
+            <div class="selector-lista" role="listbox">
+              @for (t of trabajadoresFiltrados; track t.idTrabajador) {
+                <button
+                  type="button"
+                  class="selector-item"
+                  role="option"
+                  [attr.aria-selected]="form.get('idTrabajador')?.value === t.idTrabajador"
+                  (click)="seleccionarTrabajador(t)">
+                  <span class="selector-item-nombre">{{ t.nombreCompleto }}</span>
+                  <span class="selector-item-unidad">{{ t.telefono }}</span>
+                </button>
+              } @empty {
+                <div class="selector-empty">No se encontraron trabajadores.</div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="selected-chip" *ngIf="trabajadorSeleccionado">
+          <span>{{ trabajadorSeleccionado.nombreCompleto }}</span>
+          <button type="button" class="chip-remove" (click)="quitarTrabajador()" aria-label="Quitar trabajador">✕</button>
+        </div>
+
+        <span class="field-error" *ngIf="form.get('idTrabajador')?.touched && form.get('idTrabajador')?.invalid">
+          Selecciona el trabajador asignado
+        </span>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="fechaCompra">Fecha de compra</label>
+          <input
+            id="fechaCompra"
+            type="datetime-local"
+            formControlName="fechaCompra"
+            [attr.min]="minFecha">
+          <span class="field-error" *ngIf="form.get('fechaCompra')?.touched && form.get('fechaCompra')?.hasError('fechaAnterior')">
+            La fecha de compra no puede ser anterior a hoy
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="notas">Notas</label>
+          <textarea
+            id="notas"
+            rows="3"
+            formControlName="notas"
+            placeholder="Condiciones de compra, observaciones, etc."></textarea>
+        </div>
+      </div>
+
+      <!-- ── Materiales de la compra (mini CRUD) ───────────────────────── -->
+      <div class="compra-materiales">
+        <div class="section-title">
+          <h2>Materiales de la compra</h2>
+          <span class="section-count" *ngIf="detallesSeleccionados.length">
+            {{ detallesSeleccionados.length }} material{{ detallesSeleccionados.length !== 1 ? 'es' : '' }}
+          </span>
+        </div>
+
+        <div class="selector" #buscarMaterialWrap>
+          <div class="selector-input-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input
+              type="text"
+              [value]="busquedaMaterial"
+              (input)="onBusquedaMaterial($event)"
+              (focus)="onFocoMaterial()"
+              (keydown.escape)="cerrarSelectorMaterial()"
+              placeholder="Buscar y agregar materiales…"
+              autocomplete="off"
+              role="combobox"
+              aria-label="Buscar materiales para la compra"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="selectorMaterialAbierto">
+          </div>
+
+          @if (selectorMaterialAbierto) {
+            <div class="selector-lista" role="listbox">
+              @for (m of materialesFiltradosBuscador; track m.key) {
+                <button
+                  type="button"
+                  class="selector-item"
+                  role="option"
+                  [attr.aria-selected]="materialYaAgregado(m)"
+                  (click)="seleccionarMaterial(m)">
+                  <span class="selector-item-nombre">{{ m.nombreMaterial }}</span>
+                  <span class="selector-item-precio" *ngIf="m.precio != null">{{ formatoPrecio(m.precio) }}</span>
+                  <span class="selector-item-prov">{{ m.nombreProveedor }}</span>
+                  <span class="selector-item-unidad">{{ m.unidadMedida }}</span>
+                  <span class="selector-item-estado" *ngIf="materialYaAgregado(m)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+                    Agregado
+                  </span>
+                </button>
+              } @empty {
+                <div class="selector-empty">No se encontraron materiales.</div>
+              }
+            </div>
+          }
+        </div>
+
+        @if (detallesSeleccionados.length > 0) {
+          <div class="det-table">
+            <div class="det-table-head">
+              <span>Material</span>
+              <span>Proveedor</span>
+              <span class="w-unidad">Unidad</span>
+              <span class="w-cant">Cantidad</span>
+              <span class="w-medida">Medida</span>
+              <span class="w-acc"></span>
+            </div>
+            @for (det of detallesSeleccionados; track det.idProveedor + '|' + det.idMaterial; let i = $index) {
+              <div class="det-table-row">
+                <span class="det-nombre">{{ det.nombreMaterial }}</span>
+                <span class="det-prov">{{ det.nombreProveedor }}</span>
+                <span class="w-unidad det-unidad">{{ det.unidadMedida }}</span>
+                <span class="w-cant">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    [value]="det.cantidad"
+                    (input)="onCantidadChange(i, $event)"
+                    placeholder="0">
+                </span>
+                <span class="w-medida">
+                  <input
+                    type="text"
+                    [value]="det.medida ?? ''"
+                    (input)="onMedidaChange(i, $event)"
+                    maxlength="20"
+                    placeholder="Opcional">
+                </span>
+                <span class="w-acc">
+                  <button type="button" class="icon-btn icon-btn--danger" (click)="quitarMaterial(i)" aria-label="Quitar material">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2z"/></svg>
+                  </button>
+                </span>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="det-empty">Aún no has agregado materiales a la compra. Busca y selecciona materiales arriba.</div>
+        }
+      </div>
+
+    </form>
+  </app-entity-form>
+</div>

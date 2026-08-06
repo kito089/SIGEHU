@@ -1,26 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { ComprasService } from '../../../services/compras.service';
+import { Compra } from '../../../core/models/compra.model';
+import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 /* =========================================================================
-   SIGEHU — Órdenes de Compra (componente Angular standalone)
-   RF-17 (Cotización y compra de insumos) / RF-19 (Autorización de compras).
-   Estados: "Cotizada", "Autorizada", "Recibida" y "Cancelada".
-   Sustituye fetchOrdenes() por tu llamada real al backend.
+   SIGEHU — Órdenes de Compra (listado).
+   Datos reales vía GET /Compras. Acciones: Ver detalle (modal con cabecera
+   y materiales), Editar (navega al formulario con queryParam id) y Eliminar
+   (soft-delete con modal de confirmación, RNF-07).
    ========================================================================= */
-
-type EstadoOrden = 'Cotizada' | 'Enviada' | 'Autorizada' | 'Recibida' | 'Cancelada';
-
-interface OrdenRow {
-  id: number;
-  folio: string;
-  proveedor: string;
-  descripcion: string;
-  total: number;
-  estado: EstadoOrden;
-}
 
 @Component({
   selector: 'app-ordenes-compra',
@@ -30,48 +24,53 @@ interface OrdenRow {
   styleUrl: './ordenes-compra.component.scss',
 })
 export class OrdenesCompraComponent implements OnInit {
+  private router = inject(Router);
+  private service = inject(ComprasService);
+  private toast = inject(ToastService);
 
-  ordenes: OrdenRow[] = [];
+  compras: Compra[] = [];
   searchTerm = '';
-  pendienteAutorizar: OrdenRow | null = null;
+  cargando = false;
+
+  selectedCompra: Compra | null = null;
+  cargandoDetalle = false;
+
+  compraAEliminar: Compra | null = null;
+  confirmarEliminacion = false;
+  eliminando = false;
 
   columns: DataTableColumn[] = [
-    { key: 'folio', label: 'Folio' },
-    { key: 'proveedor', label: 'Proveedor' },
-    { key: 'descripcion', label: 'Descripción' },
-    { key: 'total', label: 'Total', align: 'right' },
-    { key: 'estado', label: 'Estado' },
+    { key: 'idCompra', label: 'Compra' },
+    { key: 'nombreTrabajador', label: 'Trabajador asignado' },
+    { key: 'fechaCompra', label: 'Fecha' },
+    { key: 'recibida', label: 'Estado' },
+    { key: 'notas', label: 'Notas' },
   ];
 
   ngOnInit(): void {
-    this.fetchOrdenes().then(ordenes => {
-      this.ordenes = ordenes;
-    });
+    this.cargarCompras();
   }
 
-  // Ajusta esto a tu endpoint real cuando conectes el backend.
-  // constructor(private comprasService: ComprasService) {}
-  // private fetchOrdenes(): Promise<OrdenRow[]> {
-  //   return firstValueFrom(this.comprasService.listar());
-  // }
-  private async fetchOrdenes(): Promise<OrdenRow[]> {
-    return [
-      { id: 1, folio: 'OC-0001', proveedor: 'Herrería El Águila', descripcion: 'Compra de PTR y lámina cal.14', total: 48600, estado: 'Autorizada' },
-      { id: 2, folio: 'OC-0002', proveedor: 'Tornillos y Ferretería GYA', descripcion: 'Paquete de tornillería y consumibles', total: 12400, estado: 'Enviada' },
-      { id: 3, folio: 'OC-0003', proveedor: 'Aceros del Bajío', descripcion: 'Ángulos y soleras para fachada', total: 23900, estado: 'Recibida' },
-      { id: 4, folio: 'OC-0004', proveedor: 'Dist. Metales Norte', descripcion: 'Lámina troquelada', total: 9800, estado: 'Cancelada' },
-    ];
+  async cargarCompras(): Promise<void> {
+    this.cargando = true;
+    try {
+      this.compras = await firstValueFrom(this.service.listar());
+    } catch {
+      this.compras = [];
+    } finally {
+      this.cargando = false;
+    }
   }
 
-  get ordenesFiltradas(): OrdenRow[] {
+  get comprasFiltradas(): Compra[] {
     const term = this.searchTerm.trim().toLowerCase();
-    if (!term) return this.ordenes;
+    if (!term) return this.compras;
 
-    return this.ordenes.filter(o =>
-      o.folio.toLowerCase().includes(term) ||
-      o.proveedor.toLowerCase().includes(term) ||
-      o.descripcion.toLowerCase().includes(term) ||
-      o.estado.toLowerCase().includes(term)
+    return this.compras.filter(c =>
+      `#${c.idCompra}`.toLowerCase().includes(term) ||
+      c.nombreTrabajador.toLowerCase().includes(term) ||
+      (c.notas ?? '').toLowerCase().includes(term) ||
+      (c.recibida ? 'recibida' : 'pendiente').includes(term)
     );
   }
 
@@ -79,42 +78,93 @@ export class OrdenesCompraComponent implements OnInit {
     this.searchTerm = term;
   }
 
-  estadoClass(estado: EstadoOrden): string {
-    switch (estado) {
-      case 'Cotizada': return 'badge-estado--info';
-      case 'Enviada': return 'badge-estado--warning';
-      case 'Autorizada': return 'badge-estado--ok';
-      case 'Recibida': return 'badge-estado--ok';
-      case 'Cancelada': return 'badge-estado--danger';
+  formatoFecha(valor?: string): string {
+    if (!valor) return '—';
+
+    // El backend normaliza a "YYYY-MM-DD HH:MM" (sin zona horaria).
+    const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(valor.trim());
+    if (m) {
+      const [, anio, mes, dia, hora, min] = m;
+      return `${dia}/${mes}/${anio} ${hora}:${min}`;
+    }
+
+    const d = new Date(valor);
+    if (Number.isNaN(d.getTime())) return valor;
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const anio = d.getFullYear();
+    const hora = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dia}/${mes}/${anio} ${hora}:${min}`;
+  }
+
+  totalMateriales(compra: Compra): number {
+    return compra.detalles?.length ?? 0;
+  }
+
+  trackDetalle(index: number, detalle: { idProveedor: number; idMaterial: number }): string {
+    return `${detalle.idProveedor}|${detalle.idMaterial}`;
+  }
+
+  // ── Detalles ────────────────────────────────────────────────────────────
+  async verDetalle(compra: Compra): Promise<void> {
+    this.selectedCompra = compra;
+    // El listado (GET /Compras) no incluye Detalles[], por lo que las filas
+    // llegan con `detalles: []`. Siempre se re-hidrata con GET /Compras/:id
+    // para mostrar materiales y la fecha de registro reales.
+    if (!compra.detalles || compra.detalles.length === 0) {
+      this.cargandoDetalle = true;
+      try {
+        const detalle = await firstValueFrom(this.service.obtener(compra.idCompra));
+        this.selectedCompra = detalle;
+      } catch {
+        this.toast.error('No se pudieron cargar los detalles de la compra.');
+      } finally {
+        this.cargandoDetalle = false;
+      }
     }
   }
 
-  formatoTotal(total: number): string {
-    return `$${total.toLocaleString('es-MX')}`;
+  cerrarDetalle(): void {
+    this.selectedCompra = null;
   }
 
-  nuevaOrden(): void {
-    alert('Aquí se abriría el formulario para generar una nueva orden de compra (RF-17).');
+  // ── Editar ──────────────────────────────────────────────────────────────
+  editarCompra(compra: Compra): void {
+    this.router.navigate(['/admin/orden/nueva'], { queryParams: { id: compra.idCompra } });
   }
 
-  autorizar(orden: OrdenRow): void {
-    this.pendienteAutorizar = orden;
+  // ── Eliminar ────────────────────────────────────────────────────────────
+  eliminarCompra(compra: Compra): void {
+    this.compraAEliminar = compra;
+    this.confirmarEliminacion = true;
   }
 
-  get mensajeAutorizacion(): string {
-    return this.pendienteAutorizar
-      ? `¿Autorizar la orden ${this.pendienteAutorizar.folio} por $${this.pendienteAutorizar.total.toLocaleString('es-MX')} con ${this.pendienteAutorizar.proveedor}?`
-      : '';
+  cancelarEliminacion(): void {
+    this.confirmarEliminacion = false;
+    this.compraAEliminar = null;
   }
 
-  cancelarAutorizacion(): void {
-    this.pendienteAutorizar = null;
+  async confirmarEliminar(): Promise<void> {
+    if (!this.compraAEliminar) return;
+    this.eliminando = true;
+    try {
+      await firstValueFrom(this.service.desactivar(this.compraAEliminar.idCompra));
+      this.compras = this.compras.filter(c => c.idCompra !== this.compraAEliminar!.idCompra);
+      if (this.selectedCompra?.idCompra === this.compraAEliminar.idCompra) {
+        this.selectedCompra = null;
+      }
+      this.toast.success('Compra eliminada correctamente');
+      this.confirmarEliminacion = false;
+      this.compraAEliminar = null;
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.eliminando = false;
+    }
   }
 
-  confirmarAutorizacion(): void {
-    const orden = this.pendienteAutorizar;
-    if (!orden) return;
-    alert(`Orden ${orden.folio} autorizada.`);
-    this.pendienteAutorizar = null;
+  nuevaCompra(): void {
+    this.router.navigate(['/admin/orden/nueva']);
   }
 }

@@ -1,6 +1,27 @@
 import service from '../services/Compras.service.js';
 import auth from '../middlewares/auth.middleware.js';
 
+// Valida que la fecha de compra no sea anterior al día de hoy (RNF Compras).
+// Acepta "YYYY-MM-DD HH:MM[:SS]" (backend) o ISO 8601; devuelve null si es válida.
+const validarFechaCompra = (valor) => {
+    if (valor == null || String(valor).trim() === '') return null;
+
+    const texto = String(valor).trim().replace('T', ' ');
+    const m = /^(\d{4})-(\d{2})-(\d{2})[ ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(texto);
+    if (!m) return 'Formato de fecha de compra inválido';
+
+    const [, anio, mes, dia] = m;
+    const hoy = new Date();
+    const hoyUTC = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const fechaCompraUTC = Date.UTC(+anio, +mes - 1, +dia);
+
+    if (fechaCompraUTC < hoyUTC) {
+        return 'La fecha de compra no puede ser anterior a hoy';
+    }
+
+    return null;
+};
+
 const getAll = async (req, res) => {
     try {
         if (req.user?.rol === 'Trabajador') {
@@ -40,14 +61,56 @@ const create = async (req, res) => {
             return res.status(400).json({ error: 'El campo idTrabajador es requerido' });
         }
 
+        const errorFecha = validarFechaCompra(req.body?.FechaCompra);
+        if (errorFecha) {
+            return res.status(400).json({ error: errorFecha });
+        }
+
         await service.createCompra({
             idTrabajador,
+            FechaCompra: req.body?.FechaCompra ?? null,
             Notas: Notas ?? null,
             detalles: detalles ?? null,
             idTrabajadorCtx: req.user?.idTrabajador
         });
 
         res.status(201).json({ message: 'Compra creada' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+const update = async (req, res) => {
+    try {
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).json({ error: 'El cuerpo de la solicitud esta vacio' });
+        }
+
+        const { idTrabajador, Notas, detalles } = req.body;
+
+        if (!idTrabajador) {
+            return res.status(400).json({ error: 'El campo idTrabajador es requerido' });
+        }
+
+        const errorFecha = validarFechaCompra(req.body?.FechaCompra);
+        if (errorFecha) {
+            return res.status(400).json({ error: errorFecha });
+        }
+
+        const actualizado = await service.updateCompra({
+            id: req.params.id,
+            idTrabajador,
+            FechaCompra: req.body?.FechaCompra ?? null,
+            Notas: Notas ?? null,
+            detalles: detalles ?? null,
+            idTrabajadorCtx: req.user?.idTrabajador
+        });
+
+        if (actualizado === null) {
+            return res.status(404).json({ error: 'Compra no encontrada' });
+        }
+
+        res.json({ message: 'Compra actualizada' });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -105,4 +168,4 @@ const remove = async (req, res) => {
     }
 };
 
-export default { getAll, getById, create, getChofer, marcarRecibida, remove };
+export default { getAll, getById, create, update, getChofer, marcarRecibida, remove };

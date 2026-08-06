@@ -36,6 +36,7 @@ export const routes: Routes = [
       { path: 'ruta', loadComponent: () => import('./pages/Admin/ruta/hoja-ruta.component').then(m => m.HojaRutaComponent) },
       { path: 'garantias', loadComponent: () => import('./pages/Admin/garantias/garantias.component').then(m => m.GarantiasComponent) },
       { path: 'orden', loadComponent: () => import('./pages/Admin/orden/ordenes-compra.component').then(m => m.OrdenesCompraComponent) },
+      { path: 'orden/nueva', loadComponent: () => import('./pages/Admin/orden/compra-form/compra-form.component').then(m => m.CompraFormComponent) },
       { path: 'analitico', loadComponent: () => import('./pages/Admin/analitico/panel-analitico.component').then(m => m.PanelAnaliticoComponent) },
       {
         path: '',
