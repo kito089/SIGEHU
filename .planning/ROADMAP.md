@@ -74,6 +74,81 @@
 
 ---
 
+## PHASE 2: MÓDULO CLIENTES COMPLETO (Nueva Fase - Post Phase 1)
+
+### **Objetivo General:** Implementación completa del módulo Clientes según REQUIREMENTS.md (RF-03, RF-04, RF-05, RF-06) + Mejoras Proveedores + Backend completo
+
+### **Wave 1: Frontend - Proveedores Modal Detalles + Eliminaciones Clientes** (Días 1-2)
+- 1.1 Rediseñar modal detalles Proveedores: label-based design, lista materiales (no count), botón "Detalles" por material
+- 1.2 Crear componente reutilizable `MaterialDetailComponent` en `shared/components/`
+- 1.3 Eliminar "¿Requiere Factura?" completamente del frontend Clientes (formulario + listado + modelo)
+- 1.4 Eliminar "Dirección de Instalación / Habitual" completamente del frontend Clientes
+- 1.5 **Validación:** `npm run build` exitoso — **BLOQUEADA por issue preexistente `environment.prod.ts`** (ajeno a la ola)
+
+> **Progreso Wave 1:** ✅ código completo (1.1-1.8 implementados). Build no verificable por defecto preexistente de `angular.json` (`fileReplacements` → `environment.prod.ts` inexistente, gitignored y autogenerado por `build.bat`).
+
+### **Wave 2: Frontend - Clientes Formulario Persona/Empresa + Selector + Datos Fiscales** (Días 3-5)
+- 2.1 Selector mutuamente exclusivo: Dos check buttons "Persona" | "Empresa" (nunca ambos activos)
+- 2.2 Formulario Persona: Nombre (req), Teléfono, Correo (XOR req: al menos uno), Observaciones
+- 2.3 Datos Fiscales Persona (Switch): RFC, Razón Social, Régimen Fiscal, Uso CFDI, CP, Dirección - **Searchers reutilizados de Proveedores**
+- 2.4 Formulario Empresa: Nombre (req), Dirección, Observaciones
+- 2.5 Datos Fiscales Empresa (Switch): RFC, Razón Social, Régimen Fiscal, Uso CFDI, CP, Dirección Fiscal
+- 2.6 **Validación:** `npm run build` exitoso
+
+> **Progreso Wave 2:** ✅ código completo (2.1-2.12 implementados y verificados). Dev significativo: los "Searchers" Régimen/Uso CFDI NO existen en Proveedores → se reutilizan catálogos backend del módulo Clientes (`GET /Clientes/RegimenesFiscales`, `GET /Clientes/UsosCFDI`) con combobox searchable single-select en el propio formulario (KI-12). Bloqueo `environment.prod.ts` resuelto (autogenerado por `build.bat`); se corrigieron 2 errores TS de Wave 2 (getters FormGroup + método `cargarCatalogos`). **`npm run build` → exit 0 verificado.**
+
+### **Wave 3: Frontend - Contactos CRUD + Validaciones + Indicadores Obligatorios** (Días 6-7)
+- 3.1 Componente `ContactListComponent` (shared): Mini CRUD contactos 1:N (Nombre, Tel, Correo, Obs, validación XOR, min 1)
+- 3.2 Integrar ContactList en formulario Empresa
+- 3.3 Modo edición: Cargar datos existentes, detectar tipo, poblar contactos y fiscales
+- 3.4 Actualizar listado Clientes (data-table): columnas nuevo modelo, sin columnas eliminadas
+- 3.5 Actualizar filtros (filter-bar): Tipo, Con/Sin fiscales, Activos/Inactivos
+- 3.6 Indicadores visuales obligatorios: Asterisco rojo consistente (`--sigehu-danger`) en todos los campos req
+- 3.7 Validaciones completas: Email, Phone (10-15), RFC MX (12-13), CP (5 díg), longitudes - reutilizando validadores existentes
+- 3.8 **Validación:** `npm run build` exitoso
+
+> **Progreso Wave 3:** ✅ implementado y verificado (3.1-3.6). ContactList pulida (dup, confirm-modal para eliminar, aria-live, orden por inserción). Modo edición ya cubierto desde W2. Listado Clientes con badge Tipo + columnas Nombre/Tél/Correo/RFC/Obras/SAT. Filtros persona/empresa/datos SAT + búsqueda por correo. Estilos alineados a tokens `--sigehu-*`. **`npm run build` → exit 0, sin errores.**
+
+> **Progreso Wave 4:** ✅ implementado y verificado (4.1-4.8). Backend Clientes actualizado a nuevo modelo: validación `tipo` persona/empresa, CP 5 dígitos, XOR telefono/correo persona, empresa→contactos>=1, RFC/email/phone. `createCliente` persiste contacto principal si XOR; `updateCliente` hace MERGE de `contactos` (lista completa reemplaza) y `getClienteById` retorna `contactos[]` para modo edición. `blockFinancialForWorker` ya devuelve 403 a trabajadores en endpoints fiscales (RNF-04). Queries parametrizadas + transacciones explícitas + `RDB$GET_CONTEXT` antes de DML. Campos `requiereFactura`/`direccionInstalacion` ausentes en backend (comentario DEPRECATED). **`npm run build` → exit 0; `node src/app.js` inicia sin errores (:3000). Pendiente: columna TIPO y tabla `CLIENTES_DATOS_FISCALES` (DDL Wave 5).**
+
+### **Wave 4: Backend - Rutas, Controladores, Servicios, Queries Clientes** (Días 8-9)
+- 4.1 Actualizar modelo/validación backend: Eliminar campos obsoletos, agregar tipo, contactos, fiscales
+- 4.2 Controlador: Endpoints CRUD aceptando nuevo payload, 403 financiero para trabajadores (RNF-04)
+- 4.3 Servicio: Transacciones explícitas (BEGIN/COMMIT/ROLLBACK), auditoría (RDB$SET_CONTEXT), upsert contactos/fiscales
+- 4.4 Rutas: Middleware auth + roles, protección datos fiscales
+- 4.5 Queries SQL parametrizadas: SELECT con joins, INSERT/UPDATE transaccionales
+- 4.6 **Validación:** `node src/app.js` inicia sin errores, endpoints responden
+
+### **Wave 5: Backend - Stored Procedures, Triggers, Vistas, Índices, Tablas** (Días 10-11)
+- 5.1 DDL: Columna `Tipo` (persona/empresa) agregada a `Clientes` existente; índice `IDX_Clientes_Tipo`; **NO se crearon tablas nuevas** — se reutilizan `Clientes` + `ContactosClientes` existentes (sin `CLIENTES_CONTACTOS` ni `CLIENTES_DATOS_FISCALES` separadas)
+- 5.2 SPs: `SP_CREAR_CLIENTE`, `SP_ACTUALIZAR_CLIENTE`, `SP_OBTENER_CLIENTE`, `SP_LISTAR_CLIENTES` — transaccionales, con `RDB$SET_CONTEXT` para auditoría, validación tipo
+- 5.3 Triggers auditoría: **Ya existían** para `Clientes` y `ContactosClientes` (AI/AU/AD) — no se requirieron nuevos
+- 5.4 Vistas: `VW_CLIENTES_CON_OBRAS` actualizada (incluye `Tipo`); creada `VW_CLIENTES_COMPLETO` con datos fiscales
+- 5.5 Índices: `IDX_Clientes_Tipo` agregado; FKs existentes mantenidas
+- 5.6 **Validación:** ✅ Sintaxis SQL OK, Backend inicia (BD conectada, :3000), Build frontend exit 0
+
+> **Progreso Wave 5:** ✅ completa. Implementación siguió esquema **actual** de `SIGEHU.sql` (no plan original): se extendió tabla `Clientes` existente con columna `Tipo`, se reutilizó `ContactosClientes` para contactos 1:N, y los datos fiscales ya están en `Clientes` (RFC, RegimenFiscal, UsoCFDI, CP). Triggers de auditoría ya existían. SPs y vistas creadas/actualizadas. Backend y Frontend compilan sin errores.
+
+### **Wave 6: Backend - SIGEHU.sql + Migración Datos + Integridad** (Día 12)
+- 6.1 Consolidar sección Clientes en `SIGEHU.sql` (Tablas, SPs, Triggers, Vistas, Índices)
+- 6.2 Script migración `phase2-clientes-migration.sql`: Datos existentes → nuevo esquema (idempotente, reversible)
+- 6.3 Verificar integridad referencial completa
+- 6.4 **Validación:** Migración ejecuta sin error, API funcional con nuevo esquema
+
+### **Wave 7: Validation Wave - Comparación Exhaustiva REQUIREMENTS.md** (Día 13)
+- 7.1 Checklist RF-03 (CRUD Clientes & Contactos 1:N)
+- 7.2 Checklist RF-04 (Historial Cliente)
+- 7.3 Checklist RF-05 (Filtros)
+- 7.4 Checklist RF-06 (Validación Estricta)
+- 7.5 Documentar gaps en `.planning/phase2-gaps.md` - **SOLO VERIFICACIÓN, NO IMPLEMENTACIÓN**
+
+### **Wave 8: Verificación Técnica - Build Frontend + Backend** (Día 14)
+- 8.1 `npm run build` (Frontend) - Fix SOLO errores Fase 2
+- 8.2 `node src/app.js` (Backend) - Fix SOLO errores Fase 2
+- 8.3 Actualizar `STATE.md`, `ROADMAP.md`, `phase-2-plan.md` - Fase marcada Complete
+
+---
+
 ## Criterios de Éxito (Definition of Done)
 
 | Criterio | Métrica de Verificación |

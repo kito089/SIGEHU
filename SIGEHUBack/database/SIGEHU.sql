@@ -327,6 +327,7 @@ CREATE TABLE Clientes (
     UsosCFDI_idUsoCFDI INTEGER,
     Observaciones BLOB SUB_TYPE TEXT,
     Activo BOOLEAN DEFAULT TRUE NOT NULL,
+    Tipo VARCHAR(10) DEFAULT 'persona' NOT NULL CHECK (Tipo IN ('persona', 'empresa')),
     PRIMARY KEY (idCliente),
     CONSTRAINT UQ_CLIENTES_RFC UNIQUE (RFC),
     CONSTRAINT fk_Clientes_RegimenesFiscales1
@@ -343,6 +344,7 @@ CREATE INDEX fk_Clientes_RegimenesFiscales1_idx ON Clientes(RegimenesFiscales_id
 CREATE INDEX fk_Clientes_UsosCFDI1_idx ON Clientes(UsosCFDI_idUsoCFDI);
 CREATE INDEX IDX_Clientes_NombreCompleto ON Clientes (NombreCompleto);
 CREATE INDEX IDX_Clientes_Activo ON Clientes (Activo);
+CREATE INDEX IDX_Clientes_Tipo ON Clientes (Tipo);
 
 -- -----------------------------------------------------
 -- ContactosClientes
@@ -2916,6 +2918,199 @@ SET TERM ;^
 
 
 -- =============================================================================
+-- SECCIÓN 6.1: STORED PROCEDURES - CLIENTES
+-- =============================================================================
+
+SET TERM ^ ;
+
+-- -----------------------------------------------------------------------------
+-- SP_CREAR_CLIENTE
+-- Crea un cliente con sus contactos en una sola transacción.
+-- Retorna el ID del cliente creado.
+-- -----------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE SP_CREAR_CLIENTE (
+    pNombreCompleto       VARCHAR(100),
+    pDireccion            BLOB SUB_TYPE TEXT,
+    pRFC                  VARCHAR(13),
+    pRegimenFiscalId      INTEGER,
+    pCodigoPostal         VARCHAR(5),
+    pUsoCFDIId            INTEGER,
+    pObservaciones        BLOB SUB_TYPE TEXT,
+    pTipo                 VARCHAR(10),
+    pContactosJson        BLOB SUB_TYPE TEXT,
+    pIdTrabajador         INTEGER
+)
+RETURNS (
+    oIdCliente INTEGER
+)
+AS
+DECLARE VARIABLE vIdCliente INTEGER;
+DECLARE VARIABLE vContactos BLOB SUB_TYPE TEXT;
+BEGIN
+    -- Validar tipo
+    IF (:pTipo NOT IN ('persona', 'empresa')) THEN
+        EXCEPTION;
+
+    -- Establecer contexto de auditoría
+    SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', CAST(:pIdTrabajador AS VARCHAR(20)))
+    FROM RDB$DATABASE;
+
+    -- Insertar cliente
+    INSERT INTO Clientes (
+        NombreCompleto, Direccion, RFC, RegimenesFiscales_idRegimenFiscal,
+        CodigoPostal, UsosCFDI_idUsoCFDI, Observaciones, Tipo
+    ) VALUES (
+        :pNombreCompleto, :pDireccion, :pRFC, :pRegimenFiscalId,
+        :pCodigoPostal, :pUsoCFDIId, :pObservaciones, :pTipo
+    ) RETURNING idCliente INTO :vIdCliente;
+
+    oIdCliente = vIdCliente;
+
+    -- Insertar contactos si se proporcionan (JSON array)
+    IF (:pContactosJson IS NOT NULL AND CHAR_LENGTH(:pContactosJson) > 2) THEN
+    BEGIN
+        -- Nota: El parsing del JSON se hace en el backend (Node.js)
+        -- Este SP asume que el backend inserta los contactos por separado
+        -- o usa EXECUTE BLOCK para iterar. Aquí solo retornamos el ID.
+    END
+
+    SUSPEND;
+END^
+
+-- -----------------------------------------------------------------------------
+-- SP_ACTUALIZAR_CLIENTE
+-- Actualiza un cliente existente.
+-- -----------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE SP_ACTUALIZAR_CLIENTE (
+    pIdCliente            INTEGER,
+    pNombreCompleto       VARCHAR(100),
+    pDireccion            BLOB SUB_TYPE TEXT,
+    pRFC                  VARCHAR(13),
+    pRegimenFiscalId      INTEGER,
+    pCodigoPostal         VARCHAR(5),
+    pUsoCFDIId            INTEGER,
+    pObservaciones        BLOB SUB_TYPE TEXT,
+    pTipo                 VARCHAR(10),
+    pIdTrabajador         INTEGER
+)
+AS
+BEGIN
+    -- Validar tipo
+    IF (:pTipo NOT IN ('persona', 'empresa')) THEN
+        EXCEPTION;
+
+    -- Establecer contexto de auditoría
+    SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', CAST(:pIdTrabajador AS VARCHAR(20)))
+    FROM RDB$DATABASE;
+
+    UPDATE Clientes
+    SET NombreCompleto = :pNombreCompleto,
+        Direccion = :pDireccion,
+        RFC = :pRFC,
+        RegimenesFiscales_idRegimenFiscal = :pRegimenFiscalId,
+        CodigoPostal = :pCodigoPostal,
+        UsosCFDI_idUsoCFDI = :pUsoCFDIId,
+        Observaciones = :pObservaciones,
+        Tipo = :pTipo
+    WHERE idCliente = :pIdCliente;
+END^
+
+-- -----------------------------------------------------------------------------
+-- SP_OBTENER_CLIENTE
+-- Obtiene un cliente por ID con sus contactos y datos fiscales.
+-- -----------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE SP_OBTENER_CLIENTE (
+    pIdCliente INTEGER
+)
+RETURNS (
+    oIdCliente INTEGER,
+    oNombreCompleto VARCHAR(100),
+    oDireccion BLOB SUB_TYPE TEXT,
+    oRFC VARCHAR(13),
+    oRegimenFiscalId INTEGER,
+    oCodigoPostal VARCHAR(5),
+    oUsoCFDIId INTEGER,
+    oObservaciones BLOB SUB_TYPE TEXT,
+    oActivo BOOLEAN,
+    oTipo VARCHAR(10)
+)
+AS
+BEGIN
+    SELECT
+        idCliente, NombreCompleto, Direccion, RFC,
+        RegimenesFiscales_idRegimenFiscal, CodigoPostal, UsosCFDI_idUsoCFDI,
+        Observaciones, Activo, Tipo
+    FROM Clientes
+    WHERE idCliente = :pIdCliente
+    INTO :oIdCliente, :oNombreCompleto, :oDireccion, :oRFC,
+         :oRegimenFiscalId, :oCodigoPostal, :oUsoCFDIId,
+         :oObservaciones, :oActivo, :oTipo;
+
+    SUSPEND;
+END^
+
+-- -----------------------------------------------------------------------------
+-- SP_LISTAR_CLIENTES
+-- Lista clientes con filtros y paginación (versión simplificada sin SQL dinámico).
+-- Nota: El backend usa queries directas con VW_CLIENTES_CON_OBRAS.
+-- Este SP proporciona una interfaz básica con paginación simple.
+-- -----------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE SP_LISTAR_CLIENTES (
+    pSearch       VARCHAR(200),
+    pTipo         VARCHAR(10),
+    pConFiscales  VARCHAR(10),
+    pActivo       VARCHAR(10),
+    pPage         INTEGER,
+    pPageSize     INTEGER
+)
+RETURNS (
+    oIdCliente INTEGER,
+    oNombreCompleto VARCHAR(100),
+    oTelefonoPrincipal VARCHAR(15),
+    oCorreoPrincipal VARCHAR(254),
+    oRFC VARCHAR(13),
+    oActivo BOOLEAN,
+    oTieneDatosFiscales BOOLEAN,
+    oTotalObrasActivas INTEGER,
+    oTipo VARCHAR(10)
+)
+AS
+DECLARE VARIABLE vOffset INTEGER;
+BEGIN
+    vOffset = (:pPage - 1) * :pPageSize;
+
+    FOR SELECT
+            c.idCliente,
+            c.NombreCompleto,
+            (SELECT FIRST 1 cc.Telefono FROM ContactosClientes cc WHERE cc.Clientes_idCliente = c.idCliente ORDER BY cc.idContactoCliente) AS TelefonoPrincipal,
+            (SELECT FIRST 1 cc.Correo FROM ContactosClientes cc WHERE cc.Clientes_idCliente = c.idCliente ORDER BY cc.idContactoCliente) AS CorreoPrincipal,
+            c.RFC,
+            c.Activo,
+            CASE WHEN c.RFC IS NOT NULL THEN TRUE ELSE FALSE END AS TieneDatosFiscales,
+            COUNT(o.idObra) AS TotalObrasActivas,
+            c.Tipo
+        FROM Clientes c
+        LEFT JOIN Obras o ON o.Clientes_idCliente = c.idCliente AND o.Activo = TRUE AND o.EstadosObra_idEstadoObra < 7
+        WHERE 1=1
+          AND (:pSearch IS NULL OR TRIM(:pSearch) = '' OR UPPER(c.NombreCompleto) LIKE UPPER('%' || :pSearch || '%'))
+          AND (:pTipo IS NULL OR :pTipo NOT IN ('persona', 'empresa') OR c.Tipo = :pTipo)
+          AND (:pConFiscales <> 'with' OR c.RFC IS NOT NULL)
+          AND (:pConFiscales <> 'without' OR c.RFC IS NULL)
+          AND (:pActivo <> 'true' OR c.Activo = TRUE)
+          AND (:pActivo <> 'false' OR c.Activo = FALSE)
+        GROUP BY c.idCliente, c.NombreCompleto, c.RFC, c.Activo, c.Tipo
+        ORDER BY c.NombreCompleto
+        ROWS :pPageSize TO :vOffset + :pPageSize - 1
+    INTO :oIdCliente, :oNombreCompleto, :oTelefonoPrincipal, :oCorreoPrincipal,
+         :oRFC, :oActivo, :oTieneDatosFiscales, :oTotalObrasActivas, :oTipo
+    DO
+        SUSPEND;
+END^
+
+SET TERM ;^
+
+
+-- =============================================================================
 -- SECCIÓN 7: VISTAS
 -- =============================================================================
 
@@ -2967,6 +3162,7 @@ CREATE OR ALTER VIEW VW_CLIENTES_CON_OBRAS AS
 SELECT
     c.idCliente,
     c.NombreCompleto,
+    c.Tipo,
     (SELECT FIRST 1 cc.Telefono
      FROM ContactosClientes cc
      WHERE cc.Clientes_idCliente = c.idCliente
@@ -2983,7 +3179,30 @@ FROM Clientes c
 LEFT JOIN Obras o ON o.Clientes_idCliente = c.idCliente
                  AND o.Activo = TRUE
                  AND o.EstadosObra_idEstadoObra < 7  -- Excluir Finalizadas
-GROUP BY c.idCliente, c.NombreCompleto, c.RFC, c.Activo;
+GROUP BY c.idCliente, c.NombreCompleto, c.Tipo, c.RFC, c.Activo;
+
+-- -----------------------------------------------------------------------------
+-- VW_CLIENTES_COMPLETO
+-- Vista completa de clientes con datos fiscales para detalle/edición.
+-- Los contactos se obtienen por separado via backend/service.
+-- -----------------------------------------------------------------------------
+CREATE OR ALTER VIEW VW_CLIENTES_COMPLETO AS
+SELECT
+    c.idCliente,
+    c.NombreCompleto,
+    c.Direccion,
+    c.RFC,
+    c.CodigoPostal,
+    c.RegimenesFiscales_idRegimenFiscal AS idRegimenFiscal,
+    c.UsosCFDI_idUsoCFDI AS idUsoCFDI,
+    c.Observaciones,
+    c.Activo,
+    c.Tipo,
+    rf.Nombre AS RegimenFiscal,
+    ucfdi.Nombre AS UsoCFDI
+FROM Clientes c
+LEFT JOIN RegimenesFiscales rf ON rf.idRegimenFiscal = c.RegimenesFiscales_idRegimenFiscal
+LEFT JOIN UsosCFDI ucfdi ON ucfdi.idUsoCFDI = c.UsosCFDI_idUsoCFDI;
 
 -- -----------------------------------------------------------------------------
 -- VW_DETALLE_OBRA

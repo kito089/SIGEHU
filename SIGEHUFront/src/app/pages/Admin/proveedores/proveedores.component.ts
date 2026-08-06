@@ -1,25 +1,29 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ProveedoresService } from '../../../services/proveedores.service';
-import { Proveedor } from '../../../core/models/proveedor.model';
+import { Proveedor, ProveedorMaterial } from '../../../core/models/proveedor.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { MaterialDetailComponent, MaterialDetailData } from '../../../shared/components/material-detail/material-detail.component';
 
 /* =========================================================================
    SIGEHU — Proveedores (listado).
    Datos reales vía GET /Proveedores. Acciones: Ver catálogo (modal con
    datos descriptivos), Editar (navega al formulario con queryParam id) y
    Eliminar (soft-delete del proveedor con modal de confirmación, RNF-07).
+   El modal de detalles muestra la lista completa de materiales donde cada
+   uno expone un botón "Detalles" que abre la vista reusable MaterialDetail.
    ======================================================================== */
 
 @Component({
   selector: 'app-proveedores',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
+  imports: [CommonModule, IonicModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, MaterialDetailComponent],
   templateUrl: './proveedores.component.html',
   styleUrl: './proveedores.component.scss',
 })
@@ -33,6 +37,10 @@ export class ProveedoresComponent implements OnInit {
   cargando = false;
 
   selectedProveedor: Proveedor | null = null;
+
+  selectedMaterialForDetail: MaterialDetailData | null = null;
+
+  @Output() materialDetailClick = new EventEmitter<ProveedorMaterial>();
 
   proveedorAEliminar: Proveedor | null = null;
   confirmarEliminacion = false;
@@ -85,6 +93,15 @@ export class ProveedoresComponent implements OnInit {
 
   cerrarDetalle(): void {
     this.selectedProveedor = null;
+  }
+
+  onMaterialDetailClick(material: ProveedorMaterial): void {
+    this.selectedMaterialForDetail = material;
+    this.materialDetailClick.emit(material);
+  }
+
+  cerrarDetalleMaterial(): void {
+    this.selectedMaterialForDetail = null;
   }
 
   editarProveedor(proveedor: Proveedor): void {

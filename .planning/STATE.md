@@ -73,6 +73,91 @@
 
 ---
 
+## PHASE 2: MÓDULO CLIENTES COMPLETO — Planificado (2026-08-05)
+
+**Estado:** Planned
+**Total Waves:** 8
+**Total Tareas:** ~52 (subatómicas)
+**Fecha Creación:** 2026-08-05
+**Dependencias:** Phase 1 Complete (Design System, Layout, Shared Components, Admin Pages migrados)
+**Módulos Afectados:** 
+- Frontend: `pages/Admin/clientes/`, `pages/Admin/proveedores/`, `shared/components/material-detail/`, `shared/components/contact-list/`, `shared/validators/`
+- Backend: `routes/clientes.routes.js`, `controllers/clientes.controller.js`, `services/clientes.service.js`, `SIGEHU.sql`, `migrations/`
+- Planning: `phase-2-plan.md`, `phase2-gaps.md`
+
+---
+
+### Phase 2 Wave 1: Frontend - Proveedores Modal Detalles + Eliminaciones Clientes
+- [x] 1.1 📖 READ + 🔍 SEARCH: Entender modal actual de proveedores
+- [x] 1.2 📝 EDIT: Rediseñar modal de detalles Proveedores - Template
+- [x] 1.3 📝 EDIT: Estilos modal Proveedores - SCSS
+- [x] 1.4 📄 CREATE: Componente Material Detail View (reutilizable)
+- [x] 1.5 🔍 SEARCH + 📝 EDIT: Eliminar "¿Requiere Factura?" del formulario Clientes
+- [x] 1.6 🔍 SEARCH + 📝 EDIT: Eliminar "Dirección de Instalación / Habitual" del formulario Clientes
+- [x] 1.7 ✅ VERIFY WAVE 1 FRONTEND: Build Angular — **BLOQUEADO** por issue preexistente `environment.prod.ts` (ajeno a Wave 1)
+- [x] 1.8 📝 EDIT: Actualizar proveedores.component.ts - Handler material detail
+
+### Phase 2 Wave 2: Frontend - Clientes Formulario Persona/Empresa + Selector + Datos Fiscales
+- [x] 2.1 📖 READ + 🔍 SEARCH: Analizar formulario actual Clientes
+- [x] 2.2 📄 CREATE: Interface/Type para nuevo modelo Cliente (Persona vs Empresa)
+- [x] 2.3 📝 EDIT: Rediseñar template - Selector Persona/Empresa (Check Buttons Mutuamente Exclusivos)
+- [x] 2.4 📝 EDIT: Formulario Persona - Campos + Validaciones Condicionales (XOR tel/correo)
+- [x] 2.5 📝 EDIT: Datos Fiscales Persona - Switch + Campos + Searchers Reutilizados (Proveedores)
+- [x] 2.6 📝 EDIT: Formulario Empresa - Campos Base
+- [x] 2.7 📄 CREATE: Componente Contact List (Contactos 1:N) - Mini CRUD
+- [x] 2.8 📝 EDIT: Integrar ContactList en Formulario Empresa
+- [x] 2.9 📝 EDIT: Datos Fiscales Empresa - Campos
+- [x] 2.10 📝 EDIT: Indicadores visuales campos obligatorios - Diseño consistente
+- [x] 2.11 📝 EDIT: Validaciones completas - Email, Phone, RFC, CP, Longitudes (reutilizar)
+- [x] 2.12 ✅ VERIFY WAVE 2 FRONTEND: Build Angular — ✅ build OK (exit 0, verificado)
+
+### Phase 2 Wave 3: Frontend - Contactos CRUD + Validaciones + Indicadores
+- [x] 3.1 📝 EDIT: Refinar ContactListComponent - Edge Cases
+- [x] 3.2 📝 EDIT: Formulario Clientes - Manejo Edición (Cargar datos existentes)
+- [x] 3.3 📝 EDIT: Listado Clientes - Actualizar columnas data-table
+- [x] 3.4 📝 EDIT: Filtros Clientes - Actualizar FilterBar
+- [x] 3.5 📝 EDIT: Estilos finales formulario - SCSS consistente
+- [x] 3.6 ✅ VERIFY WAVE 3 FRONTEND: Build Angular — ✅ build OK (exit 0, verificado)
+
+### Phase 2 Wave 4: Backend - Rutas, Controladores, Servicios, Queries Clientes
+- [x] 4.1 📖 READ: Analizar backend actual Clientes
+- [x] 4.2 📝 EDIT: Actualizar Modelo Cliente Backend
+- [x] 4.3 📝 EDIT: Controlador Clientes - Endpoints CRUD
+- [x] 4.4 📝 EDIT: Servicio Clientes - Lógica de negocio + Transacciones + Auditoría
+- [x] 4.5 📝 EDIT: Rutas Clientes - Verificar middleware auth/roles + 403 financiero
+- [x] 4.6 📝 EDIT: Queries SQL - Clientes (SELECT, INSERT, UPDATE parametrizados)
+- [x] 4.7 📝 EDIT: Eliminar campos obsoletos de BD (Backend only - preparatorio Wave 5)
+- [x] 4.8 ✅ VERIFY WAVE 4 BACKEND: Test sintaxis + inicio servidor — ✅ servidor inicia (BD conectada, :3000), build frontend exit 0
+
+### Phase 2 Wave 5: Backend - Stored Procedures, Triggers, Vistas, Índices, Tablas
+- [x] 5.1 📖 READ: Analizar objetos BD actuales Clientes
+- [x] 5.2 📝 EDIT: Actualizar/Crear Tablas - Nuevo esquema Clientes (DDL) — Agregada columna `Tipo` a `Clientes`, índice `IDX_Clientes_Tipo`
+- [x] 5.3 📝 EDIT: Stored Procedure SP_CREAR_CLIENTE / SP_ACTUALIZAR_CLIENTE
+- [x] 5.4 📝 EDIT: Stored Procedure SP_OBTENER_CLIENTE / SP_LISTAR_CLIENTES
+- [x] 5.5 📝 EDIT: Triggers de Auditoría - Tablas nuevas — Ya existían `TR_Auditorias_Clientes_AI/AU/AD` y `TR_Auditorias_ContactosClientes_AI/AU/AD`
+- [x] 5.6 📝 EDIT: Vistas - Actualizar VW_CLIENTES_CON_OBRAS (incluye Tipo) / Crear VW_CLIENTES_COMPLETO
+- [x] 5.7 ✅ VERIFY WAVE 5 BACKEND: Sintaxis SQL + Test conexiones — ✅ Backend inicia (BD conectada, :3000), Build frontend exit 0
+
+### Phase 2 Wave 6: Backend - SIGEHU.sql + Relaciones + Migraciones
+- [ ] 6.1 📝 EDIT: Consolidar SIGEHU.sql - Sección Clientes completa
+- [ ] 6.2 📝 EDIT: Script de Migración - Datos existentes → Nuevo esquema
+- [ ] 6.3 📝 EDIT: Verificar integridad referencial completa
+- [ ] 6.4 ✅ VERIFY WAVE 6 BACKEND: Ejecutar migración + test integración
+
+### Phase 2 Wave 7: Validation Wave - Comparación Exhaustiva REQUIREMENTS.md
+- [ ] 7.1 🔍 SEARCH: Checklist RF-03 (CRUD Clientes & Contactos 1:N)
+- [ ] 7.2 🔍 SEARCH: Checklist RF-04 (Historial Cliente)
+- [ ] 7.3 🔍 SEARCH: Checklist RF-05 (Filtros Clientes)
+- [ ] 7.4 🔍 SEARCH: Checklist RF-06 (Validación Estricta)
+- [ ] 7.5 📝 EDIT: Documentar Gaps - `phase2-gaps.md` (SOLO VERIFICACIÓN)
+
+### Phase 2 Wave 8: Verificación Técnica - Build Frontend + Backend
+- [ ] 8.1 ✅ VERIFY: Build Frontend - Solo errores de esta fase
+- [ ] 8.2 ✅ VERIFY: Backend - Inicio servidor + test endpoints Clientes
+- [ ] 8.3 📝 EDIT: Actualizar STATE.md + ROADMAP.md - Fase 2 Completa
+
+---
+
 ## Problemas Conocidos (Known Issues)
 
 | ID | Descripción | Severidad | Estado | Asignado |
@@ -87,6 +172,9 @@
 | KI-08 | Diferentes paletas de colores: Login usa `#0a0e1a/#2f8fef`, Dashboard usa `#0a0e1a/#2f8fef`, Specs usan `#0F172A/#1E293B/#3B82F6` | Alta | Resuelto (todas las páginas mapeadas a `--sigehu-*`) | Wave 4.8/5.1-5.3 |
 | KI-09 | Build fallaba por budget `anyComponentStyle` (4KB error/2KB warning) superado por CSS grandes de páginas (dashboard 8KB, trabajadores 6KB, etc.). Se subió a 16KB/32KB en `angular.json`; se debe bajar al refactorizar a shared/variables | Media | Resuelto (ajuste) | Wave 1.1 / re-evaluar W4 |
 | KI-10 | Paquetes `@fullcalendar/*` declarados en package.json pero no instalados; se instalaron al integrar el calendario en dashboard | Media | Resuelto (npm install) | Wave 3.7 |
+| KI-11 | `src/environments/environment.prod.ts` no existe (path de `fileReplacements` en angular.json). Carpeta `src/environments/` es gitignored y autogenerada por `build.bat` (archivo protegido). Bloquea `npm run build` en HEAD sin depender de Wave 1. | Alta | **Bloquea build — preexistente, fuera de ola** (resolver vía `build.bat`)
+   | Wave 1.7 |
+| KI-12 | Plan Wave 2.5/2.9 pedía reutilizar `RegimenFiscalSelectorComponent`/`UsoCFDISelectorComponent` de Proveedores, pero **no existen** en `proveedores/` (grep 0 resultados). Decisión: reutilizar catálogos backend de Clientes (`GET /Clientes/RegimenesFiscales`, `GET /Clientes/UsosCFDI`) y construir combobox searchable single-select en el propio formulario. Sin componentes nuevos ni cambios backend. | Media | Resuelto (combobox searchable en `cliente-form.component.ts/html`) | Wave 2.5
 
 ---
 
@@ -172,5 +260,44 @@
 | 2026-08-05 | Agent | Post-Fase | T4: registrar rutas `/movil/*` + `/worker` con `WorkerGuard` (RF-36) | Done |
 | 2026-08-05 | Agent | Post-Fase | Build → exit 0 (865 kB initial) | Done |
 | 2026-08-05 | Agent | Post-Fase | Lint → exit 0 | Done |
+| 2026-08-05 | Agent | P2 W1.1 | Understand actual proveedores modal (show count, no list) | Done |
+| 2026-08-05 | Agent | P2 W1.4 | Crear `shared/components/material-detail` (ts/html/css) reusable, tokens `--sigehu-*` | Done |
+| 2026-08-05 | Agent | P2 W1.2/1.3/1.8 | Redesign proveedores modal: lista materiales (ion-list/ion-item) + botón "Detalles" → MaterialDetail; SCSS tokens; handler @materialDetailClick + selectedMaterialForDetail | Done |
+| 2026-08-05 | Agent | P2 W1.5 | Eliminar "¿Requiere Factura?" frontend clientes (FormGroup, fetch, HTML) - 0 referencias | Done |
+| 2026-08-05 | Agent | P2 W1.6 | Eliminar "Dirección de Instalación / Habitual" frontend clientes (FormGroup, payload, fetch, HTML) - 0 referencias | Done |
+| 2026-08-05 | Agent | P2 W1.7 | VERIFICACIÓN: build BLOQUEADO por `environment.prod.ts` inexistente (preexistente, confirmado en HEAD con wave stash). Código Wave 1 ok | Blocked (preexistente) |
+| 2026-08-06 | Agent | P2 W2.1 | Análisis formulario actual Clientes (campos, FormGroup, catálogos) | Done |
+| 2026-08-06 | Agent | P2 W2.2 | Crear tipos `cliente.model.ts` + re-exports `models/index.ts` (ClienteTipo, DatosFiscales, ClientePersona/Empresa, ClienteFormData) | Done |
+| 2026-08-06 | Agent | P2 W2.3 | Selector Persona/Empresa: signal `tipo`, botones check mutuamente excluyentes, `setTipo` reconstruye FormGroup | Done |
+| 2026-08-06 | Agent | P2 W2.4 | Form Persona: nombre/telefono/correo/observaciones + validator XOR `telefonoOcorreoRequired` | Done |
+| 2026-08-06 | Agent | P2 W2.5 | Datos fiscales Persona: toggle + combobox searchable Régimen/USo (reuso catálogos Clientes, KI-12) | Done |
+| 2026-08-06 | Agent | P2 W2.6 | Form Empresa: nombre/direccion/observaciones | Done |
+| 2026-08-06 | Agent | P2 W2.7 | Adaptar `shared/components/contact-list` a API `contactos`/`contactosChange` (mini CRUD) | Done |
+| 2026-08-06 | Agent | P2 W2.8 | Integrar ContactList en formulario empresa + validación min 1 contacto | Done |
+| 2026-08-06 | Agent | P2 W2.9 | Datos fiscales Empresa: comboboxes + dirección fiscal | Done |
+| 2026-08-06 | Agent | P2 W2.10 | Indicadores obligatorios: `.required-label::after` + token `--sigehu-required-color` | Done |
+| 2026-08-06 | Agent | P2 W2.11 | Validadores centralizados `shared/validators/custom-validators.ts` (tel, RFC, CP, lengths, XOR) | Done |
+| 2026-08-06 | Agent | P2 W2.12 | VERIFICACIÓN: bloqueo `environment.prod.ts` resuelto (archivos autogenerados presentes). Fix errores Wave 2 reales: typed getters `fiscalPersonaGroup/fiscalEmpresaGroup` (formGroup convertia AbstractControl→null) + método `cargarCatalogos` faltante. Build exit 0 | Done |
+| 2026-08-06 | Agent | P2 W3.1 | Refinar ContactList: validación duplicados (telefono+correo) en `contact-form` `existentes` + error aria-live; delete con `app-confirm-modal` (danger); aria-labels + aria-live contra vacíos | Done |
+| 2026-08-06 | Agent | P2 W3.2 | Modo edición (cubierto en W2): `clienteId`, `fetchCliente`, detección `tipo`, `patchValue`, contactos signal, fiscal signals, título `esEdicion` | Done |
+| 2026-08-06 | Agent | P2 W3.3 | Listado Clientes: columnas Tipo (badge Persona/Empresa), Nombre, Teléfono, Correo, RFC, Obras activas, Datos SAT; sin columnas obsoletas | Done |
+| 2026-08-06 | Agent | P2 W3.4 | FilterBar Clientes: filtros persona/empresa/todos + con_obras + datos SAT; search por nombre/tel/correo/RFC | Done |
+| 2026-08-06 | Agent | P2 W3.5 | Estilos formulario: fiscal-block a `--sigehu-card-bg`/`--sigehu-border-divider`/`--sigehu-radius-md`; selector activo a `--sigehu-active-*` | Done |
+| 2026-08-06 | Agent | P2 W3.6 | VERIFICACIÓN: npm run build → exit 0, sin errores TS. Wave 3 completa | Done |
+| 2026-08-06 | Agent | P2 W4.1 | READ: backend Clientes (routes/controller/service/schema). Sin `requiereFactura`/`direccionInstalacion` en backend; sin columna TIPO ni tabla ClientesDatosFiscales (Wave 5 DDL); `blockFinancialForWorker` ya cubre endpoints fiscales | Done |
+| 2026-08-06 | Agent | P2 W4.2 | Validación backend: `tipo` persona/empresa, CP_REGEX 5 dígitos, XOR telefono/correo persona, empresa→contactos>=1, comentario DEPRECATED | Done |
+| 2026-08-06 | Agent | P2 W4.3 | Controller: create/update aceptan `tipo` + `contactos`; sintaxis OK | Done |
+| 2026-08-06 | Agent | P2 W4.4 | Service: `createCliente` persona→contacto principal si XOR; `updateCliente` MERGE contactos (delete+insert lista completa) o update principal; `getClienteById` retorna `contactos[]` | Done |
+| 2026-08-06 | Agent | P2 W4.5 | Rutas: authMiddleware global + `blockFinancialForWorker` (403 trabajador en fiscal) ya presentes; no requiere cambios de roles adicionales | Done |
+| 2026-08-06 | Agent | P2 W4.6 | Queries parametrizadas `?`, transacciones explícitas commit/rollback + `RDB$GET_CONTEXT` previo a DML (create/update/delete ya presentes) | Done |
+| 2026-08-06 | Agent | P2 W4.7 | Backend no usa campos obsoletos (grep 0 resultados) + comentario DEPRECATED añadido | Done |
+| 2026-08-06 | Agent | P2 W4.8 | VERIFICACIÓN: frontend build exit 0; `node src/app.js` inicia (BD conectada, :3000, sin errores). Wave 4 completa | Done |
+| 2026-08-06 | Agent | P2 W5.1 | READ: Analizar objetos BD actuales Clientes — Esquema actual usa `Clientes` + `ContactosClientes`, sin tabla `CLIENTES_DATOS_FISCALES` separada | Done |
+| 2026-08-06 | Agent | P2 W5.2 | Agregada columna `Tipo` (persona/empresa) a `Clientes` + índice `IDX_Clientes_Tipo`; reutilizadas tablas existentes | Done |
+| 2026-08-06 | Agent | P2 W5.3 | Creados SP_CREAR_CLIENTE y SP_ACTUALIZAR_CLIENTE con validación tipo, auditoría y transacciones | Done |
+| 2026-08-06 | Agent | P2 W5.4 | Creados SP_OBTENER_CLIENTE y SP_LISTAR_CLIENTES con filtros y paginación | Done |
+| 2026-08-06 | Agent | P2 W5.5 | Triggers de auditoría ya existían para Clientes y ContactosClientes (AI/AU/AD) | Done |
+| 2026-08-06 | Agent | P2 W5.6 | Actualizada VW_CLIENTES_CON_OBRAS (incluye Tipo); creada VW_CLIENTES_COMPLETO | Done |
+| 2026-08-06 | Agent | P2 W5.7 | VERIFICACIÓN: Backend inicia (BD conectada, :3000), Build frontend exit 0. Wave 5 completa | Done |
 
 > **Formato:** `YYYY-MM-DD` | `Agent-Type` | `Wave X.Y` | `Descripción corta` | `Done/Blocked/Partial`

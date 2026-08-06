@@ -80,9 +80,41 @@
     <div class="modal-row"><span class="k">Correo electrónico</span><span class="v">{{ selectedProveedor.correo || '—' }}</span></div>
     <div class="modal-row"><span class="k">Dirección</span><span class="v">{{ selectedProveedor.direccion || '—' }}</span></div>
     <div class="modal-row"><span class="k">Observaciones</span><span class="v">{{ selectedProveedor.notas || '—' }}</span></div>
-    <div class="modal-row"><span class="k">Materiales en catálogo</span><span class="v">{{ totalMateriales(selectedProveedor) }}</span></div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">
+        <span>Materiales en catálogo</span>
+        <span class="count-pill">{{ totalMateriales(selectedProveedor) }}</span>
+      </div>
+
+      @if (totalMateriales(selectedProveedor) > 0) {
+        <ion-list class="material-list">
+          @for (mat of selectedProveedor.materiales; track mat.idMaterial) {
+            <ion-item class="material-item">
+              <ion-label>
+                <div class="mat-nombre">{{ mat.nombre }}</div>
+                <div class="mat-meta">{{ mat.descripcion || 'Sin descripción' }}<span *ngIf="mat.unidadMedida"> · {{ mat.unidadMedida }}</span></div>
+              </ion-label>
+              <ion-button class="mat-detail-btn" fill="clear" color="primary" size="small" (click)="onMaterialDetailClick(mat)" aria-label="Ver detalles de {{ mat.nombre }}" title="Ver detalle del material">
+                <ion-icon name="information-circle" slot="start"></ion-icon>
+                Detalles
+              </ion-button>
+            </ion-item>
+          }
+        </ion-list>
+      } @else {
+        <p class="mat-empty">Sin materiales asociados.</p>
+      }
+    </div>
   </div>
 </div>
+
+<app-material-detail
+  *ngIf="selectedMaterialForDetail"
+  [material]="selectedMaterialForDetail"
+  (close)="cerrarDetalleMaterial()"
+  class="material-detail-overlay">
+</app-material-detail>
 
 <app-confirm-modal
   *ngIf="confirmarEliminacion"

@@ -15,7 +15,7 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por nombre, teléfono o RFC…'"
+      [searchPlaceholder]="'Buscar por nombre, teléfono, correo o RFC…'"
       [options]="filterOptions"
       [filterValue]="filtro"
       (searchTermChange)="onSearchChange($event)"
@@ -31,11 +31,22 @@
     >
       <ng-template #cell let-row let-col="column">
         @switch (col.key) {
+          @case ('tipo') {
+            <span class="badge" [class.badge-info]="row.tipo === 'persona'" [class.badge-primary]="row.tipo === 'empresa'">
+              {{ row.tipo === 'persona' ? 'Persona' : 'Empresa' }}
+            </span>
+          }
           @case ('nombre') {
             <span class="td-nombre">{{ row.nombre }}</span>
           }
           @case ('telefono') {
             <span class="td-muted">{{ row.telefono }}</span>
+          }
+          @case ('correo') {
+            <span class="td-muted">{{ row.correo }}</span>
+          }
+          @case ('rfc') {
+            <span class="td-muted">{{ row.rfc }}</span>
           }
           @case ('obrasActivas') {
             <span class="tag" [class.tag-obras-empty]="row.obrasActivas === 0">
@@ -73,7 +84,7 @@
   <div class="modal" *ngIf="selectedCliente" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
-        <div class="cliente-tag">Cliente</div>
+        <div class="cliente-tag">{{ selectedCliente.tipo === 'persona' ? 'Persona' : 'Empresa' }}</div>
         <h2>{{ selectedCliente.nombre }}</h2>
       </div>
       <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
