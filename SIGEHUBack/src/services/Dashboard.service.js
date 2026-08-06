@@ -8,6 +8,32 @@ const getIndicadores = async () => {
     );
 };
 
+// Resumen de KPIs superiores del Dashboard: obras activas, finalizadas el mes
+// en curso y garantías cerradas el mes en curso.
+const getResumen = async () => {
+    const db = await getConnection();
+    const rows = await db.query(
+        `SELECT
+            (SELECT COUNT(*) FROM Obras
+             WHERE Activo = TRUE AND EstadosObra_idEstadoObra < 7) AS OBRAS_ACTIVAS,
+            (SELECT COUNT(*) FROM Obras
+             WHERE Activo = TRUE AND EstadosObra_idEstadoObra = 7
+               AND EXTRACT(YEAR FROM FechaUltimaActualizacion) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+               AND EXTRACT(MONTH FROM FechaUltimaActualizacion) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)) AS FINALIZADAS_MES,
+            (SELECT COUNT(*) FROM Garantias
+             WHERE Activo = TRUE AND EstadoGarantia_idEstadoGarantia = 3
+               AND EXTRACT(YEAR FROM FechaUltimaActualizacion) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+               AND EXTRACT(MONTH FROM FechaUltimaActualizacion) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)) AS GARANTIAS_CERRADAS_MES
+         FROM RDB$DATABASE`,
+        []
+    );
+    return {
+        obrasActivas: Number(rows?.[0]?.OBRAS_ACTIVAS ?? 0),
+        finalizadasMes: Number(rows?.[0]?.FINALIZADAS_MES ?? 0),
+        garantiasCerradasMes: Number(rows?.[0]?.GARANTIAS_CERRADAS_MES ?? 0),
+    };
+};
+
 const getKanban = async () => {
     const db = await getConnection();
     return await db.query(
@@ -64,6 +90,7 @@ const getCalendarEvents = async () => {
 
 export default {
     getIndicadores,
+    getResumen,
     getKanban,
     getActivityFeed,
     getCalendarEvents

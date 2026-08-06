@@ -1,0 +1,25 @@
+@if (orientation() === 'vertical') {
+  <div class="bars bars--vertical">
+    @for (item of items(); track item.label) {
+      <div class="bars__col" title="{{ item.label }}: {{ displayValue(item) }}">
+        <div class="bars__track">
+          <div class="bars__fill" [style]="barStyle(item)"></div>
+        </div>
+        <span class="bars__value">{{ formatNumber(item.value) }}</span>
+        <span class="bars__label" [attr.title]="item.label">{{ item.label }}</span>
+      </div>
+    }
+  </div>
+} @else {
+  <ul class="bars bars--horizontal">
+    @for (item of items(); track item.label) {
+      <li class="bars__row" title="{{ item.label }}: {{ displayValue(item) }}">
+        <span class="bars__row-label" [attr.title]="item.label">{{ item.label }}</span>
+        <div class="bars__row-track">
+          <div class="bars__row-fill" [style]="barStyle(item)"></div>
+        </div>
+        <span class="bars__row-value">{{ displayValue(item) }}</span>
+      </li>
+    }
+  </ul>
+}

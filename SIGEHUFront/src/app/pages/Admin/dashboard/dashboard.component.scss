@@ -39,6 +39,100 @@
   padding: var(--sigehu-space-10) var(--sigehu-space-6);
 }
 
+/* ── Compras pendientes ─────────────────────────────────────────────────── */
+.dashboard-compras {
+  margin-top: var(--sigehu-space-5);
+  min-height: 0;
+}
+
+.dashboard-compras__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sigehu-space-3);
+}
+
+.dashboard-compras__title {
+  margin: 0;
+  font-size: var(--sigehu-font-size-md);
+  font-weight: var(--sigehu-font-weight-semibold);
+  color: var(--sigehu-text-primary);
+}
+
+.dashboard-compras__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--sigehu-space-2);
+  border-radius: 999px;
+  background: var(--sigehu-session-active-bg, #2563EB);
+  color: var(--sigehu-session-active-text, #FFFFFF);
+  font-size: var(--sigehu-font-size-xs);
+  font-weight: var(--sigehu-font-weight-semibold);
+}
+
+.dashboard-compras__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sigehu-space-2);
+}
+
+.dashboard-compras__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sigehu-space-4);
+  padding: var(--sigehu-space-3) var(--sigehu-space-4);
+  background: var(--sigehu-card-bg, #0F172A);
+  border: 1px solid var(--sigehu-card-border, #334155);
+  border-radius: 10px;
+}
+
+.dashboard-compras__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dashboard-compras__proveedor {
+  font-size: var(--sigehu-font-size-base);
+  font-weight: var(--sigehu-font-weight-semibold);
+  color: var(--sigehu-text-primary);
+}
+
+.dashboard-compras__mat {
+  font-size: var(--sigehu-font-size-xs);
+  color: var(--sigehu-text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-compras__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: var(--sigehu-font-size-xs);
+  color: var(--sigehu-text-tertiary);
+  white-space: nowrap;
+}
+
+.dashboard-compras__empty {
+  padding: var(--sigehu-space-4);
+  text-align: center;
+  font-size: var(--sigehu-font-size-base);
+  color: var(--sigehu-text-tertiary);
+  border: 1px dashed var(--sigehu-card-border);
+  border-radius: 10px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .dashboard-kpis {

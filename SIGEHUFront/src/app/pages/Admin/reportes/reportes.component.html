@@ -1,118 +1,222 @@
-<div class="page">
-
-  <section class="panel-frame">
-    <div class="panel-header">
-      <div>
-        <h1>Reportes</h1>
-        <p>Consultas generales e indicadores del negocio (RF-30 / RF-31)</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn-ghost" (click)="nuevaBusqueda()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          Búsqueda global
-        </button>
-        <button class="btn-primary" (click)="irAConsultas()">
-          Consultas detalladas
-        </button>
-      </div>
+<div class="reportes">
+  <header class="reportes__header">
+    <div>
+      <h1 class="reportes__title">Reportes</h1>
+      <p class="reportes__subtitle">Análisis y consultas por dominio del negocio</p>
     </div>
-  </section>
+    <p class="reportes__hint">Se muestran hasta 2 gráficas grandes a la vez + detalle</p>
+  </header>
 
-  <section class="kpi-grid">
-    @for (kpi of kpis; track kpi.label) {
-      <app-kpi-card
-        [value]="kpi.value"
-        [label]="kpi.label"
-        [iconSvg]="kpi.iconSvg"
-        [iconBgColor]="kpi.iconBgColor"
-        [iconColor]="kpi.iconColor"
-      ></app-kpi-card>
+  <nav class="reportes__tabs" role="tablist" aria-label="Categorías de reporte">
+    @for (cat of categorias; track cat.id) {
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="activeCategory() === cat.id"
+        class="reportes__tab"
+        [class.reportes__tab--active]="activeCategory() === cat.id"
+        (click)="selectCategory(cat.id)"
+      >
+        <span class="reportes__tab-icon" [innerHTML]="cat.icon"></span>
+        <span>{{ cat.label }}</span>
+      </button>
     }
-  </section>
+  </nav>
 
-  <!-- Actividad reciente (RF-33) — fuente: Auditorias / AuditoriasDetalles -->
-  <section class="panel-frame">
-    <div class="panel-header">
-      <div>
-        <h1>Actividad reciente</h1>
-        <p>Últimos eventos capturados por auditoría (máximo 20 registros)</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn-ghost" (click)="irAlHistorial()">
-          Ver historial completo
-        </button>
-      </div>
-    </div>
+  @if (cargando()) {
+    <div class="reportes__state">Cargando reporte…</div>
+  } @else if (error()) {
+    <div class="reportes__state reportes__state--error">{{ error() }}</div>
+  } @else {
+    @switch (activeCategory()) {
+      @case ('obras') {
+        <div class="reportes__grid">
+          <section class="report-card">
+            <h2 class="report-card__title">Obras por estado</h2>
+            <app-chart-donut [data]="obrasDonut()" centerLabel="Obras"></app-chart-donut>
+          </section>
+          <section class="report-card">
+            <h2 class="report-card__title">Evolución de creación</h2>
+            <app-chart-line [data]="evolucionLine()"></app-chart-line>
+          </section>
+        </div>
+        <section class="report-card report-card--full">
+          <h2 class="report-card__title">Tiempo promedio por etapa (días)</h2>
+          <app-chart-bars [data]="tiemposBars()" orientation="horizontal" unit="days"></app-chart-bars>
+        </section>
+      }
 
-    @if (cargandoActividad) {
-      <app-skeleton type="table" [lines]="5"></app-skeleton>
-    } @else if (actividad.length === 0) {
-      <app-empty-state
-        title="Sin actividad reciente"
-        subtitle="Aún no existen eventos de auditoría registrados"
-        icon="file-tray-outline"
-      ></app-empty-state>
-    } @else {
-      <div class="act-list">
-        @for (act of actividad; track act.id) {
-          <div class="act-item">
-            <span class="act-item__dot" [class]="'act-item__dot--' + dotColor(act.accion)"></span>
-            <div class="act-item__body">
-              <div class="act-item__top">
-                <span class="act-item__tipo">{{ etiquetaAccion(act.accion) }}</span>
-                <span class="act-item__fecha">{{ fechaHora(act.fecha) }}</span>
-              </div>
-              <p class="act-item__texto">{{ act.descripcion }}</p>
-              <p class="act-item__detalle">{{ act.tabla }} · {{ act.usuario }}</p>
+      @case ('clientes') {
+        <div class="reportes__grid">
+          <section class="report-card">
+            <h2 class="report-card__title">Nuevos clientes por mes</h2>
+            <app-chart-line [data]="clientesLine()"></app-chart-line>
+          </section>
+          <section class="report-card">
+            <h2 class="report-card__title">Obras por cliente</h2>
+            <app-chart-bars [data]="clientesBars()" orientation="horizontal" [limit]="10"></app-chart-bars>
+          </section>
+        </div>
+        <section class="report-card report-card--full">
+          <h2 class="report-card__title">Últimos clientes registrados</h2>
+          @if (clientesNuevos()?.listado?.length) {
+            <table class="report-table">
+              <thead>
+                <tr><th>Cliente</th><th>Registrado</th></tr>
+              </thead>
+              <tbody>
+                @for (c of clientesNuevos()?.listado ?? []; track c.idCliente) {
+                  <tr>
+                    <td>{{ c.nombre }}</td>
+                    <td class="report-table__muted">{{ c.fecha }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="report-card__empty">Sin registros.</p>
+          }
+        </section>
+      }
+
+      @case ('trabajadores') {
+        <div class="reportes__grid">
+          <section class="report-card">
+            <h2 class="report-card__title">Obras activas por trabajador</h2>
+            <app-chart-bars [data]="trabObrasBars()" orientation="horizontal"></app-chart-bars>
+          </section>
+          <section class="report-card">
+            <h2 class="report-card__title">Garantías atendidas por trabajador</h2>
+            <app-chart-bars [data]="trabGarantiasBars()" orientation="horizontal"></app-chart-bars>
+          </section>
+        </div>
+      }
+
+      @case ('garantias') {
+        <div class="reportes__grid">
+          <section class="report-card">
+            <h2 class="report-card__title">Estado de garantías</h2>
+            <app-chart-donut [data]="garantiasDonut()" centerLabel="Garantías"></app-chart-donut>
+            <div class="report-card__stats">
+              <span>Abiertas: <b>{{ garantias()?.abiertas ?? 0 }}</b></span>
+              <span>Resueltas: <b>{{ garantias()?.resueltas ?? 0 }}</b></span>
+              <span>Prom. resolución: <b>{{ garantias()?.promedioResolucionDias ?? 0 }} días</b></span>
             </div>
-            @if (act.accion === 'UPDATE') {
-              <button class="btn-ghost act-item__btn" (click)="verDetalles(act)">Ver detalles</button>
+          </section>
+          <section class="report-card">
+            <h2 class="report-card__title">Obras con problemas recurrentes</h2>
+            <table class="report-table">
+              <thead>
+                <tr><th>Obra</th><th>#</th></tr>
+              </thead>
+              <tbody>
+                @for (p of problemas(); track p.idObra) {
+                  <tr title="{{ p.cliente }} – {{ p.detalle }}">
+                    <td>{{ p.obra }}</td>
+                    <td class="report-table__strong">{{ p.numero }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            @if (!problemas().length) {
+              <p class="report-card__empty">Sin problemas recurrentes.</p>
             }
-          </div>
+          </section>
+        </div>
+        @if (multiples().length) {
+          <section class="report-card report-card--full">
+            <h2 class="report-card__title">Obras con varias garantías</h2>
+            <table class="report-table">
+              <thead><tr><th>Obra</th><th>Cliente</th><th>Garantías</th></tr></thead>
+              <tbody>
+                @for (g of multiples(); track g.idObra) {
+                  <tr><td>{{ g.nombre }}</td><td class="report-table__muted">{{ g.cliente }}</td><td class="report-table__strong">{{ g.numero }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </section>
         }
-      </div>
+      }
+
+      @case ('materiales') {
+        <div class="reportes__grid">
+          <section class="report-card">
+            <h2 class="report-card__title">Materiales más utilizados</h2>
+            <app-chart-bars [data]="usoMaterBars()" orientation="horizontal" [limit]="10"></app-chart-bars>
+          </section>
+          <section class="report-card">
+            <h2 class="report-card__title">Materiales sin proveedor</h2>
+            @if (sinProveedor().length) {
+              <table class="report-table">
+                <thead><tr><th>Material</th><th>Unidad</th></tr></thead>
+                <tbody>
+                  @for (m of sinProveedor(); track m.idMaterial) {
+                    <tr><td>{{ m.nombre }}</td><td class="report-table__muted">{{ m.unidad }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <p class="report-card__empty">Todos los materiales cuentan con proveedor.</p>
+            }
+          </section>
+        </div>
+      }
+
+      @case ('compras') {
+        <section class="report-card report-card--full">
+          <h2 class="report-card__title">Compras pendientes de recibir</h2>
+          @if (compras().length) {
+            <table class="report-table">
+              <thead>
+                <tr><th>Fecha</th><th>Proveedores</th><th>Materiales</th><th>Líneas</th></tr>
+              </thead>
+              <tbody>
+                @for (c of compras(); track c.idCompra) {
+                  <tr>
+                    <td class="report-table__muted">{{ c.fechaCompra }}</td>
+                    <td>{{ c.proveedores }}</td>
+                    <td>{{ c.materiales }}</td>
+                    <td class="report-table__strong">{{ c.lineas }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="report-card__empty">No hay compras pendientes. 
+              <button class="report-card__link" (click)="irAOrdenes()">Ver órdenes</button></p>
+          }
+        </section>
+      }
+
+      @case ('proveedores') {
+        <div class="reportes__grid">
+          <section class="report-card">
+            <h2 class="report-card__title">Proveedores más utilizados</h2>
+            <app-chart-bars [data]="proveedoresBars()" orientation="horizontal"></app-chart-bars>
+          </section>
+          <section class="report-card">
+            <h2 class="report-card__title">Mayor variedad de materiales</h2>
+            <app-chart-bars [data]="variedadBars()" orientation="horizontal"></app-chart-bars>
+          </section>
+        </div>
+        <section class="report-card report-card--full">
+          <h2 class="report-card__title">Materiales por proveedor</h2>
+          <app-chart-stacked [data]="materialesPorProveedorStack()"></app-chart-stacked>
+        </section>
+      }
+
+      @case ('kits') {
+        <div class="reportes__grid">
+          <section class="report-card">
+            <h2 class="report-card__title">Kits más utilizados</h2>
+            <app-chart-donut [data]="kitsDonut()" centerLabel="Asignaciones"></app-chart-donut>
+          </section>
+          <section class="report-card">
+            <h2 class="report-card__title">Materiales por kit</h2>
+            <app-chart-stacked [data]="materialesKitStack()"></app-chart-stacked>
+          </section>
+        </div>
+      }
     }
-  </section>
-
-  <!-- Modal de detalles de una actualización (AuditoriasDetalles) -->
-  @if (detalleRegistro) {
-    <app-detail-modal
-      tag="Detalles de la actualización"
-      [title]="detalleRegistro.descripcion"
-      [loading]="detalleCargando"
-      (cerrar)="cerrarDetalles()"
-    >
-      <div class="detail-modal__section">
-        <span class="detail-modal__label">Cambios por campo</span>
-      </div>
-      <div class="detalle-tabla-wrap">
-        <table class="detalle-tabla">
-          <thead>
-            <tr>
-              <th>Campo</th>
-              <th>Cambio</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (d of detalleCampos; track d.id) {
-              <tr>
-                <td class="detalle-tabla__campo">{{ d.campo }}</td>
-                <td class="detalle-tabla__cambio">
-                  <span class="d-old">{{ d.valorAnterior || '—' }}</span>
-                  <span class="d-arrow">→</span>
-                  <span class="d-new">{{ d.valorNuevo || '—' }}</span>
-                </td>
-              </tr>
-            }
-            @if (detalleCampos.length === 0 && !detalleCargando) {
-              <tr>
-                <td colspan="2" class="detalle-tabla__empty">No hay cambios de campo registrados.</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </app-detail-modal>
   }
-
 </div>

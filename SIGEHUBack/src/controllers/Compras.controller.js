@@ -168,4 +168,16 @@ const remove = async (req, res) => {
     }
 };
 
-export default { getAll, getById, create, update, getChofer, marcarRecibida, remove };
+const getPendientes = async (req, res) => {
+    try {
+        if (req.user?.rol === 'Trabajador') {
+            return res.status(403).json({ error: 'Solo Propietario puede ver las compras pendientes' });
+        }
+        const pendientes = await service.getComprasPendientes();
+        res.json(pendientes);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+export default { getAll, getById, getPendientes, create, update, getChofer, marcarRecibida, remove };

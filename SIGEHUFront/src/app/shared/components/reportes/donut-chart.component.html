@@ -1,0 +1,33 @@
+<div class="donut-chart">
+  <div class="donut-chart__canvas">
+    <svg viewBox="0 0 40 40" class="donut-chart__svg" aria-hidden="true">
+      <circle cx="20" cy="20" r="15.9" fill="transparent"
+              stroke="var(--sigehu-card-bg, #0F172A)" stroke-width="4"></circle>
+      @for (seg of segments(); track seg.label) {
+        <circle cx="20" cy="20" r="15.9" fill="transparent"
+                [attr.stroke]="seg.color" stroke-width="4" stroke-linecap="butt"
+                [attr.stroke-dasharray]="seg.dash"
+                [attr.stroke-dashoffset]="seg.offset"></circle>
+      }
+    </svg>
+    <div class="donut-chart__center">
+      <span class="donut-chart__center-value">{{ formatNumber(total()) }}</span>
+      @if (centerLabel()) {
+        <span class="donut-chart__center-label">{{ centerLabel() }}</span>
+      }
+    </div>
+  </div>
+
+  @if (segments().length) {
+    <ul class="donut-chart__legend">
+      @for (seg of segments(); track seg.label) {
+        <li class="donut-chart__legend-item">
+          <span class="donut-chart__dot" [style.background-color]="seg.color"></span>
+          <span class="donut-chart__legend-label">{{ seg.label }}</span>
+          <span class="donut-chart__legend-value">{{ formatNumber(seg.value) }}</span>
+          <span class="donut-chart__legend-pct">{{ seg.pct }}%</span>
+        </li>
+      }
+    </ul>
+  }
+</div>

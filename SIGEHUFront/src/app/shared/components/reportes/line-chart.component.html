@@ -1,0 +1,23 @@
+<div class="line-chart">
+  <svg viewBox="0 0 320 180" class="line-chart__svg" preserveAspectRatio="none">
+    @for (g of gridLines(); track g) {
+      <line class="line-chart__grid" x1="40" x2="308"
+            [attr.y1]="g.y" [attr.y2]="g.y"></line>
+    }
+    @if (linePath()) {
+      <path class="line-chart__area" [attr.d]="areaPath()"></path>
+      <path class="line-chart__line" [attr.d]="linePath()" [attr.stroke]="color()"></path>
+    }
+    @for (p of points(); track p.label) {
+      <circle class="line-chart__dot" [attr.cx]="p.x" [attr.cy]="p.y"
+              [attr.fill]="color()">
+        <title>{{ p.label }}: {{ formatNumber(p.value) }}</title>
+      </circle>
+    }
+  </svg>
+  <div class="line-chart__axis">
+    @for (t of xTicks(); track t.label) {
+      <span class="line-chart__tick" [attr.title]="t.label">{{ t.label }}</span>
+    }
+  </div>
+</div>
