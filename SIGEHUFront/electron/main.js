@@ -26,7 +26,7 @@ function createWindow() {
     width: 1400,
     height: 900,
     title: 'SIGEHU',
-    icon: path.join(__dirname, '..', 'dist', 'assets', 'icon', 'icon.png'),
+    icon: path.join(__dirname, '..', 'dist', 'assets', 'icon.png'),
     autoHideMenuBar: true,
   });
 
