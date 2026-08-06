@@ -64,7 +64,9 @@ export class NotificationService {
       message,
       createdAt: Date.now(),
     };
-    const next = [...this.notifications.getValue(), item].slice(-MAX_NOTIFICATIONS);
+    const next: AppNotification[] = [item, ...this.notifications.getValue()]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, MAX_NOTIFICATIONS);
     this.notifications.next(next);
     this.persist(next);
   }
@@ -95,7 +97,8 @@ export class NotificationService {
       const raw = localStorage.getItem(STORAGE_KEY);
       const arr = raw ? (JSON.parse(raw) as AppNotification[]) : [];
       if (Array.isArray(arr)) {
-        this.notifications.next(arr);
+        const sorted = [...arr].sort((a, b) => b.createdAt - a.createdAt);
+        this.notifications.next(sorted);
       }
     } catch {
       this.notifications.next([]);

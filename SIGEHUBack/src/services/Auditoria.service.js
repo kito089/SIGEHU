@@ -76,8 +76,70 @@ const getAuditoriaByCliente = async (idCliente, limit = 50) => {
     );
 };
 
+// ─── ACTIVIDAD RECIENTE (RF-33) ─────────────────────────────────────────────
+// Cabeceras de auditoría más recientes. La descripción amigable ya está
+// construida por los triggers (Auditorias.Descripcion).
+const getActividad = async (limit = 20) => {
+    const db = await getConnection();
+
+    return await db.query(
+        `SELECT a.idAuditoria AS IDAUDITORIA, a.Fecha AS FECHA,
+                a.Tabla AS TABLA, a.Accion AS ACCION, a.Descripcion AS DESCRIPCION,
+                a.RegistroAfectado AS REGISTROAFECTADO,
+                t.NombreCompleto AS TRABAJADOR
+         FROM Auditorias a
+         JOIN Trabajadores t ON t.idTrabajador = a.Trabajadores_idTrabajador
+         ORDER BY a.Fecha DESC
+         ROWS ?`,
+        [limit]
+    );
+};
+
+// ─── HISTORIAL COMPLETO (con filtro opcional por día) ────────────────────────
+const getAuditorias = async ({ dia = null, limit = 500 }) => {
+    const db = await getConnection();
+    const params = [];
+    let where = '';
+
+    if (dia) {
+        where = 'WHERE CAST(a.Fecha AS DATE) = CAST(? AS DATE)';
+        params.push(dia);
+    }
+    params.push(limit);
+
+    return await db.query(
+        `SELECT a.idAuditoria AS IDAUDITORIA, a.Fecha AS FECHA,
+                a.Tabla AS TABLA, a.Accion AS ACCION, a.Descripcion AS DESCRIPCION,
+                a.RegistroAfectado AS REGISTROAFECTADO,
+                t.NombreCompleto AS TRABAJADOR
+         FROM Auditorias a
+         JOIN Trabajadores t ON t.idTrabajador = a.Trabajadores_idTrabajador
+         ${where}
+         ORDER BY a.Fecha DESC
+         ROWS ?`,
+        params
+    );
+};
+
+// ─── DETALLES DE UNA AUDITORÍA (AuditoriasDetalles) ──────────────────────────
+const getAuditoriaDetalles = async (idAuditoria) => {
+    const db = await getConnection();
+
+    return await db.query(
+        `SELECT idAuditoriaDetalle AS IDAUDITORIADETALLE,
+                Campo AS CAMPO, ValorAnterior AS VALORANTERIOR, ValorNuevo AS VALORNUEVO
+         FROM AuditoriasDetalles
+         WHERE Auditorias_idAuditoria = ?
+         ORDER BY idAuditoriaDetalle`,
+        [idAuditoria]
+    );
+};
+
 export default {
     createAuditoria,
     createAuditoriaDetalle,
     getAuditoriaByCliente,
+    getActividad,
+    getAuditorias,
+    getAuditoriaDetalles,
 }

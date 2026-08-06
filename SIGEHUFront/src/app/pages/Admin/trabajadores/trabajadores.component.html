@@ -4,7 +4,7 @@
 
     <div class="panel-header">
       <div>
-        <h1>GestiÃ³n de Trabajadores</h1>
+        <h1>Gestión de Trabajadores</h1>
         <p>Directorio del personal operativo y sus obras asignadas</p>
       </div>
       <button class="btn-primary" (click)="nuevoTrabajador()">
@@ -15,7 +15,7 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por usuario, nombre o telÃ©fonoâ€¦'"
+      [searchPlaceholder]="'Buscar por usuario, nombre o teléfono…'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
@@ -85,7 +85,7 @@
 
 </div>
 
-<!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+<!-- MODAL DE DETALLE (patrón estándar "Ver Detalle") -->
 <app-detail-modal
   *ngIf="selectedTrabajador"
   tag="Ficha de Trabajador"
@@ -101,12 +101,12 @@
     </div>
 
     <div class="detail-modal__field">
-      <span class="detail-modal__label">TelÃ©fono de Contacto</span>
+      <span class="detail-modal__label">Teléfono de Contacto</span>
       <span class="detail-modal__value">{{ selectedTrabajador.telefono || 'No registrado' }}</span>
     </div>
 
     <div class="detail-modal__field detail-modal__field--span-2">
-      <span class="detail-modal__label">Correo ElectrÃ³nico</span>
+      <span class="detail-modal__label">Correo Electrónico</span>
       <span class="detail-modal__value">{{ selectedTrabajador.correo || 'No registrado' }}</span>
     </div>
 
@@ -132,7 +132,7 @@
   </div>
 
   <div class="detail-modal__section">
-    <span class="detail-modal__label">Documento de AfiliaciÃ³n IMSS</span>
+    <span class="detail-modal__label">Documento de Afiliación IMSS</span>
 
     <div *ngIf="selectedTrabajador.documentoImssUrl && selectedTrabajador.documentoImssUrl.indexOf('blob:') !== 0; else sinDocumento" class="document-preview-bar">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>

@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
 import { DashboardTabsComponent, DashboardTab } from '../../../shared/components/dashboard/tabs/dashboard-tabs.component';
 import { KanbanBoardComponent, KanbanColumnData, KanbanCardData } from '../../../shared/components/kanban/kanban-board.component';
-import { ActivityFeedComponent } from '../../../shared/components/activity-feed/activity-feed.component';
 import { CalendarComponent } from '../../../shared/components/calendar/calendar.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 
@@ -15,7 +14,6 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
     KpiCardComponent,
     DashboardTabsComponent,
     KanbanBoardComponent,
-    ActivityFeedComponent,
     CalendarComponent,
     EmptyStateComponent
   ],
@@ -106,14 +104,9 @@ export class DashboardComponent {
     },
   ]);
 
-  // Activity Feed data (RF-33)
-  readonly activityFeed = signal([
-    { id: 1, action: 'Cambió estado', entity: 'Obra C-12', detail: 'Solicitud → Levantamiento', user: 'Carlos Utrilla', time: 'Hace 5 min', type: 'state_change' },
-    { id: 2, action: 'Subió fotos', entity: 'Obra C-08', detail: '3 fotos de instalación', user: 'N. Bárcenas', time: 'Hace 12 min', type: 'photos' },
-    { id: 3, action: 'Creó obra', entity: 'Obra C-15', detail: 'Cliente: Constructora Altamira', user: 'Carlos Utrilla', time: 'Hace 1 hora', type: 'create' },
-    { id: 4, action: 'Completó levantamiento', entity: 'Obra C-03', detail: 'Pendiente validación', user: 'I. Beltrán', time: 'Hace 2 horas', type: 'validation_pending' },
-    { id: 5, action: 'Registró anticipo', entity: 'Obra C-07', detail: '$15,000 MXN - Transferencia', user: 'Carlos Utrilla', time: 'Hace 3 horas', type: 'payment' },
-  ]);
+  // Activity Feed (RF-33)
+  // La "Actividad reciente" vive ahora únicamente en la página de Reportes,
+  // alimentada por Auditorias / AuditoriasDetalles del backend.
 
   onTabChange(tab: DashboardTab): void {
     this.activeTab.set(tab);

@@ -5,7 +5,7 @@
     <div class="panel-header">
       <div>
         <h1>Materiales / Herramientas</h1>
-        <p>CatÃ¡logo de materiales e insumos del taller (Fuente: API /Materiales)</p>
+        <p>Catálogo de materiales e insumos del taller (Fuente: API /Materiales)</p>
       </div>
       <button class="btn-primary" (click)="nuevoMaterial()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -15,7 +15,7 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por material, unidad o descripciÃ³nâ€¦'"
+      [searchPlaceholder]="'Buscar por material, unidad o descripción…'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
@@ -35,7 +35,7 @@
             <span class="td-muted">{{ row.unidadMedida }}</span>
           }
           @case ('descripcion') {
-            <span class="td-muted">{{ row.descripcion || 'â€”' }}</span>
+            <span class="td-muted">{{ row.descripcion || '—' }}</span>
           }
         }
       </ng-template>
@@ -57,7 +57,7 @@
 
   </section>
 
-  <!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+  <!-- MODAL DE DETALLE (patrón estándar "Ver Detalle") -->
   @if (selectedMaterial) {
     <app-detail-modal
       tag="Material"
@@ -69,7 +69,7 @@
       <div class="detail-modal__grid">
         <div class="detail-modal__field">
           <span class="detail-modal__label">Unidad de medida</span>
-          <span class="detail-modal__value">{{ selectedMaterial.unidadMedida || 'â€”' }}</span>
+          <span class="detail-modal__value">{{ selectedMaterial.unidadMedida || '—' }}</span>
         </div>
 
         <div class="detail-modal__field">
@@ -78,8 +78,8 @@
         </div>
 
         <div class="detail-modal__field detail-modal__field--span-2">
-          <span class="detail-modal__label">DescripciÃ³n</span>
-          <span class="detail-modal__value">{{ selectedMaterial.descripcion || 'Sin descripciÃ³n' }}</span>
+          <span class="detail-modal__label">Descripción</span>
+          <span class="detail-modal__value">{{ selectedMaterial.descripcion || 'Sin descripción' }}</span>
         </div>
       </div>
     </app-detail-modal>

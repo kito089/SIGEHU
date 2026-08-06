@@ -39,12 +39,6 @@
   padding: var(--sigehu-space-10) var(--sigehu-space-6);
 }
 
-.dashboard-activity {
-  margin-top: var(--sigehu-space-8);
-  padding-top: var(--sigehu-space-6);
-  border-top: var(--sigehu-border-width) solid var(--sigehu-border-divider);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .dashboard-kpis {

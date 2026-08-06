@@ -88,7 +88,8 @@ const update = async (req, res) => {
                 GiroPrincipal: GiroPrincipal ?? null,
                 ContactoCompras: ContactoCompras ?? null,
                 Notas: Notas ?? null,
-                materiales: materiales !== undefined ? materiales : undefined
+                materiales: materiales !== undefined ? materiales : undefined,
+                idTrabajadorCtx: req.user?.idTrabajador
             }
         );
 
