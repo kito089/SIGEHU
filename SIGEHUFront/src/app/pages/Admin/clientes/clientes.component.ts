@@ -1,12 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 
 /* =========================================================================
    SIGEHU — Gestión de Clientes (listado)
@@ -31,12 +32,13 @@ interface Cliente {
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
 })
 export class ClientesComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private toast = inject(ToastService);
 
@@ -45,6 +47,7 @@ export class ClientesComponent implements OnInit {
   filtro: FiltroClientes = 'todos';
   selectedCliente: Cliente | null = null;
   cargando = false;
+  private detallePendienteId: number | null = null;
 
   clienteAEliminar: Cliente | null = null;
   confirmarEliminacion = false;
@@ -66,17 +69,34 @@ export class ClientesComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarClientes();
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
   }
 
   async cargarClientes(): Promise<void> {
     this.cargando = true;
     try {
       this.clientes = await this.fetchClientes();
+      this.abrirDetallePendiente();
     } catch {
       this.clientes = [];
     } finally {
       this.cargando = false;
     }
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const cliente = this.clientes.find(c => c.id === id);
+    if (!cliente) return;
+    this.detallePendienteId = null;
+    this.verCliente(cliente);
   }
 
   private mapCliente(raw: any): Cliente {

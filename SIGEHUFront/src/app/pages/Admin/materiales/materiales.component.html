@@ -1,11 +1,11 @@
-<div class="page">
+﻿<div class="page">
 
   <section class="panel-frame">
 
     <div class="panel-header">
       <div>
         <h1>Materiales / Herramientas</h1>
-        <p>Catálogo de materiales e insumos del taller (Fuente: API /Materiales)</p>
+        <p>CatÃ¡logo de materiales e insumos del taller (Fuente: API /Materiales)</p>
       </div>
       <button class="btn-primary" (click)="nuevoMaterial()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -15,7 +15,7 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por material, unidad o descripción…'"
+      [searchPlaceholder]="'Buscar por material, unidad o descripciÃ³nâ€¦'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
@@ -35,13 +35,16 @@
             <span class="td-muted">{{ row.unidadMedida }}</span>
           }
           @case ('descripcion') {
-            <span class="td-muted">{{ row.descripcion || '—' }}</span>
+            <span class="td-muted">{{ row.descripcion || 'â€”' }}</span>
           }
         }
       </ng-template>
 
       <ng-template #actions let-row>
         <div class="acciones-group">
+          <button class="icon-btn" (click)="verDetalle(row)" aria-label="Ver detalle" title="Ver Detalle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
           <button class="icon-btn" (click)="editar(row)" aria-label="Editar material" title="Editar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
           </button>
@@ -53,6 +56,32 @@
     </app-data-table>
 
   </section>
+
+  <!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+  @if (selectedMaterial) {
+    <app-detail-modal
+      tag="Material"
+      [title]="selectedMaterial.nombre"
+      (cerrar)="cerrarDetalle()"
+    >
+      <div class="detail-modal__grid">
+        <div class="detail-modal__field">
+          <span class="detail-modal__label">Unidad de medida</span>
+          <span class="detail-modal__value">{{ selectedMaterial.unidadMedida || 'â€”' }}</span>
+        </div>
+
+        <div class="detail-modal__field">
+          <span class="detail-modal__label">ID</span>
+          <span class="detail-modal__value">{{ selectedMaterial.idMaterial }}</span>
+        </div>
+
+        <div class="detail-modal__field detail-modal__field--span-2">
+          <span class="detail-modal__label">DescripciÃ³n</span>
+          <span class="detail-modal__value">{{ selectedMaterial.descripcion || 'Sin descripciÃ³n' }}</span>
+        </div>
+      </div>
+    </app-detail-modal>
+  }
 
   @if (confirmarEliminacion && materialAEliminar) {
     <app-confirm-modal

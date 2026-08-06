@@ -1,11 +1,11 @@
-<div class="page">
+﻿<div class="page">
 
   <section class="panel-frame">
 
     <div class="panel-header">
       <div>
-        <h1>Gestión de Proveedores</h1>
-        <p>Catálogo de proveedores, distribuidores de materiales, perfiles metálicos y accesorios</p>
+        <h1>GestiÃ³n de Proveedores</h1>
+        <p>CatÃ¡logo de proveedores, distribuidores de materiales, perfiles metÃ¡licos y accesorios</p>
       </div>
       <button class="btn-primary" (click)="nuevoProveedor()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -15,7 +15,7 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por empresa, contacto o teléfono…'"
+      [searchPlaceholder]="'Buscar por empresa, contacto o telÃ©fonoâ€¦'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
@@ -31,14 +31,14 @@
           @case ('nombre') {
             <div>
               <div class="td-empresa">{{ row.nombre }}</div>
-              <div class="td-giro">{{ row.giroPrincipal || '—' }}</div>
+              <div class="td-giro">{{ row.giroPrincipal || 'â€”' }}</div>
             </div>
           }
           @case ('contactoCompras') {
-            <span class="td-muted">{{ row.contactoCompras || '—' }}</span>
+            <span class="td-muted">{{ row.contactoCompras || 'â€”' }}</span>
           }
           @case ('telefono') {
-            <span class="td-muted">{{ row.telefono || '—' }}</span>
+            <span class="td-muted">{{ row.telefono || 'â€”' }}</span>
           }
           @case ('materiales') {
             <span class="td-count">{{ totalMateriales(row) }} material{{ totalMateriales(row) !== 1 ? 'es' : '' }}</span>
@@ -48,7 +48,7 @@
 
       <ng-template #actions let-row>
         <div class="acciones-group">
-          <button class="icon-btn" (click)="verCatalogo(row)" aria-label="Ver catálogo" title="Ver catálogo">
+          <button class="icon-btn" (click)="verCatalogo(row)" aria-label="Ver detalle" title="Ver Detalle">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
           <button class="icon-btn" (click)="editarProveedor(row)" aria-label="Editar proveedor" title="Editar">
@@ -65,29 +65,65 @@
 
 </div>
 
-<div class="modal-overlay" [class.open]="selectedProveedor" (click)="cerrarDetalle()">
-  <div class="modal" *ngIf="selectedProveedor" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <div>
-        <div class="proveedor-tag">Proveedor</div>
-        <h2>{{ selectedProveedor.nombre }}</h2>
-      </div>
-      <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
+<!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+<app-detail-modal
+  *ngIf="selectedProveedor"
+  tag="Proveedor"
+  [title]="selectedProveedor.nombre"
+  (cerrar)="cerrarDetalle()"
+>
+  <div class="detail-modal__grid">
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Giro principal</span>
+      <span class="detail-modal__value">{{ selectedProveedor.giroPrincipal || 'â€”' }}</span>
     </div>
-    <div class="modal-row"><span class="k">Giro principal</span><span class="v">{{ selectedProveedor.giroPrincipal || '—' }}</span></div>
-    <div class="modal-row"><span class="k">Contacto de compras</span><span class="v">{{ selectedProveedor.contactoCompras || '—' }}</span></div>
-    <div class="modal-row"><span class="k">Teléfono</span><span class="v">{{ selectedProveedor.telefono || '—' }}</span></div>
-    <div class="modal-row"><span class="k">Correo electrónico</span><span class="v">{{ selectedProveedor.correo || '—' }}</span></div>
-    <div class="modal-row"><span class="k">Dirección</span><span class="v">{{ selectedProveedor.direccion || '—' }}</span></div>
-    <div class="modal-row"><span class="k">Observaciones</span><span class="v">{{ selectedProveedor.notas || '—' }}</span></div>
-    <div class="modal-row"><span class="k">Materiales en catálogo</span><span class="v">{{ totalMateriales(selectedProveedor) }}</span></div>
+
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Contacto de compras</span>
+      <span class="detail-modal__value">{{ selectedProveedor.contactoCompras || 'â€”' }}</span>
+    </div>
+
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">TelÃ©fono</span>
+      <span class="detail-modal__value">{{ selectedProveedor.telefono || 'â€”' }}</span>
+    </div>
+
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Correo electrÃ³nico</span>
+      <span class="detail-modal__value">{{ selectedProveedor.correo || 'â€”' }}</span>
+    </div>
+
+    <div class="detail-modal__field detail-modal__field--span-2">
+      <span class="detail-modal__label">DirecciÃ³n</span>
+      <span class="detail-modal__value">{{ selectedProveedor.direccion || 'â€”' }}</span>
+    </div>
+
+    <div class="detail-modal__field detail-modal__field--span-2">
+      <span class="detail-modal__label">Observaciones</span>
+      <span class="detail-modal__value">{{ selectedProveedor.notas || 'â€”' }}</span>
+    </div>
   </div>
-</div>
+
+  <div class="detail-modal__section">
+    <span class="detail-modal__label">Materiales en catÃ¡logo ({{ totalMateriales(selectedProveedor) }})</span>
+    <div class="detail-modal__list">
+      <ng-container *ngIf="selectedProveedor.materiales?.length; else sinMateriales">
+        <span class="detail-modal__list-item" *ngFor="let m of selectedProveedor.materiales">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+          {{ m.nombre }}
+        </span>
+      </ng-container>
+      <ng-template #sinMateriales>
+        <p class="detail-modal__empty">Sin materiales registrados en el catÃ¡logo.</p>
+      </ng-template>
+    </div>
+  </div>
+</app-detail-modal>
 
 <app-confirm-modal
   *ngIf="confirmarEliminacion"
   [title]="'Desactivar proveedor'"
-  [message]="'¿Estás seguro de desactivar el proveedor “' + (proveedorAEliminar?.nombre ?? '') + '”? Los proveedores desactivados no se considerarán para nuevas compras.'"
+  [message]="'Â¿EstÃ¡s seguro de desactivar el proveedor â€œ' + (proveedorAEliminar?.nombre ?? '') + 'â€? Los proveedores desactivados no se considerarÃ¡n para nuevas compras.'"
   confirmLabel="Desactivar proveedor"
   [loading]="eliminando"
   (confirmed)="confirmarEliminar()"

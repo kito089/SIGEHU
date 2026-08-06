@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 
 /* =========================================================================
    SIGEHU — Órdenes de Compra (componente Angular standalone)
@@ -25,15 +27,21 @@ interface OrdenRow {
 @Component({
   selector: 'app-ordenes-compra',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './ordenes-compra.component.html',
   styleUrl: './ordenes-compra.component.scss',
 })
 export class OrdenesCompraComponent implements OnInit {
 
+  private route = inject(ActivatedRoute);
+
   ordenes: OrdenRow[] = [];
   searchTerm = '';
   pendienteAutorizar: OrdenRow | null = null;
+
+  // Modal de detalle ("Ver Detalle").
+  selectedOrden: OrdenRow | null = null;
+  private detallePendienteId: number | null = null;
 
   columns: DataTableColumn[] = [
     { key: 'folio', label: 'Folio' },
@@ -46,7 +54,32 @@ export class OrdenesCompraComponent implements OnInit {
   ngOnInit(): void {
     this.fetchOrdenes().then(ordenes => {
       this.ordenes = ordenes;
+      this.abrirDetallePendiente();
     });
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const orden = this.ordenes.find(o => o.id === id);
+    if (!orden) return;
+    this.detallePendienteId = null;
+    this.verDetalle(orden);
+  }
+
+  verDetalle(orden: OrdenRow): void {
+    this.selectedOrden = orden;
+  }
+
+  cerrarDetalle(): void {
+    this.selectedOrden = null;
   }
 
   // Ajusta esto a tu endpoint real cuando conectes el backend.

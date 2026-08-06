@@ -1,9 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 import { ApiService } from '../../../services/api.service';
 import { Obra } from '../../../core/models/obra.model';
 
@@ -15,16 +16,21 @@ import { Obra } from '../../../core/models/obra.model';
 @Component({
   selector: 'app-obras',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './obras.component.html',
   styleUrl: './obras.component.scss',
 })
 export class ObrasComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private api = inject(ApiService);
 
   obras: Obra[] = [];
   searchTerm = '';
+
+  // Modal de detalle ("Ver Detalle")
+  selectedObra: Obra | null = null;
+  private detallePendienteId: number | null = null;
 
   // Modal de confirmación para transición de estado (RF-08, RNF-07)
   obraEstado: Obra | null = null;
@@ -49,18 +55,36 @@ export class ObrasComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarObras();
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
   }
 
   private cargarObras(): void {
     this.api.get<Obra[]>('/Obras').subscribe({
       next: (data) => {
         this.obras = Array.isArray(data) && data.length ? data : this.obrasMock();
+        this.abrirDetallePendiente();
       },
       error: () => {
         // Datos de referencia mientras no esté disponible el backend /Obras
         this.obras = this.obrasMock();
+        this.abrirDetallePendiente();
       },
     });
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const obra = this.obras.find(o => o.idObra === id);
+    if (!obra) return;
+    this.detallePendienteId = null;
+    this.verObra(obra);
   }
 
   private obrasMock(): Obra[] {
@@ -98,7 +122,11 @@ export class ObrasComponent implements OnInit {
   }
 
   verObra(obra: Obra): void {
-    this.router.navigate(['/admin/obras', obra.idObra]);
+    this.selectedObra = obra;
+  }
+
+  cerrarDetalle(): void {
+    this.selectedObra = null;
   }
 
   abrirCambioEstado(obra: Obra): void {

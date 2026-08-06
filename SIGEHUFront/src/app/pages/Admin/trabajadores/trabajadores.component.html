@@ -1,10 +1,10 @@
-<div class="page">
+﻿<div class="page">
 
   <section class="panel-frame">
 
     <div class="panel-header">
       <div>
-        <h1>Gestión de Trabajadores</h1>
+        <h1>GestiÃ³n de Trabajadores</h1>
         <p>Directorio del personal operativo y sus obras asignadas</p>
       </div>
       <button class="btn-primary" (click)="nuevoTrabajador()">
@@ -15,7 +15,7 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por usuario, nombre o teléfono…'"
+      [searchPlaceholder]="'Buscar por usuario, nombre o telÃ©fonoâ€¦'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
@@ -85,73 +85,62 @@
 
 </div>
 
-<!-- MODAL DE DETALLES REDISEÑADO -->
-<div class="modal-overlay" [class.open]="selectedTrabajador" (click)="cerrarDetalle()">
-  <div class="modal" *ngIf="selectedTrabajador" (click)="$event.stopPropagation()">
-
-    <div class="modal-header">
-      <div>
-        <div class="trabajador-tag">Ficha de Trabajador</div>
-        <h2>{{ selectedTrabajador.nombre }}</h2>
-      </div>
-      <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
+<!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+<app-detail-modal
+  *ngIf="selectedTrabajador"
+  tag="Ficha de Trabajador"
+  [title]="selectedTrabajador.nombre"
+  (cerrar)="cerrarDetalle()"
+>
+  <div class="detail-modal__grid">
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Nombre de Usuario</span>
+      <span class="detail-modal__value">{{ selectedTrabajador.usuario }}</span>
     </div>
 
-    <div class="modal-body">
-      <div class="info-labels-grid">
-        <div class="field-label-group">
-          <label>Nombre de Usuario</label>
-          <div class="field-value">{{ selectedTrabajador.usuario }}</div>
-        </div>
-
-        <div class="field-label-group">
-          <label>Teléfono de Contacto</label>
-          <div class="field-value">{{ selectedTrabajador.telefono || 'No registrado' }}</div>
-        </div>
-
-        <div class="field-label-group span-2">
-          <label>Correo Electrónico</label>
-          <div class="field-value">{{ selectedTrabajador.correo || 'No registrado' }}</div>
-        </div>
-
-        <div class="field-label-group span-2">
-          <label>Observaciones</label>
-          <div class="field-value">{{ selectedTrabajador.observaciones || 'Sin observaciones' }}</div>
-        </div>
-      </div>
-
-      <div class="field-label-group mt-3">
-        <label>Obra(s) asignada(s)</label>
-        <div class="obras-container">
-          <ul *ngIf="selectedTrabajador.obrasAsignadas.length; else sinObras" class="obras-list">
-            <li *ngFor="let obra of selectedTrabajador.obrasAsignadas">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              {{ obra }}
-            </li>
-          </ul>
-          <ng-template #sinObras>
-            <p class="sin-obras">Sin obra(s) asignada(s) actualmente.</p>
-          </ng-template>
-        </div>
-      </div>
-
-      <div class="field-label-group mt-3">
-        <label>Documento de Afiliación IMSS</label>
-
-        <div *ngIf="selectedTrabajador.documentoImssUrl && selectedTrabajador.documentoImssUrl.indexOf('blob:') !== 0; else sinDocumento" class="document-preview-bar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <span class="doc-name">Documento_IMSS_{{ selectedTrabajador.usuario }}</span>
-          <button type="button" class="btn-link" (click)="abrirDocumentoImss(selectedTrabajador.documentoImssUrl)">
-            Ver documento
-          </button>
-        </div>
-        <ng-template #sinDocumento>
-          <div class="obras-container">
-            <p class="sin-obras">Este trabajador no tiene documento IMSS vinculado.</p>
-          </div>
-        </ng-template>
-      </div>
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">TelÃ©fono de Contacto</span>
+      <span class="detail-modal__value">{{ selectedTrabajador.telefono || 'No registrado' }}</span>
     </div>
 
+    <div class="detail-modal__field detail-modal__field--span-2">
+      <span class="detail-modal__label">Correo ElectrÃ³nico</span>
+      <span class="detail-modal__value">{{ selectedTrabajador.correo || 'No registrado' }}</span>
+    </div>
+
+    <div class="detail-modal__field detail-modal__field--span-2">
+      <span class="detail-modal__label">Observaciones</span>
+      <span class="detail-modal__value">{{ selectedTrabajador.observaciones || 'Sin observaciones' }}</span>
+    </div>
   </div>
-</div>
+
+  <div class="detail-modal__section">
+    <span class="detail-modal__label">Obra(s) asignada(s)</span>
+    <div class="detail-modal__list">
+      <ng-container *ngIf="selectedTrabajador.obrasAsignadas.length; else sinObras">
+        <span class="detail-modal__list-item" *ngFor="let obra of selectedTrabajador.obrasAsignadas">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          {{ obra }}
+        </span>
+      </ng-container>
+      <ng-template #sinObras>
+        <p class="detail-modal__empty">Sin obra(s) asignada(s) actualmente.</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <div class="detail-modal__section">
+    <span class="detail-modal__label">Documento de AfiliaciÃ³n IMSS</span>
+
+    <div *ngIf="selectedTrabajador.documentoImssUrl && selectedTrabajador.documentoImssUrl.indexOf('blob:') !== 0; else sinDocumento" class="document-preview-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span class="doc-name">Documento_IMSS_{{ selectedTrabajador.usuario }}</span>
+      <button type="button" class="btn-link" (click)="abrirDocumentoImss(selectedTrabajador.documentoImssUrl)">
+        Ver documento
+      </button>
+    </div>
+    <ng-template #sinDocumento>
+      <p class="detail-modal__empty">Este trabajador no tiene documento IMSS vinculado.</p>
+    </ng-template>
+  </div>
+</app-detail-modal>

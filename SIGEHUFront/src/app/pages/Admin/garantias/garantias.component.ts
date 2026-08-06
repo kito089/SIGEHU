@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 
 /* =========================================================================
    SIGEHU — Garantías (componente Angular standalone)
@@ -25,15 +27,21 @@ interface GarantiaRow {
 @Component({
   selector: 'app-garantias',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './garantias.component.html',
   styleUrl: './garantias.component.scss',
 })
 export class GarantiasComponent implements OnInit {
 
+  private route = inject(ActivatedRoute);
+
   garantias: GarantiaRow[] = [];
   pendienteCierre: GarantiaRow | null = null;
   searchTerm = '';
+
+  // Modal de detalle ("Ver Detalle").
+  selectedGarantia: GarantiaRow | null = null;
+  private detallePendienteId: number | null = null;
 
   columns: DataTableColumn[] = [
     { key: 'folio', label: 'Folio' },
@@ -43,10 +51,37 @@ export class GarantiasComponent implements OnInit {
     { key: 'estado', label: 'Estado' },
   ];
 
+  constructor() {}
+
   ngOnInit(): void {
     this.fetchGarantias().then(garantias => {
       this.garantias = garantias;
+      this.abrirDetallePendiente();
     });
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const garantia = this.garantias.find(g => g.id === id);
+    if (!garantia) return;
+    this.detallePendienteId = null;
+    this.verDetalle(garantia);
+  }
+
+  verDetalle(garantia: GarantiaRow): void {
+    this.selectedGarantia = garantia;
+  }
+
+  cerrarDetalle(): void {
+    this.selectedGarantia = null;
   }
 
   // Ajusta esto a tu endpoint real cuando conectes el backend.

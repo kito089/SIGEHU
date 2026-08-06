@@ -113,69 +113,6 @@
 .icon-btn:hover { color: var(--sigehu-accent, #2f8fef); border-color: var(--sigehu-accent, #2f8fef); }
 .icon-btn-danger:hover { color: var(--danger); border-color: var(--danger); }
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(3, 6, 14, 0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  padding: 20px;
-}
-
-.modal-overlay.open { display: flex; }
-
-.modal {
-  background: var(--sigehu-panel-bg, #0e1424);
-  border: 1px solid var(--sigehu-border-subtle, #1c2438);
-  border-radius: var(--sigehu-radius-lg, 14px);
-  width: 100%;
-  max-width: 420px;
-  padding: 22px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.modal-header h2 { margin: 0 0 4px; font-size: 17px; }
-.modal-header .proveedor-tag {
-  font-size: 11px;
-  color: var(--sigehu-text-tertiary, #5c6580);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 700;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  color: var(--sigehu-text-secondary, #8992a8);
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  padding: 4px;
-}
-
-.modal-close:hover { color: var(--sigehu-text-primary, #eef1f7); }
-
-.modal-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--sigehu-border-subtle, #1c2438);
-  font-size: 13px;
-}
-
-.modal-row:last-of-type { border-bottom: none; }
-.modal-row .k { color: var(--sigehu-text-secondary, #8992a8); flex-shrink: 0; }
-.modal-row .v { color: var(--sigehu-text-primary, #eef1f7); font-weight: 600; text-align: right; }
-
 @media (max-width: 720px) {
   .page { padding: 20px 16px 50px; }
   .panel-frame { padding: 16px; }

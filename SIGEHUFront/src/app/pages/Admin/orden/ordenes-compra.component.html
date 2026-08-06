@@ -1,11 +1,11 @@
-<div class="page">
+﻿<div class="page">
 
   <section class="panel-frame">
 
     <div class="panel-header">
       <div>
-        <h1>Órdenes de Compra</h1>
-        <p>Cotización, autorización y recepción de compras de insumos (RF-17 / RF-19)</p>
+        <h1>Ã“rdenes de Compra</h1>
+        <p>CotizaciÃ³n, autorizaciÃ³n y recepciÃ³n de compras de insumos (RF-17 / RF-19)</p>
       </div>
       <button class="btn-primary" (click)="nuevaOrden()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -15,14 +15,14 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por folio, proveedor o estado…'"
+      [searchPlaceholder]="'Buscar por folio, proveedor o estadoâ€¦'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
     <app-data-table
       [columns]="columns"
       [data]="ordenesFiltradas"
-      [emptyMessage]="'No se encontraron órdenes con ese criterio.'"
+      [emptyMessage]="'No se encontraron Ã³rdenes con ese criterio.'"
       rowKey="id"
     >
       <ng-template #cell let-row let-col="column">
@@ -47,6 +47,9 @@
 
       <ng-template #actions let-row>
         <div class="acciones-group">
+          <button class="icon-btn" (click)="verDetalle(row)" aria-label="Ver detalle" title="Ver Detalle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
           @if (row.estado === 'Cotizada' || row.estado === 'Enviada') {
             <button class="btn-ghost" (click)="autorizar(row)" title="Autorizar compra">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
@@ -56,6 +59,39 @@
         </div>
       </ng-template>
     </app-data-table>
+
+    <!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+    @if (selectedOrden) {
+      <app-detail-modal
+        tag="Orden de Compra"
+        [title]="selectedOrden.folio"
+        (cerrar)="cerrarDetalle()"
+      >
+        <div class="detail-modal__grid">
+          <div class="detail-modal__field">
+            <span class="detail-modal__label">Proveedor</span>
+            <span class="detail-modal__value">{{ selectedOrden.proveedor }}</span>
+          </div>
+
+          <div class="detail-modal__field">
+            <span class="detail-modal__label">Estado</span>
+            <span class="detail-modal__value">
+              <span class="badge-estado" [class]="estadoClass(selectedOrden.estado)">{{ selectedOrden.estado }}</span>
+            </span>
+          </div>
+
+          <div class="detail-modal__field detail-modal__field--span-2">
+            <span class="detail-modal__label">DescripciÃ³n</span>
+            <span class="detail-modal__value">{{ selectedOrden.descripcion }}</span>
+          </div>
+
+          <div class="detail-modal__field detail-modal__field--span-2">
+            <span class="detail-modal__label">Total</span>
+            <span class="detail-modal__value td-total">{{ formatoTotal(selectedOrden.total) }}</span>
+          </div>
+        </div>
+      </app-detail-modal>
+    }
 
     <app-confirm-modal
       *ngIf="pendienteAutorizar"
