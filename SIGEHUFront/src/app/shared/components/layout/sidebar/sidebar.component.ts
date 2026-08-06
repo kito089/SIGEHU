@@ -2,6 +2,7 @@ import { Component, computed, input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { AuthService } from '../../../../services/auth.service';
 
 export interface NavItem {
   icon: string;      // SVG inline o nombre icono
@@ -19,12 +20,25 @@ export interface NavItem {
 })
 export class SidebarComponent {
   private sanitizer = inject(DomSanitizer);
+  private auth = inject(AuthService);
 
   // Inputs
   activeRoute = input.required<string>();
-  userName = input('Carlos Utrilla');
-  userRole = input('Administrador');
-  userInitials = input('CU');
+
+  // Usuario autenticado (se obtiene dinámicamente de la sesión, sin datos estáticos).
+  private readonly usuario = computed(() => this.auth.getUser());
+
+  readonly userName = computed(() => this.usuario()?.nombre ?? 'Usuario');
+  readonly userRole = computed(() => (this.usuario()?.rol === 'Trabajador' ? 'Trabajador' : 'Administrador'));
+  readonly userInitials = computed(() => this.initials(this.usuario()?.nombre));
+
+  private initials(nombre?: string): string {
+    if (!nombre) return 'U';
+    const partes = nombre.trim().split(/\s+/).filter(Boolean);
+    const a = partes[0]?.charAt(0) ?? '';
+    const b = partes.length > 1 ? partes[partes.length - 1].charAt(0) : '';
+    return (a + b).toUpperCase() || 'U';
+  }
 
   // Configuración navegación principal (10 módulos) según REQUIREMENTS/DISEÑO_UI
   readonly navItems: NavItem[] = [
@@ -39,8 +53,6 @@ export class SidebarComponent {
     { icon: 'reports', label: 'Reportes', route: '/admin/reportes' },
     { icon: 'orders', label: 'Órdenes de Compra', route: '/admin/orden' },
   ];
-
-  readonly settingsItem: NavItem = { icon: 'settings', label: 'Configuración', route: '/admin/configuracion' };
 
   getIconName(icon: string): string {
     return icon;

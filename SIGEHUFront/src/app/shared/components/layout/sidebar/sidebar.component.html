@@ -40,23 +40,6 @@
         }
       </ul>
     </div>
-
-    <!-- Settings at bottom -->
-    <div class="nav-section nav-section-bottom">
-      <ul class="nav-list" role="list">
-        <li class="nav-item">
-          <a
-            [routerLink]="settingsItem.route"
-            routerLinkActive="active"
-            class="nav-link"
-            [class.active]="isActive(settingsItem.route)"
-          >
-            <span class="nav-icon" [innerHTML]="getSafeIconSvg('settings')" aria-hidden="true"></span>
-            <span class="nav-label">{{ settingsItem.label }}</span>
-          </a>
-        </li>
-      </ul>
-    </div>
   </nav>
 
   <!-- User Footer -->

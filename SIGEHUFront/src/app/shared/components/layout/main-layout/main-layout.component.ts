@@ -78,14 +78,4 @@ export class MainLayoutComponent {
   onNewWork(): void {
     this.router.navigate(['/admin/obras/nueva']);
   }
-
-  onNotification(): void {
-    // TODO: Abrir panel notificaciones
-    console.log('Notifications clicked');
-  }
-
-  onProfile(): void {
-    // TODO: Abrir dropdown perfil
-    console.log('Profile clicked');
-  }
 }

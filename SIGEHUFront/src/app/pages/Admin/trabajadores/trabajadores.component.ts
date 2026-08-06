@@ -5,6 +5,7 @@ import { firstValueFrom, Subscription } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { EnvService } from '../../../services/env.service';
 import { TrabajadoresRefreshService } from '../../../services/trabajadores-refresh.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 
@@ -32,6 +33,7 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private env = inject(EnvService);
   private refreshService = inject(TrabajadoresRefreshService);
+  private confirm = inject(ConfirmService);
 
 
   trabajadores: Trabajador[] = [];
@@ -136,7 +138,11 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
   }
 
   async eliminarTrabajador(trabajador: Trabajador): Promise<void> {
-    const confirmado = confirm(`¿Eliminar a "${trabajador.nombre}"? Esta acción no se puede deshacer.`);
+    const confirmado = await this.confirm.confirmar(
+      'Eliminar trabajador',
+      `¿Eliminar a "${trabajador.nombre}"? Esta acción no se puede deshacer.`,
+      { confirmarText: 'Eliminar', danger: true }
+    );
     if (!confirmado) return;
 
     try {

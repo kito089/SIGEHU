@@ -1,10 +1,7 @@
 <div class="main-layout">
-  <!-- Sidebar -->
+  <!-- Sidebar (nombre de usuario autenticado se resuelve internamente) -->
   <app-sidebar
     [activeRoute]="currentRoute()"
-    [userName]="'Carlos Utrilla'"
-    [userRole]="'Administrador'"
-    [userInitials]="'CU'"
   ></app-sidebar>
 
   <!-- Content Wrapper -->
@@ -13,11 +10,7 @@
     <app-topbar
       [pageTitle]="pageConfig.title"
       [pageSubtitle]="pageConfig.subtitle"
-      [userInitials]="'CU'"
-      [notificationCount]="0"
       (newWorkClick)="onNewWork()"
-      (notificationClick)="onNotification()"
-      (profileClick)="onProfile()"
     ></app-topbar>
 
     <!-- Main Content -->

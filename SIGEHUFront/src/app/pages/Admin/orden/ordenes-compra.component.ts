@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
+import { ConfirmService } from '../../../core/services/confirm.service';
 
 /* =========================================================================
    SIGEHU — Órdenes de Compra (componente Angular standalone)
@@ -29,6 +30,7 @@ interface OrdenRow {
   styleUrl: './ordenes-compra.component.scss',
 })
 export class OrdenesCompraComponent implements OnInit {
+  private confirm = inject(ConfirmService);
 
   ordenes: OrdenRow[] = [];
   searchTerm = '';
@@ -95,9 +97,11 @@ export class OrdenesCompraComponent implements OnInit {
     alert('Aquí se abriría el formulario para generar una nueva orden de compra (RF-17).');
   }
 
-  autorizar(orden: OrdenRow): void {
-    const confirmado = confirm(
-      `¿Autorizar la orden ${orden.folio} por $${orden.total.toLocaleString('es-MX')} con ${orden.proveedor}?`
+  async autorizar(orden: OrdenRow): Promise<void> {
+    const confirmado = await this.confirm.confirmar(
+      'Autorizar orden de compra',
+      `¿Autorizar la orden ${orden.folio} por $${orden.total.toLocaleString('es-MX')} con ${orden.proveedor}?`,
+      { confirmarText: 'Autorizar' }
     );
     if (confirmado) {
       alert(`Orden ${orden.folio} autorizada.`);

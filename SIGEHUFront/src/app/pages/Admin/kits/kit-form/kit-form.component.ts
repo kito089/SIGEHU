@@ -9,6 +9,7 @@ import { Material } from '../../../../core/models/material.model';
 import { KitMaterial, KitInstalacion } from '../../../../core/models/kit.model';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
+import { noWhitespaceValidator } from '../../../../core/validators/no-whitespace.validator';
 
 /* =========================================================================
    SIGEHU — Nuevo / Actualizar Kit de Instalación (RF-22).
@@ -69,14 +70,14 @@ export class KitFormComponent implements OnInit {
 
   constructor() {
     this.form = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      descripcion: [''],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100), noWhitespaceValidator()]],
+      descripcion: ['', [Validators.maxLength(500)]],
     });
 
     this.nuevoMaterialForm = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      unidadMedida: ['', [Validators.required, Validators.maxLength(20)]],
-      descripcion: [''],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150), noWhitespaceValidator()]],
+      unidadMedida: ['', [Validators.required, Validators.maxLength(20), noWhitespaceValidator()]],
+      descripcion: ['', [Validators.maxLength(500)]],
     });
   }
 

@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { NotificationService } from './notification.service';
 
 export type ToastType = 'success' | 'warning' | 'error' | 'info';
 
@@ -13,6 +14,8 @@ export interface ToastItem {
 
 @Injectable({ providedIn: 'root' })
 export class ToastService {
+  private notificationService = inject(NotificationService);
+
   private toastsSubject = new BehaviorSubject<ToastItem[]>([]);
   toasts$: Observable<ToastItem[]> = this.toastsSubject.asObservable();
   private counter = 0;
@@ -27,6 +30,8 @@ export class ToastService {
     const toast: ToastItem = { id, type, message, duration, createdAt: Date.now() };
     const current = this.toastsSubject.value;
     this.toastsSubject.next([...current, toast]);
+    // Duplica la notificación en el centro de notificaciones (persistente).
+    this.notificationService.push(type, message);
   }
 
   dismiss(id: number): void {

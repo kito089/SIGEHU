@@ -7,7 +7,7 @@
       [(ngModel)]="query"
       (input)="onInput()"
       (focus)="onFocus()"
-      placeholder="Buscar clientes, obras, proveedores…"
+      placeholder="Buscar clientes, obras, trabajadores…"
       aria-label="Buscador global"
     />
     <kbd class="omnibox__kbd">/</kbd>
@@ -24,7 +24,7 @@
       <div class="omnibox__group" *ngFor="let g of groups">
         <div class="omnibox__group-title">
           <ion-icon [name]="g.icon"></ion-icon>
-          {{ g.tipo }} ({{ g.items.length }})
+          {{ g.label }} ({{ g.items.length }})
         </div>
         <a
           *ngFor="let r of g.items"

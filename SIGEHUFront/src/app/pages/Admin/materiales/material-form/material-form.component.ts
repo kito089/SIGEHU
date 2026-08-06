@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { MaterialesService } from '../../../../services/materiales.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
+import { noWhitespaceValidator } from '../../../../core/validators/no-whitespace.validator';
 
 /* =========================================================================
    SIGEHU — Nuevo / Actualizar Material o Herramienta (componente Angular standalone)
@@ -52,9 +53,9 @@ export class MaterialFormComponent implements OnInit {
 
   constructor() {
     this.form = this.fb.group({
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      unidadMedida: ['', [Validators.required, Validators.maxLength(20)]],
-      descripcion: [''],
+      nombre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150), noWhitespaceValidator()]],
+      unidadMedida: ['', [Validators.required, Validators.maxLength(20), noWhitespaceValidator()]],
+      descripcion: ['', [Validators.maxLength(500)]],
     });
   }
 

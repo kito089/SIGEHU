@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
+import { ConfirmService } from '../../../core/services/confirm.service';
 
 /* =========================================================================
    SIGEHU — Garantías (componente Angular standalone)
@@ -29,6 +30,7 @@ interface GarantiaRow {
   styleUrl: './garantias.component.scss',
 })
 export class GarantiasComponent implements OnInit {
+  private confirm = inject(ConfirmService);
 
   garantias: GarantiaRow[] = [];
   searchTerm = '';
@@ -91,9 +93,11 @@ export class GarantiasComponent implements OnInit {
     alert(`Aquí se abriría el reporte de la garantía ${garantia.folio} (RF-27).`);
   }
 
-  cerrarGarantia(garantia: GarantiaRow): void {
-    const confirmado = confirm(
-      `¿Estás seguro de cerrar la garantía ${garantia.folio} de "${garantia.obra}"?\nEsta acción es definitiva.`
+  async cerrarGarantia(garantia: GarantiaRow): Promise<void> {
+    const confirmado = await this.confirm.confirmar(
+      'Cerrar garantía',
+      `¿Estás seguro de cerrar la garantía ${garantia.folio} de "${garantia.obra}"? Esta acción es definitiva.`,
+      { confirmarText: 'Cerrar garantía', danger: true }
     );
     if (confirmado) {
       alert(`Garantía ${garantia.folio} cerrada.`);
