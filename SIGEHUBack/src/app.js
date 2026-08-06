@@ -26,6 +26,7 @@ import DashboardRoutes from './routes/Dashboard.route.js';
 import BackupRoutes from './routes/Backup.route.js';
 import AuditoriaRoutes from './routes/Auditoria.route.js';
 import AuthRoutes from './routes/Auth.route.js';
+import ReportesRoutes from './routes/Reportes.route.js';
 import auth from './middlewares/auth.middleware.js';
 
 const PORT = config.apiPort || 3000;
@@ -81,6 +82,7 @@ app.use('/Auditoria', AuditoriaRoutes);
 app.use('/Auth', AuthRoutes);
 app.use('/Kits', KitsRoutes);
 app.use('/Compras', ComprasRoutes);
+app.use('/Reportes', ReportesRoutes);
 
 // prueba de conexion
 app.get('/', (req, res) => {

@@ -485,12 +485,47 @@ const esChoferAsignado = async (idCompra, idTrabajador) => {
     return rows && rows.length > 0;
 };
 
+// Compras pendientes (sin recibir) con proveedores y materiales agregados.
+// Registrarlo por: proveedores_idProveedor de cada detalle. Se reutiliza desde
+// el Dashboard ("Compras pendientes") y el módulo de Reportes.
+const getComprasPendientes = async () => {
+    const db = await getConnection();
+
+    const rows = await db.query(
+        `SELECT c.idCompra AS ID,
+                c.FechaCompra AS FECHA,
+                LIST(DISTINCT p.Nombre, ' | ') AS PROVEEDORES,
+                LIST(DISTINCT m.Nombre, ', ') AS MATERIALES,
+                COUNT(*) AS LINEAS
+         FROM Compras c
+         JOIN DetallesCompras dc ON dc.Compras_idCompra = c.idCompra
+         JOIN Proveedores_has_Materiales phm
+             ON phm.Proveedores_idProveedor = dc.Proveedores_has_Materiales_Proveedores_idProveedor
+            AND phm.Materiales_idMaterial   = dc.Proveedores_has_Materiales_Materiales_idMaterial
+         JOIN Proveedores p ON p.idProveedor = phm.Proveedores_idProveedor
+         JOIN Materiales  m ON m.idMaterial  = phm.Materiales_idMaterial
+         WHERE c.Activo = TRUE AND c.Recibida = FALSE
+         GROUP BY c.idCompra, c.FechaCompra
+         ORDER BY c.FechaCompra DESC`,
+        []
+    );
+
+    return rows.map(r => ({
+        idCompra: Number(r['ID']),
+        FechaCompra: normalizeDate(r['FECHA'] ?? r.FechaCompra ?? null),
+        proveedores: String(r['PROVEEDORES'] ?? ''),
+        materiales: String(r['MATERIALES'] ?? ''),
+        lineas: Number(r['LINEAS'] || 0),
+    }));
+};
+
 export default {
     getCompras,
     getCompraById,
     createCompra,
     updateCompra,
     getCompraChofer,
+    getComprasPendientes,
     esChoferAsignado,
     marcarRecibida,
     deleteCompra

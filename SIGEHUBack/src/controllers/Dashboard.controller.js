@@ -9,6 +9,15 @@ const getIndicadores = async (_req, res) => {
     }
 };
 
+const getResumen = async (_req, res) => {
+    try {
+        const resumen = await service.getResumen();
+        res.json(resumen);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 const getKanban = async (_req, res) => {
     try {
         const kanban = await service.getKanban();
@@ -37,4 +46,4 @@ const getCalendarEvents = async (_req, res) => {
     }
 };
 
-export default { getIndicadores, getKanban, getActivityFeed, getCalendarEvents };
+export default { getIndicadores, getResumen, getKanban, getActivityFeed, getCalendarEvents };
