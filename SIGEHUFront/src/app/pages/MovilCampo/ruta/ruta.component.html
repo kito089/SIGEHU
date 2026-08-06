@@ -1,76 +1,101 @@
-<ion-content class="ion-padding">
+<app-worker-header></app-worker-header>
+
+<ion-content class="ion-padding sigehu-content">
 
   <div class="mobile-header">
-    <ion-button fill="clear" class="back-btn" (click)="volver()" aria-label="Volver">
-      <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
-    </ion-button>
-    <h2>Hoja de Ruta e Instalación</h2>
+    <h2>Ruta de Instalación & Kits</h2>
+    <p class="subtitle">Verificación de kit para ruta y entrega en domicilio (RF-19, RF-20, RF-23)</p>
   </div>
 
-  <!-- Datos de Entrega (RF-19) -->
-  <ion-card class="sigehu-card">
+  <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
+
+  <!-- Datos de Entrega / Cliente (RF-19) -->
+  <ion-card class="sigehu-card" *ngIf="selectedObra">
     <ion-card-header>
-      <ion-card-title>Datos de Entrega</ion-card-title>
+      <div class="card-top">
+        <ion-badge color="purple">{{ selectedObra.ESTADO }}</ion-badge>
+        <span class="obra-id">OB-{{ selectedObra.ID }}</span>
+      </div>
+      <ion-card-title>{{ selectedObra.NOMBRE }}</ion-card-title>
     </ion-card-header>
-    <ion-card-content class="ion-no-padding">
-      <ion-list>
-        <ion-item lines="none" class="sigehu-item">
-          <ion-label>Cliente</ion-label>
-          <strong slot="end">{{ entrega.cliente }}</strong>
-        </ion-item>
-        <ion-item lines="none" class="sigehu-item">
-          <ion-label>Teléfono</ion-label>
-          <strong slot="end">{{ entrega.telefono }}</strong>
-        </ion-item>
-        <ion-item lines="none" class="sigehu-item">
-          <ion-label>Dirección</ion-label>
-          <strong slot="end">{{ entrega.direccion }}</strong>
-        </ion-item>
-      </ion-list>
+    <ion-card-content>
+      <div class="info-row">
+        <span class="info-label">Cliente</span>
+        <strong class="info-val">{{ entrega.cliente }}</strong>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Teléfono</span>
+        <strong class="info-val">{{ entrega.telefono }}</strong>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Dirección</span>
+        <strong class="info-val">{{ entrega.direccion }}</strong>
+      </div>
     </ion-card-content>
   </ion-card>
 
-  <!-- Mapa (Google Maps API - espacio reservado) -->
-  <ion-card class="sigehu-card">
-    <ion-card-content class="maps-placeholder">
-      <ion-icon name="location-outline"></ion-icon>
-      <span>Google Maps API (Espacio Reservado)</span>
-    </ion-card-content>
-  </ion-card>
-
-  <!-- Checklist de Kit (RF-23) -->
+  <!-- Checklist de Kit para Salida a Campo (RF-23) -->
   <ion-card class="sigehu-card">
     <ion-card-header>
-      <ion-card-title>Checklist de Herramientas e Insumos</ion-card-title>
-      <ion-card-subtitle>{{ porcentajeVerificado }}% verificado</ion-card-subtitle>
+      <div class="card-top">
+        <ion-card-title>Checklist del Kit de Instalación</ion-card-title>
+        <ion-badge [color]="porcentajeVerificado === 100 ? 'success' : 'warning'">
+          {{ porcentajeVerificado }}% verificado
+        </ion-badge>
+      </div>
+      <ion-card-subtitle>Verifica tus herramientas e insumos antes de salir a la ruta</ion-card-subtitle>
     </ion-card-header>
+
     <ion-card-content class="ion-no-padding">
-      <ion-list>
-        <ion-item
-          *ngFor="let item of checklist"
-          lines="none"
-          class="sigehu-check"
-        >
+      <ion-progress-bar [value]="porcentajeVerificado / 100" [color]="porcentajeVerificado === 100 ? 'success' : 'primary'"></ion-progress-bar>
+
+      <ion-list class="checklist-list">
+        <ion-item *ngFor="let item of checklist" lines="full" class="checklist-item">
           <ion-checkbox
+            slot="start"
             [(ngModel)]="item.verificado"
-            color="primary"
-            slot="start"></ion-checkbox>
-          <ion-label [class.checked]="item.verificado">{{ item.nombre }}</ion-label>
+          ></ion-checkbox>
+          <ion-label [class.checked]="item.verificado">
+            {{ item.nombre }}
+          </ion-label>
         </ion-item>
       </ion-list>
     </ion-card-content>
   </ion-card>
 
-  <ion-button
-    expand="block"
-    size="large"
-    class="sigehu-submit"
-    [disabled]="confirmando || porcentajeVerificado < 100"
-    (click)="confirmarEntrega()"
-  >
-    {{ confirmando ? 'Enviando…' : 'Confirmar Entrega e Instalación' }}
-  </ion-button>
-  <p class="hint" *ngIf="porcentajeVerificado < 100">
-    Verifica el 100% del checklist para continuar.
-  </p>
+  <!-- Entrega de Obra e Evidencia (RF-20) -->
+  <ion-card class="sigehu-card validation-card">
+    <ion-card-header>
+      <ion-card-title>Confirmación de Instalación Entregada</ion-card-title>
+      <ion-card-subtitle>Sube fotografía final en domicilio del cliente</ion-card-subtitle>
+    </ion-card-header>
+
+    <ion-card-content>
+      <div class="field-wrap">
+        <label>Observaciones de instalación:</label>
+        <ion-textarea
+          [(ngModel)]="notaInstalacion"
+          rows="3"
+          placeholder="Estructura nivelada y anclada correctamente en muro..."
+        ></ion-textarea>
+      </div>
+
+      <div class="field-wrap">
+        <label>Fotografía de Instalación Terminada:</label>
+        <input type="file" accept="image/*" (change)="onFileChange($event)" class="file-input" />
+      </div>
+
+      <ion-button
+        expand="block"
+        color="success"
+        size="large"
+        class="submit-btn"
+        [disabled]="confirmando"
+        (click)="confirmarEntrega()"
+      >
+        <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
+        {{ confirmando ? 'Enviando…' : 'Marcar Instalación Entregada (RF-20)' }}
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
 </ion-content>

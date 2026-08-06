@@ -1,0 +1,129 @@
+.sigehu-content {
+  --background: #0f172a;
+  color: #f8fafc;
+}
+
+.header-section {
+  margin-bottom: 16px;
+  h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+    color: #f8fafc;
+  }
+  .subtitle {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 4px 0 0 0;
+  }
+}
+
+.empty-box {
+  text-align: center;
+  padding: 32px 16px;
+  background: #1e293b;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  ion-icon {
+    font-size: 3rem;
+    margin-bottom: 8px;
+    color: #f59e0b;
+  }
+}
+
+.sigehu-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  margin: 0 0 16px 0;
+  color: #f8fafc;
+  box-shadow: none;
+
+  ion-card-header {
+    padding: 16px;
+    border-bottom: 1px solid #334155;
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .compra-id {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 600;
+  }
+  ion-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+  ion-card-subtitle {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
+}
+
+.materials-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .shield-notice {
+    font-size: 0.72rem;
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.materials-list {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.material-item {
+  --background: #0f172a;
+  --color: #f8fafc;
+  --border-color: #334155;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+
+  h2 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .completed {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+}
+
+.confirm-btn {
+  margin-top: 8px;
+  --border-radius: 8px;
+  font-weight: 700;
+}

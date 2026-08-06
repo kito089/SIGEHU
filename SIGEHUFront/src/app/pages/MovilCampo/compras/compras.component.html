@@ -1,0 +1,76 @@
+<app-worker-header></app-worker-header>
+
+<ion-content class="ion-padding sigehu-content">
+  <div class="header-section">
+    <h2>Órdenes de Compra (Logística)</h2>
+    <p class="subtitle">Lista de insumos a recolección con proveedores (RF-18)</p>
+  </div>
+
+  <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
+
+  <div *ngIf="compras.length === 0 && !loading" class="empty-box">
+    <ion-icon name="cart-outline"></ion-icon>
+    <p>No hay órdenes de compra pendientes para choferes.</p>
+  </div>
+
+  <!-- Lista de órdenes de compra asignadas -->
+  <div *ngFor="let c of compras" class="compra-card-wrap">
+    <ion-card class="sigehu-card">
+      <ion-card-header>
+        <div class="card-top">
+          <ion-badge color="warning">{{ c.ESTADO }}</ion-badge>
+          <span class="compra-id">OC-{{ c.ID }}</span>
+        </div>
+        <ion-card-title>{{ c.PROVEEDOR_NOMBRE }}</ion-card-title>
+        <ion-card-subtitle>
+          <ion-icon name="location-outline"></ion-icon>
+          {{ c.PROVEEDOR_DIRECCION }}
+        </ion-card-subtitle>
+        <ion-card-subtitle *ngIf="c.PROVEEDOR_TELEFONO">
+          <ion-icon name="call-outline"></ion-icon>
+          {{ c.PROVEEDOR_TELEFONO }}
+        </ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="materials-header">
+          <h3>Lista de Materiales a Recoger</h3>
+          <span class="shield-notice">
+            <ion-icon name="shield-checkmark-outline"></ion-icon>
+            Aislamiento Financiero Activo (Sin costos)
+          </span>
+        </div>
+
+        <ion-list class="materials-list">
+          <ion-item
+            *ngFor="let m of c.MATERIALES"
+            lines="full"
+            class="material-item"
+            (click)="toggleMaterialItem(m)"
+          >
+            <ion-checkbox
+              slot="start"
+              [checked]="m.COMPLETADO"
+              (click)="$event.stopPropagation(); toggleMaterialItem(m)"
+            ></ion-checkbox>
+            <ion-label [class.completed]="m.COMPLETADO">
+              <h2>{{ m.MATERIAL_NOMBRE }}</h2>
+            </ion-label>
+            <ion-badge slot="end" color="primary">{{ m.CANTIDAD }} {{ m.UNIDAD }}</ion-badge>
+          </ion-item>
+        </ion-list>
+
+        <ion-button
+          expand="block"
+          color="primary"
+          class="confirm-btn"
+          [disabled]="c.ESTADO === 'Surtida en Proveedor'"
+          (click)="marcarCompraCompletada(c)"
+        >
+          <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+          {{ c.ESTADO === 'Surtida en Proveedor' ? 'Orden Completa' : 'Confirmar Recolección Surtida' }}
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

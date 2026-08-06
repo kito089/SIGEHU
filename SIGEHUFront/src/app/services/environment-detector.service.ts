@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,7 @@ export class EnvironmentDetector {
 
   constructor() {
     this.isElectron = !!(window as any).require;
-    this.isCapacitor = !!((window as any).Capacitor);
+    this.isCapacitor = Capacitor.isNativePlatform() || !!(window as any).Capacitor;
     this.isWeb = !this.isElectron && !this.isCapacitor;
   }
 
