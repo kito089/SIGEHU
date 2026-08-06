@@ -1,76 +1,118 @@
-<ion-content class="ion-padding">
+<app-worker-header></app-worker-header>
+
+<ion-content class="ion-padding sigehu-content">
 
   <div class="mobile-header">
-    <ion-button fill="clear" class="back-btn" (click)="volver()" aria-label="Volver">
-      <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
-    </ion-button>
-    <h2>Garantías y Postventa</h2>
+    <h2>Garantías y Post-Venta</h2>
+    <p class="subtitle">Atención de fallas en sitio y seguimiento de sub-estados (RF-24, RF-25, RF-26)</p>
   </div>
 
-  <!-- Nuevo Reporte (RF-24) -->
+  <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
+
+  <!-- Registro de Nuevo Reporte de Garantía (RF-24) -->
   <ion-card class="sigehu-card">
     <ion-card-header>
-      <ion-card-title>Registrar Atención de Garantía</ion-card-title>
+      <ion-card-title>Abrir Reporte de Garantía</ion-card-title>
+      <ion-card-subtitle>Reportar reporte de obra instalada</ion-card-subtitle>
     </ion-card-header>
-    <ion-card-content class="ion-no-padding">
-      <ion-list>
-        <ion-item class="sigehu-field">
-          <ion-label position="stacked">Obra / Proyecto</ion-label>
-          <ion-input [value]="obra" readonly></ion-input>
-        </ion-item>
-        <ion-item class="sigehu-field">
-          <ion-label position="stacked">Fecha del Reporte</ion-label>
-          <ion-input type="date" [(ngModel)]="fechaReporte"></ion-input>
-        </ion-item>
-        <ion-item class="sigehu-field">
-          <ion-label position="stacked">Técnico Asignado</ion-label>
-          <ion-select placeholder="Selecciona un técnico…">
-            <ion-select-option *ngFor="let t of tecnicos" [value]="t.id">
-              {{ t.nombre }}
-            </ion-select-option>
-          </ion-select>
-        </ion-item>
-        <ion-item class="sigehu-field">
-          <ion-label position="stacked">Observaciones de la Falla</ion-label>
-          <ion-textarea
-            rows="3"
-            placeholder="Chapa, pintura, bisagra…"></ion-textarea>
-        </ion-item>
-      </ion-list>
+
+    <ion-card-content>
+      <div class="field-wrap">
+        <label>Obra Instalada:</label>
+        <ion-input [value]="selectedObraNombre" readonly class="readonly-input"></ion-input>
+      </div>
+
+      <div class="field-wrap">
+        <label>Descripción del Problema / Falla:</label>
+        <ion-textarea
+          [(ngModel)]="nuevoProblema"
+          rows="3"
+          placeholder="Describir desajuste, ruido, pintura o falla mecánica reportada..."
+        ></ion-textarea>
+      </div>
+
+      <div class="field-wrap">
+        <label>Evidencia Fotográfica inicial:</label>
+        <input type="file" accept="image/*" (change)="onFileChange($event)" class="file-input" />
+      </div>
+
+      <ion-button
+        expand="block"
+        color="danger"
+        class="submit-btn"
+        [disabled]="guardando"
+        (click)="abrirNuevoReporte()"
+      >
+        <ion-icon name="warning-outline" slot="start"></ion-icon>
+        Registrar Reporte de Garantía
+      </ion-button>
     </ion-card-content>
   </ion-card>
 
-  <ion-button
-    expand="block"
-    size="large"
-    class="sigehu-submit sigehu-submit--danger"
-    (click)="guardarTicket()"
-  >
-    Guardar Ticket de Garantía
-  </ion-button>
+  <!-- Lista de Garantías Asignadas (RF-25 / RF-26) -->
+  <h3 class="section-title">Tickets de Garantía Asignados</h3>
 
-  <!-- Tickets en seguimiento (RF-25) -->
-  <ion-card class="sigehu-card">
-    <ion-card-header>
-      <ion-card-title>Tickets en Seguimiento</ion-card-title>
-    </ion-card-header>
-    <ion-card-content class="ion-no-padding">
-      <ion-list>
-        <ion-item
-          *ngFor="let ticket of tickets"
-          lines="full"
-          class="sigehu-ticket"
-        >
-          <ion-label>
-            <h3>{{ ticket.id }}</h3>
-            <p>{{ ticket.descripcion }}</p>
-            <small>Técnico: {{ ticket.tecnico }}</small>
-          </ion-label>
-          <ion-badge slot="end" color="warning" class="ticket-badge">
-            {{ ticket.estado }}
+  <div *ngFor="let t of tickets" class="ticket-card-wrap">
+    <ion-card class="sigehu-card">
+      <ion-card-header>
+        <div class="card-top">
+          <ion-badge [color]="t.ESTADO === 'Resuelta' ? 'success' : t.ESTADO === 'En atención' ? 'warning' : 'danger'">
+            {{ t.ESTADO }}
           </ion-badge>
-        </ion-item>
-      </ion-list>
-    </ion-card-content>
-  </ion-card>
+          <span class="ticket-id">{{ t.ID }}</span>
+        </div>
+        <ion-card-title>{{ t.OBRA_NOMBRE }}</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="info-row">
+          <span class="info-label">Descripción Falla</span>
+          <strong class="info-val desc-val">{{ t.DESCRIPCION }}</strong>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Dirección</span>
+          <strong class="info-val">{{ t.DIRECCION }}</strong>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Teléfono</span>
+          <strong class="info-val">{{ t.TELEFONO }}</strong>
+        </div>
+
+        <!-- Sub-estados y Acción Correctiva (RF-25 / RF-26) -->
+        <div class="resolution-wrap" *ngIf="t.ESTADO !== 'Resuelta'">
+          <div class="state-buttons">
+            <ion-button
+              size="small"
+              fill="outline"
+              color="warning"
+              [disabled]="t.ESTADO === 'En atención'"
+              (click)="cambiarSubEstado(t, 'En atención')"
+            >
+              En Atención
+            </ion-button>
+          </div>
+
+          <div class="field-wrap">
+            <label>Acción Correctiva Realizada:</label>
+            <ion-textarea
+              [(ngModel)]="t.ACCION_CORRECTIVA"
+              rows="2"
+              placeholder="Se ajustó chapa y lubricó riel..."
+            ></ion-textarea>
+          </div>
+
+          <ion-button
+            expand="block"
+            color="success"
+            size="small"
+            class="resolve-btn"
+            (click)="marcarResuelta(t)"
+          >
+            <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+            Cerrar y Marcar Resuelta (RF-26)
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
 </ion-content>

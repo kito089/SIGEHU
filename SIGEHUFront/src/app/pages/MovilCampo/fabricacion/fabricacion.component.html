@@ -1,0 +1,121 @@
+<app-worker-header></app-worker-header>
+
+<ion-content class="ion-padding sigehu-content">
+  <!-- Selector de obras en taller -->
+  <div class="header-section">
+    <h2>Orden de Trabajo (Taller)</h2>
+    <p class="subtitle">Especificaciones de fabricación y lista de materiales (RF-15)</p>
+  </div>
+
+  <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
+
+  <div *ngIf="obras.length === 0 && !loading" class="empty-box">
+    <ion-icon name="construct-outline"></ion-icon>
+    <p>No tienes obras asignadas en proceso de fabricación.</p>
+  </div>
+
+  <!-- Selector de obra asignada -->
+  <div *ngIf="obras.length > 1" class="obra-selector">
+    <ion-label>Seleccionar Obra:</ion-label>
+    <ion-select [value]="selectedObra?.ID" (ionChange)="seleccionarObra($any($event.detail.value))" interface="popover">
+      <ion-select-option *ngFor="let o of obras" [value]="o.ID">
+        {{ o.NOMBRE }} ({{ o.ESTADO }})
+      </ion-select-option>
+    </ion-select>
+  </div>
+
+  <div *ngIf="selectedObra" class="fabricacion-card-wrap">
+    <!-- Tarjeta Principal de Obra -->
+    <ion-card class="sigehu-card">
+      <ion-card-header>
+        <div class="card-top">
+          <ion-badge color="primary">{{ selectedObra.ESTADO }}</ion-badge>
+          <span class="obra-id">OB-{{ selectedObra.ID }}</span>
+        </div>
+        <ion-card-title>{{ selectedObra.NOMBRE }}</ion-card-title>
+        <ion-card-subtitle *ngIf="selectedObra.CLIENTE_NOMBRE">
+          Cliente: {{ selectedObra.CLIENTE_NOMBRE }}
+        </ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <!-- Medidas Reales -->
+        <div class="measures-grid">
+          <div class="measure-box">
+            <span class="label">Alto</span>
+            <span class="value">{{ selectedObra.MEDIDAS_ALTO || '2.50' }} m</span>
+          </div>
+          <div class="measure-box">
+            <span class="label">Ancho</span>
+            <span class="value">{{ selectedObra.MEDIDAS_ANCHO || '4.20' }} m</span>
+          </div>
+          <div class="measure-box">
+            <span class="label">Profundidad</span>
+            <span class="value">{{ selectedObra.MEDIDAS_PROFUNDIDAD || '0.15' }} m</span>
+          </div>
+        </div>
+
+        <!-- Especificaciones del Diseño -->
+        <div class="spec-section">
+          <h3>Especificaciones Técnicas</h3>
+          <p class="spec-text">{{ selectedObra.ESPECIFICACIONES || 'Verificar nivelación en base y refuerzo central.' }}</p>
+          <div *ngIf="selectedObra.MODELO_DISENO" class="model-badge">
+            <ion-icon name="image-outline"></ion-icon>
+            <span>Diseño: {{ selectedObra.MODELO_DISENO }}</span>
+          </div>
+        </div>
+
+        <!-- Lista de Insumos / Materiales Requeridos -->
+        <div class="materials-section">
+          <h3>Materiales Asignados para la Obra</h3>
+          <ion-list class="materials-list">
+            <ion-item *ngFor="let m of selectedObra.MATERIALES" lines="full" class="material-item">
+              <ion-icon name="cube-outline" slot="start"></ion-icon>
+              <ion-label>
+                <h2>{{ m.MATERIAL }}</h2>
+                <p>{{ m.UNIDAD }}</p>
+              </ion-label>
+              <ion-badge slot="end" color="medium">{{ m.CANTIDAD }} {{ m.UNIDAD }}</ion-badge>
+            </ion-item>
+          </ion-list>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Doble Validación de Fabricación (RF-17) -->
+    <ion-card class="sigehu-card validation-card">
+      <ion-card-header>
+        <ion-card-title>Conclusión y Evidencia Fotográfica</ion-card-title>
+        <ion-card-subtitle>Al terminar la pieza en taller, captura la evidencia fotográfica</ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="field-wrap">
+          <label>Nota de avance / fabricación:</label>
+          <ion-textarea
+            [(ngModel)]="notaAvance"
+            rows="3"
+            placeholder="Fabricación concluida. Estructura soldada y pulida, lista para pintura..."
+          ></ion-textarea>
+        </div>
+
+        <div class="field-wrap">
+          <label>Fotografía de evidencia:</label>
+          <input type="file" accept="image/*" (change)="onFileChange($event)" class="file-input" />
+        </div>
+
+        <ion-button
+          expand="block"
+          color="success"
+          size="large"
+          class="submit-btn"
+          [disabled]="guardando"
+          (click)="marcarFabricacionTerminada()"
+        >
+          <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
+          {{ guardando ? 'Enviando...' : 'Marcar Fabricación Terminada' }}
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

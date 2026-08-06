@@ -50,6 +50,8 @@ export const routes: Routes = [
     canActivate: [WorkerGuard],
     children: [
       { path: 'levantamientos', loadComponent: () => import('./pages/MovilCampo/levantamientos/levantamientos.component').then(m => m.LevantamientosComponent) },
+      { path: 'fabricacion', loadComponent: () => import('./pages/MovilCampo/fabricacion/fabricacion.component').then(m => m.FabricacionComponent) },
+      { path: 'compras', loadComponent: () => import('./pages/MovilCampo/compras/compras.component').then(m => m.ComprasComponent) },
       { path: 'ruta', loadComponent: () => import('./pages/MovilCampo/ruta/ruta.component').then(m => m.RutaComponent) },
       { path: 'garantias', loadComponent: () => import('./pages/MovilCampo/garantias/garantias.component').then(m => m.GarantiasCampoComponent) },
       { path: '', redirectTo: 'levantamientos', pathMatch: 'full' }

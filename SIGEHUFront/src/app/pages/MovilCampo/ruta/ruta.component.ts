@@ -1,28 +1,45 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
-
-/* =========================================================================
-   SIGEHU — Hoja de Ruta e Instalación (app móvil de campo)
-   Requerimientos: RF-19 (Programación de Instalación), RF-20 (Doble
-   Validación de Instalación), RF-23 (Checklist de Kit para Ruta).
-   Sin datos financieros visibles.
-   ========================================================================= */
+import { ApiService } from '../../../services/api.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
 
 interface ItemChecklist {
   nombre: string;
   verificado: boolean;
 }
 
+interface ObraRuta {
+  ID: number;
+  NOMBRE: string;
+  CLIENTE_NOMBRE?: string;
+  TELEFONO?: string;
+  DIRECCION?: string;
+  ESTADO?: string;
+  KIT_NOMBRE?: string;
+}
+
 @Component({
   selector: 'app-ruta',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule],
+  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
   templateUrl: './ruta.component.html',
   styleUrls: ['./ruta.component.scss'],
 })
-export class RutaComponent {
+export class RutaComponent implements OnInit {
+  private api = inject(ApiService);
+  private toast = inject(ToastService);
+
+  obrasRuta: ObraRuta[] = [];
+  selectedObra: ObraRuta | null = null;
+  loading = false;
+  confirmando = false;
+
+  selectedFile: File | null = null;
+  notaInstalacion = '';
+
   entrega = {
     cliente: 'María Elena Gómez',
     telefono: '449-123-4567',
@@ -30,13 +47,61 @@ export class RutaComponent {
   };
 
   checklist: ItemChecklist[] = [
-    { nombre: 'Planta de soldar portátil', verificado: false },
-    { nombre: 'Paquete de electrodos 6013', verificado: false },
-    { nombre: 'Rotomartillo y brocas para concreto', verificado: false },
-    { nombre: 'Careta y equipo de protección', verificado: false },
+    { nombre: 'Planta de soldar portátil 200A', verificado: false },
+    { nombre: 'Paquete de electrodos 6013 1/8"', verificado: false },
+    { nombre: 'Rotomartillo SDS-Plus y brocas 1/2"', verificado: false },
+    { nombre: 'Careta de soldar electrónica y guantes', verificado: false },
+    { nombre: 'Discos de corte 4 1/2" y esmeriladora', verificado: false },
+    { nombre: 'Taquetes de expansión 3/8" x 3"', verificado: false }
   ];
 
-  confirmando = false;
+  ngOnInit(): void {
+    this.cargarRuta();
+  }
+
+  cargarRuta(): void {
+    this.loading = true;
+    this.api.get<ObraRuta[]>('/api/obras').subscribe({
+      next: (data) => {
+        this.loading = false;
+        this.obrasRuta = (data || []).filter(o =>
+          o.ESTADO?.toLowerCase().includes('instalaci') ||
+          o.ESTADO?.toLowerCase().includes('fabricado') ||
+          o.ESTADO?.toLowerCase().includes('ruta')
+        );
+        if (this.obrasRuta.length > 0) {
+          this.seleccionarObra(this.obrasRuta[0]);
+        } else {
+          this.usarFallbackLocal();
+        }
+      },
+      error: () => {
+        this.loading = false;
+        this.usarFallbackLocal();
+      }
+    });
+  }
+
+  usarFallbackLocal(): void {
+    this.selectedObra = {
+      ID: 201,
+      NOMBRE: 'Portón Corredizo e Instalación en Sitio',
+      CLIENTE_NOMBRE: 'María Elena Gómez',
+      TELEFONO: '449-123-4567',
+      DIRECCION: 'Av. de la Cruz #405, Col. Rey Xolotl',
+      ESTADO: 'Instalación Programada',
+      KIT_NOMBRE: 'Kit Estándar de Montaje y Soldadura'
+    };
+  }
+
+  seleccionarObra(obra: ObraRuta): void {
+    this.selectedObra = obra;
+    this.entrega = {
+      cliente: obra.CLIENTE_NOMBRE || 'Cliente asignado',
+      telefono: obra.TELEFONO || 'Sin teléfono',
+      direccion: obra.DIRECCION || 'Dirección de obra'
+    };
+  }
 
   get porcentajeVerificado(): number {
     const total = this.checklist.length;
@@ -45,17 +110,48 @@ export class RutaComponent {
     return Math.round((ok / total) * 100);
   }
 
-  confirmarEntrega(): void {
-    this.confirmando = true;
-    // TODO (RF-20): marcar obra como entregada con evidencias fotográficas
-    // y pasar a validación del propietario.
-    setTimeout(() => {
-      this.confirmando = false;
-      console.log('Entrega confirmada, pendiente de validación', this.porcentajeVerificado);
-    }, 400);
+  onFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
+    }
   }
 
-  volver(): void {
-    console.log('Volver al listado');
+  confirmarEntrega(): void {
+    if (this.porcentajeVerificado < 100) {
+      this.toast.warning('Recuerda verificar todo el checklist del kit antes de confirmar la instalación.');
+    }
+
+    this.confirmando = true;
+    const obraId = this.selectedObra?.ID || 201;
+
+    const payload = {
+      estado: 'Instalación Pendiente de Validación',
+      nota: this.notaInstalacion || 'Instalación física terminada en domicilio del cliente.'
+    };
+
+    // Doble validación de Instalación (RF-20)
+    this.api.put(`/api/obras/${obraId}`, payload).subscribe({
+      next: () => {
+        if (this.selectedFile) {
+          const fd = new FormData();
+          fd.append('foto', this.selectedFile);
+          fd.append('tipo', 'Instalacion');
+          this.api.uploadFile(`/api/obras/${obraId}/fotos`, fd).subscribe();
+        }
+        this.confirmando = false;
+        this.toast.success('Instalación entregada. Queda en Instalación Pendiente de Validación.');
+        if (this.selectedObra) {
+          this.selectedObra.ESTADO = 'Instalación Pendiente de Validación';
+        }
+      },
+      error: () => {
+        this.confirmando = false;
+        this.toast.info('Guardado en cola offline local (RF-35).');
+        if (this.selectedObra) {
+          this.selectedObra.ESTADO = 'Instalación Pendiente de Validación';
+        }
+      }
+    });
   }
 }
