@@ -2,12 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
-import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
-  imports: [RouterOutlet, ToastContainerComponent, ConfirmDialogComponent],
+  imports: [RouterOutlet, ToastContainerComponent],
 })
 export class AppComponent implements OnInit {
   private router = inject(Router);

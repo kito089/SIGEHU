@@ -56,7 +56,6 @@
   --ion-button-border-radius: var(--sigehu-radius-md);
 }
 
-<<<<<<< HEAD
 /* ===========================================================================
    SISTEMA ÚNICO DE SCROLL (Pickup del Layout)
    ---------------------------------------------------------------------------
@@ -83,14 +82,15 @@ main.main-content > * .page-scroll {
   min-height: 0 !important;
   height: auto !important;
   overflow: visible !important;
-=======
+}
+
 /**
  * Marcador de campos obligatorios (*) — convención SIGEHU.
  * Se usa en todos los formularios del sistema para identificar los campos
  * requeridos de forma consistente (RF-06 / DISEÑO_UI).
  */
-.req{
+.req {
   color: var(--sigehu-danger);
   margin-left: 2px;
->>>>>>> e7bac74 (cambos)
 }
+

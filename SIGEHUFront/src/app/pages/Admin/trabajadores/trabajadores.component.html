@@ -70,6 +70,17 @@
       </ng-template>
     </app-data-table>
 
+    <app-confirm-modal
+      *ngIf="pendienteEliminar"
+      variant="danger"
+      title="Eliminar trabajador"
+      [message]="mensajeEliminacion"
+      confirmLabel="Eliminar"
+      cancelLabel="Cancelar"
+      (confirmed)="confirmarEliminacion()"
+      (cancelled)="cancelarEliminacion()"
+    ></app-confirm-modal>
+
   </section>
 
 </div>

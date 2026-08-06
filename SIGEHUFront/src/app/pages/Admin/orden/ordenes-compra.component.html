@@ -57,6 +57,17 @@
       </ng-template>
     </app-data-table>
 
+    <app-confirm-modal
+      *ngIf="pendienteAutorizar"
+      variant="default"
+      title="Autorizar orden de compra"
+      [message]="mensajeAutorizacion"
+      confirmLabel="Autorizar"
+      cancelLabel="Cancelar"
+      (confirmed)="confirmarAutorizacion()"
+      (cancelled)="cancelarAutorizacion()"
+    ></app-confirm-modal>
+
   </section>
 
 </div>

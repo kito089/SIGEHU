@@ -20,11 +20,7 @@
           maxlength="100"
           placeholder="Ej. Aceros Monterrey">
         <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
-<<<<<<< HEAD
-          Ingresa el nombre de la empresa (mín. 3 caracteres)
-=======
           {{ form.get('nombre')?.hasError('required') ? 'Ingresa el nombre de la empresa' : form.get('nombre')?.hasError('minlength') ? 'Mínimo 3 caracteres' : 'El nombre no puede contener solo espacios' }}
->>>>>>> e7bac74 (cambos)
         </span>
       </div>
 

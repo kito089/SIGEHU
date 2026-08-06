@@ -1,8 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
-import { ConfirmService } from '../../../core/services/confirm.service';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 /* =========================================================================
    SIGEHU — Órdenes de Compra (componente Angular standalone)
@@ -25,15 +25,15 @@ interface OrdenRow {
 @Component({
   selector: 'app-ordenes-compra',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
   templateUrl: './ordenes-compra.component.html',
   styleUrl: './ordenes-compra.component.scss',
 })
 export class OrdenesCompraComponent implements OnInit {
-  private confirm = inject(ConfirmService);
 
   ordenes: OrdenRow[] = [];
   searchTerm = '';
+  pendienteAutorizar: OrdenRow | null = null;
 
   columns: DataTableColumn[] = [
     { key: 'folio', label: 'Folio' },
@@ -97,14 +97,24 @@ export class OrdenesCompraComponent implements OnInit {
     alert('Aquí se abriría el formulario para generar una nueva orden de compra (RF-17).');
   }
 
-  async autorizar(orden: OrdenRow): Promise<void> {
-    const confirmado = await this.confirm.confirmar(
-      'Autorizar orden de compra',
-      `¿Autorizar la orden ${orden.folio} por $${orden.total.toLocaleString('es-MX')} con ${orden.proveedor}?`,
-      { confirmarText: 'Autorizar' }
-    );
-    if (confirmado) {
-      alert(`Orden ${orden.folio} autorizada.`);
-    }
+  autorizar(orden: OrdenRow): void {
+    this.pendienteAutorizar = orden;
+  }
+
+  get mensajeAutorizacion(): string {
+    return this.pendienteAutorizar
+      ? `¿Autorizar la orden ${this.pendienteAutorizar.folio} por $${this.pendienteAutorizar.total.toLocaleString('es-MX')} con ${this.pendienteAutorizar.proveedor}?`
+      : '';
+  }
+
+  cancelarAutorizacion(): void {
+    this.pendienteAutorizar = null;
+  }
+
+  confirmarAutorizacion(): void {
+    const orden = this.pendienteAutorizar;
+    if (!orden) return;
+    alert(`Orden ${orden.folio} autorizada.`);
+    this.pendienteAutorizar = null;
   }
 }

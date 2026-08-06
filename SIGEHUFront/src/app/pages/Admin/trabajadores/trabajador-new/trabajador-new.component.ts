@@ -64,16 +64,10 @@ export class TrabajadorNewComponent implements OnInit {
     this.form = this.fb.group({
       usuario: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-Z0-9._-]+$/)]],
       nombre: ['', [Validators.required, Validators.minLength(3)]],
-<<<<<<< HEAD
-      oficio: ['', [Validators.required]],
-      // Permite "+", números y espacios (máx. 15 dígitos). Se sanea antes de enviar.
-      telefono: ['', [Validators.required, Validators.pattern(TELEFONO_REACTIVO_PATTERN)]],
-=======
       // Contraseña: obligatoria en alta (RF-27, hash bcrypt); opcional en edición.
       contra: [''],
       // Permite "+", números y espacios (máx. 15 caracteres). Se sanea antes de enviar.
-      telefono: ['', [Validators.required, Validators.pattern(/^\+?[\d\s]{7,15}$/)]],
->>>>>>> e7bac74 (cambos)
+      telefono: ['', [Validators.required, Validators.pattern(TELEFONO_REACTIVO_PATTERN)]],
       correo: ['', [Validators.email]],
       observaciones: [''],
     });

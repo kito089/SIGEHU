@@ -5,9 +5,9 @@ import { firstValueFrom, Subscription } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { EnvService } from '../../../services/env.service';
 import { TrabajadoresRefreshService } from '../../../services/trabajadores-refresh.service';
-import { ConfirmService } from '../../../core/services/confirm.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 export interface Trabajador {
   id: number;
@@ -24,7 +24,7 @@ export interface Trabajador {
 @Component({
   selector: 'app-trabajadores',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
   templateUrl: './trabajadores.component.html',
   styleUrl: './trabajadores.component.scss',
 })
@@ -33,12 +33,12 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private env = inject(EnvService);
   private refreshService = inject(TrabajadoresRefreshService);
-  private confirm = inject(ConfirmService);
 
 
   trabajadores: Trabajador[] = [];
   searchTerm = '';
   selectedTrabajador: Trabajador | null = null;
+  pendienteEliminar: Trabajador | null = null;
   private refreshSub: Subscription | null = null;
 
   columns: DataTableColumn[] = [
@@ -137,13 +137,23 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
     window.open(base + '/' + url.replace(/^\/+/, ''), '_blank');
   }
 
-  async eliminarTrabajador(trabajador: Trabajador): Promise<void> {
-    const confirmado = await this.confirm.confirmar(
-      'Eliminar trabajador',
-      `¿Eliminar a "${trabajador.nombre}"? Esta acción no se puede deshacer.`,
-      { confirmarText: 'Eliminar', danger: true }
-    );
-    if (!confirmado) return;
+  eliminarTrabajador(trabajador: Trabajador): void {
+    this.pendienteEliminar = trabajador;
+  }
+
+  get mensajeEliminacion(): string {
+    return this.pendienteEliminar
+      ? `¿Eliminar a "${this.pendienteEliminar.nombre}"? Esta acción no se puede deshacer.`
+      : '';
+  }
+
+  cancelarEliminacion(): void {
+    this.pendienteEliminar = null;
+  }
+
+  async confirmarEliminacion(): Promise<void> {
+    const trabajador = this.pendienteEliminar;
+    if (!trabajador) return;
 
     try {
       await firstValueFrom(this.api.delete('/Trabajadores/' + trabajador.id));
@@ -153,6 +163,8 @@ export class TrabajadoresComponent implements OnInit, OnDestroy {
       }
     } catch {
       // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.pendienteEliminar = null;
     }
   }
 

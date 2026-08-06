@@ -9,16 +9,13 @@ import { Material } from '../../../../core/models/material.model';
 import { Proveedor, ProveedorMaterial } from '../../../../core/models/proveedor.model';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
-<<<<<<< HEAD
 import {
   TELEFONO_REACTIVO_PATTERN,
   TELEFONO_ERROR_ENVIO,
   filtrarTelefonoInput,
   sanitizarTelefono,
 } from '../../../../core/utils/telefono.util';
-=======
 import { noWhitespaceValidator } from '../../../../core/validators/no-whitespace.validator';
->>>>>>> e7bac74 (cambos)
 
 /* =========================================================================
    SIGEHU — Nuevo / Actualizar Proveedor.
@@ -77,23 +74,13 @@ export class ProveedorNewComponent implements OnInit {
 
   constructor() {
     this.form = this.fb.group({
-<<<<<<< HEAD
-      nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+      nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100), noWhitespaceValidator()]],
       giroPrincipal: ['', [Validators.maxLength(100)]],
       contactoCompras: ['', [Validators.maxLength(150)]],
       telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN)]],
       correo: ['', [Validators.email, Validators.maxLength(254)]],
-      direccion: [''],
-      notas: [''],
-=======
-      nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100), noWhitespaceValidator()]],
-      giroPrincipal: ['', [Validators.maxLength(100)]],
-      contactoCompras: ['', [Validators.maxLength(150)]],
-      telefono: ['', [Validators.pattern(/^[0-9()\s\-+]{7,15}$/)]],
-      correo: ['', [Validators.email, Validators.maxLength(254)]],
       direccion: ['', [Validators.maxLength(250)]],
       notas: ['', [Validators.maxLength(500)]],
->>>>>>> e7bac74 (cambos)
     });
 
     this.nuevoMaterialForm = this.fb.group({

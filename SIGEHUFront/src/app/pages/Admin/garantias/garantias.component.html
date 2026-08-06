@@ -61,6 +61,17 @@
       </ng-template>
     </app-data-table>
 
+    <app-confirm-modal
+      *ngIf="pendienteCierre"
+      variant="danger"
+      title="Cerrar garantía"
+      [message]="mensajeCierre"
+      confirmLabel="Cerrar garantía"
+      cancelLabel="Cancelar"
+      (confirmed)="confirmarCierre()"
+      (cancelled)="cancelarCierre()"
+    ></app-confirm-modal>
+
   </section>
 
 </div>
