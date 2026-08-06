@@ -5,7 +5,7 @@
     badgeText="Cliente"
     [loading]="loading"
     [submitting]="guardando"
-    submitLabel="Guardar Cliente"
+    [submitLabel]="esEdicion ? 'Guardar Cambios' : 'Guardar Cliente'"
     (submitRequested)="onSubmit()"
     (cancelRequested)="cancelar()"
   >
@@ -30,9 +30,9 @@
             id="telefono"
             type="tel"
             formControlName="telefono"
-            placeholder="10 dígitos">
+            placeholder="10 a 15 dígitos">
           <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-            Ingresa un teléfono válido a 10 dígitos
+            Ingresa un teléfono válido (10 a 15 dígitos)
           </span>
         </div>
 

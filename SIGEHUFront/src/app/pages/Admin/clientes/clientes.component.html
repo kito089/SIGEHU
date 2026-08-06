@@ -25,6 +25,7 @@
     <app-data-table
       [columns]="columns"
       [data]="clientesFiltrados"
+      [loading]="cargando"
       [emptyMessage]="'No se encontraron clientes con ese criterio.'"
       rowKey="id"
     >
@@ -85,3 +86,14 @@
     <div class="modal-row"><span class="k">Datos SAT</span><span class="v">{{ selectedCliente.datosSat ? 'Registrados' : 'No Provistos' }}</span></div>
   </div>
 </div>
+
+<app-confirm-modal
+  *ngIf="confirmarEliminacion"
+  [title]="'Desactivar cliente'"
+  [message]="'¿Estás seguro de desactivar a “' + (clienteAEliminar?.nombre ?? '') + '”? Esta acción no se puede deshacer.'"
+  confirmLabel="Desactivar"
+  [loading]="eliminando"
+  (confirmed)="confirmarEliminar()"
+  (cancelled)="cancelarEliminacion()"
+  variant="danger"
+></app-confirm-modal>

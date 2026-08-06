@@ -82,6 +82,12 @@ label{
   margin-bottom: 6px;
 }
 
+/* Asterisco de campos obligatorios */
+.req{
+  color: var(--danger);
+  margin-left: 2px;
+}
+
 input[type="text"],
 input[type="tel"],
 input[type="email"],
