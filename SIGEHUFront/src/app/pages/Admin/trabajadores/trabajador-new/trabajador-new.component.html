@@ -1,7 +1,7 @@
 <div class="page">
   <app-entity-form
     [title]="esEdicion ? 'Actualizar Datos del Trabajador' : 'Nuevo Trabajador'"
-    subtitle="Registra la información de contacto y oficio del personal operativo"
+    subtitle="Registra la información de contacto del personal operativo"
     badgeText="Trabajador"
     [loading]="loading"
     [submitting]="guardando"
@@ -40,17 +40,6 @@
         </div>
       </div>
 
-      <div class="field">
-        <label for="oficio">Oficio</label>
-        <select id="oficio" formControlName="oficio">
-          <option value="" disabled>Selecciona un oficio</option>
-          <option *ngFor="let o of oficios" [value]="o">{{ o }}</option>
-        </select>
-        <span class="field-error" *ngIf="form.get('oficio')?.touched && form.get('oficio')?.invalid">
-          Selecciona un oficio
-        </span>
-      </div>
-
       <div class="field-row">
         <div class="field">
           <label for="telefono">Teléfono</label>
@@ -59,10 +48,13 @@
             type="tel"
             formControlName="telefono"
             inputmode="tel"
+            minlength="15"
+            maxlength="16"
             placeholder="+52 449 000 00 00"
+            title="Mínimo 15 caracteres: solo '+', números y espacios"
             (input)="onTelefonoInput($event)">
           <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-            Teléfono inválido: solo "+", números y espacios
+            Teléfono inválido: mínimo 15 caracteres, solo "+", números y espacios
           </span>
         </div>
 

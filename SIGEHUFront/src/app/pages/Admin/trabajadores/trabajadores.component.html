@@ -28,7 +28,7 @@
       <ng-template #cell let-row let-col="column">
         @switch (col.key) {
           @case ('usuario') {
-            <span class="user-badge">@{{ row.usuario }}</span>
+            <span class="user-badge">{{ row.usuario }}</span>
           }
           @case ('nombre') {
             <div class="td-nombre">{{ row.nombre }}</div>
@@ -90,7 +90,7 @@
       <div class="info-labels-grid">
         <div class="field-label-group">
           <label>Nombre de Usuario</label>
-          <div class="field-value">@{{ selectedTrabajador.usuario }}</div>
+          <div class="field-value">{{ selectedTrabajador.usuario }}</div>
         </div>
 
         <div class="field-label-group">

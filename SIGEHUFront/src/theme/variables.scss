@@ -126,6 +126,65 @@
   --sigehu-z-modal: 200;
   --sigehu-z-toast: 300;
   --sigehu-z-tooltip: 400;
+
+  // -----------------------------------------------------------------------------
+  // ALIASES GENÉRICOS (consumidos por componentes compartidos: button, toast,
+  // confirm-modal, omnibox, input, calendar, etc.)
+  // -----------------------------------------------------------------------------
+  --bg-surface: var(--sigehu-card-bg);
+  --bg-card: var(--sigehu-card-bg);
+  --bg-deep: var(--sigehu-sidebar-bg);
+  --bg-hover: var(--sigehu-border-divider);
+  --bg-input: var(--sigehu-search-bg);
+  --bg-overlay: rgba(2, 6, 23, 0.7);
+  --border-subtle: var(--sigehu-border-divider);
+  --border-card: var(--sigehu-card-border);
+  --border-focus: var(--sigehu-accent);
+  --border-input: var(--sigehu-border-divider);
+  --error: var(--sigehu-danger);
+  --error-text: var(--sigehu-danger);
+  --success: var(--sigehu-success);
+  --success-text: var(--sigehu-success);
+  --warning: var(--sigehu-warning);
+  --warning-text: var(--sigehu-warning);
+  --info: var(--sigehu-accent);
+  --info-text: var(--sigehu-accent);
+  --accent-blue: var(--sigehu-accent);
+  --accent-blue-hover: #2563eb;
+  --accent-blue-light: var(--sigehu-accent-soft);
+  --text-primary: var(--sigehu-text-primary);
+  --text-secondary: var(--sigehu-text-secondary);
+  --text-muted: var(--sigehu-text-tertiary);
+  --font-family: var(--sigehu-font-family);
+  --font-size-xs: var(--sigehu-font-size-xs);
+  --font-size-sm: var(--sigehu-font-size-sm);
+  --font-size-base: var(--sigehu-font-size-base);
+  --font-size-lg: var(--sigehu-font-size-lg);
+  --font-size-xl: var(--sigehu-font-size-xl);
+  --font-size-2xl: var(--sigehu-font-size-2xl);
+  --radius-sm: var(--sigehu-radius-sm);
+  --radius-md: var(--sigehu-radius-md);
+  --radius-lg: var(--sigehu-radius-lg);
+  --radius-xl: var(--sigehu-radius-xl);
+  --radius-full: var(--sigehu-radius-pill);
+  --spacing-xs: var(--sigehu-space-1);
+  --spacing-sm: var(--sigehu-space-2);
+  --spacing-md: var(--sigehu-space-4);
+  --spacing-lg: var(--sigehu-space-6);
+  --spacing-xl: var(--sigehu-space-8);
+  --spacing-2xl: var(--sigehu-space-10);
+  --spacing-3xl: 48px;
+  --shadow-lg: var(--sigehu-shadow-subtle);
+  --shadow-xl: var(--sigehu-shadow-subtle);
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --focus-ring: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  --z-dropdown: var(--sigehu-z-dropdown);
+  --z-modal-backdrop: var(--sigehu-z-modal);
+  --z-toast: var(--sigehu-z-toast);
+  --skeleton-base: #1e293b;
+  --skeleton-shine: #334155;
 }
 
 // =============================================================================
