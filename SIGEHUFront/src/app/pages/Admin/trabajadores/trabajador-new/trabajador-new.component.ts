@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -31,7 +32,7 @@ import {
 @Component({
   selector: 'app-trabajador-new',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, EntityFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, EntityFormComponent],
   templateUrl: './trabajador-new.component.html',
   styleUrls: ['./trabajador-new.component.css'],
 })
@@ -56,6 +57,9 @@ export class TrabajadorNewComponent implements OnInit {
   isDragging = false;
   rutaDocumentoExistente = '';
   documentoExistenteVisible = false;
+
+  // Toggle mostrar/ocultar contraseña.
+  mostrarContrasena = false;
 
   private previewUrl: string | null = null;
   private tipoUsuarioActual: number | null = null;
@@ -97,6 +101,10 @@ export class TrabajadorNewComponent implements OnInit {
 
   get esEdicion(): boolean {
     return this.trabajadorId !== null;
+  }
+
+  toggleContrasena(): void {
+    this.mostrarContrasena = !this.mostrarContrasena;
   }
 
   formatearTamano(bytes: number): string {

@@ -98,8 +98,13 @@
               <span class="w-acc"></span>
             </div>
             @for (mat of materialesSeleccionados; track mat.idMaterial; let i = $index) {
-              <div class="mat-table-row">
-                <span class="mat-nombre">{{ mat.nombre }}</span>
+              <div class="mat-table-row" [class.mat-table-row--eliminado]="esMaterialEliminado(mat)">
+                <span class="mat-nombre">
+                  {{ mat.nombre }}
+                  <span class="mat-historic" *ngIf="esMaterialEliminado(mat)">
+                    Este material ha sido eliminado del sistema.
+                  </span>
+                </span>
                 <span class="mat-unidad">{{ mat.unidadMedida }}</span>
                 <span class="w-cant">
                   <input
@@ -108,17 +113,24 @@
                     step="any"
                     [value]="mat.cantidad ?? ''"
                     (input)="onCantidadChange(i, $event)"
-                    placeholder="0">
+                    placeholder="0"
+                    [disabled]="esMaterialEliminado(mat)">
                 </span>
                 <span class="w-notas">
                   <input
                     type="text"
                     [value]="mat.notasKit ?? ''"
                     (input)="onNotasChange(i, $event)"
-                    placeholder="Opcionales">
+                    placeholder="Opcionales"
+                    [disabled]="esMaterialEliminado(mat)">
                 </span>
                 <span class="w-acc">
-                  <button type="button" class="icon-btn icon-btn--danger" (click)="quitarMaterial(i)" aria-label="Quitar material">
+                  <button
+                    type="button"
+                    class="icon-btn icon-btn--danger"
+                    (click)="quitarMaterial(i)"
+                    aria-label="Quitar material"
+                    [disabled]="esMaterialEliminado(mat)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2z"/></svg>
                   </button>
                 </span>

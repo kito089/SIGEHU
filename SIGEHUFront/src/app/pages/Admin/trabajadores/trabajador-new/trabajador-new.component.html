@@ -43,12 +43,23 @@
       <div class="field-row">
         <div class="field">
           <label for="contra">Contraseña <span class="req" *ngIf="!esEdicion" aria-hidden="true">*</span></label>
-          <input
-            id="contra"
-            type="password"
-            formControlName="contra"
-            autocomplete="new-password"
-            placeholder="Mín. 4 caracteres">
+          <div class="password-wrap">
+            <input
+              id="contra"
+              [type]="mostrarContrasena ? 'text' : 'password'"
+              formControlName="contra"
+              autocomplete="new-password"
+              placeholder="Mín. 4 caracteres">
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="toggleContrasena()"
+              [attr.aria-label]="mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              [attr.title]="mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              [attr.aria-pressed]="mostrarContrasena">
+              <ion-icon [name]="mostrarContrasena ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+            </button>
+          </div>
           <span class="field-error" *ngIf="form.get('contra')?.touched && form.get('contra')?.invalid">
             {{ esEdicion ? 'Mínimo 4 caracteres' : 'En alta, la contraseña es obligatoria (mín. 4 caracteres)' }}
           </span>

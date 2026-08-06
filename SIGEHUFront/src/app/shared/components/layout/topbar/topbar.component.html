@@ -12,6 +12,18 @@
       class="topbar-search"
     ></app-omnibox>
 
+    <!-- Botón Nueva Obra -->
+    <button
+      class="btn btn-primary new-work-btn"
+      (click)="onNewWork()"
+      type="button"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <span>Nueva obra</span>
+    </button>
+
     <!-- Centro de Notificaciones -->
     <div class="notif-wrap" #notifWrapper>
       <button
@@ -34,17 +46,5 @@
         <app-notifications-panel></app-notifications-panel>
       }
     </div>
-
-    <!-- Botón Nueva Obra -->
-    <button
-      class="btn btn-primary new-work-btn"
-      (click)="onNewWork()"
-      type="button"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      <span>Nueva obra</span>
-    </button>
   </div>
 </header>

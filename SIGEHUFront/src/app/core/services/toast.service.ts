@@ -26,12 +26,16 @@ export class ToastService {
   info(message: string, duration = 4000): void { this.push('info', message, duration); }
 
   private push(type: ToastType, message: string, duration: number): void {
+    // El centro de notificaciones SIEMPRE registra (incluso con mute activo).
+    this.notificationService.push(type, message);
+
+    // El toast visual solo se muestra cuando no está silenciado.
+    if (this.notificationService.isMuted) return;
+
     const id = ++this.counter;
     const toast: ToastItem = { id, type, message, duration, createdAt: Date.now() };
     const current = this.toastsSubject.value;
     this.toastsSubject.next([...current, toast]);
-    // Duplica la notificación en el centro de notificaciones (persistente).
-    this.notificationService.push(type, message);
   }
 
   dismiss(id: number): void {

@@ -16,7 +16,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
      - push(type, message): agrega una notificación (icono/color según tipo).
      - remove(id): elimina una notificación individual.
      - clearAll(): elimina todas.
-     - mute/unmute: silenciar (detiene el registro de nuevas notificaciones).
+     - mute/unmute: silencia SOLO los toasts visuales (el centro sigue
+       registrando todas las notificaciones). El estado se mantiene en
+       memoria mientras la aplicación permanezca abierta.
    ========================================================================= */
 
 export type NotificationType = 'success' | 'warning' | 'error' | 'info';
@@ -29,7 +31,6 @@ export interface AppNotification {
 }
 
 const STORAGE_KEY = 'sigehu_notifications';
-const MUTE_KEY = 'sigehu_notifications_muted';
 const MAX_NOTIFICATIONS = 100;
 
 @Injectable({ providedIn: 'root' })
@@ -42,7 +43,6 @@ export class NotificationService {
   private seq = 0;
 
   constructor() {
-    this.muted = localStorage.getItem(MUTE_KEY) === '1';
     this.load();
   }
 
@@ -55,9 +55,9 @@ export class NotificationService {
     return this.notifications.getValue();
   }
 
-  /** Registra una nueva notificación. No-op si está silenciado. */
+  /** Registra una nueva notificación. El centro SIEMPRE registra (incluso silenciado). */
   push(type: NotificationType, message: string): void {
-    if (this.muted || !message) return;
+    if (!message) return;
     const item: AppNotification = {
       id: ++this.seq + Date.now(),
       type,
@@ -80,10 +80,9 @@ export class NotificationService {
     this.persist([]);
   }
 
-  /** Silencia/reanuda el registro de notificaciones. */
+  /** Silencia los toasts visuales (el centro sigue registrando). Estado en memoria. */
   setMuted(value: boolean): void {
     this.muted = value;
-    localStorage.setItem(MUTE_KEY, value ? '1' : '0');
   }
 
   toggleMuted(): boolean {

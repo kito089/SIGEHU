@@ -138,6 +138,7 @@ export class KitFormComponent implements OnInit {
         unidadMedida: m.unidadMedida ?? '',
         cantidad: m.cantidad ?? null,
         notasKit: m.notasKit ?? null,
+        activo: m.activo ?? true,
       }));
       return true;
     } catch {
@@ -205,16 +206,27 @@ export class KitFormComponent implements OnInit {
     return idMaterial != null && this.materialesSeleccionados.some(m => m.idMaterial === idMaterial);
   }
 
+  /** True cuando el material fue eliminado del sistema (soft-delete). */
+  esMaterialEliminado(mat: KitMaterial): boolean {
+    return mat.activo === false;
+  }
+
   quitarMaterial(index: number): void {
+    const mat = this.materialesSeleccionados[index];
+    if (mat && this.esMaterialEliminado(mat)) return;
     this.materialesSeleccionados.splice(index, 1);
   }
 
   onCantidadChange(index: number, event: Event): void {
+    const mat = this.materialesSeleccionados[index];
+    if (!mat || this.esMaterialEliminado(mat)) return;
     const value = (event.target as HTMLInputElement).value;
     this.materialesSeleccionados[index].cantidad = value === '' ? null : Number(value);
   }
 
   onNotasChange(index: number, event: Event): void {
+    const mat = this.materialesSeleccionados[index];
+    if (!mat || this.esMaterialEliminado(mat)) return;
     this.materialesSeleccionados[index].notasKit = (event.target as HTMLInputElement).value;
   }
 

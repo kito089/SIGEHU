@@ -13,4 +13,6 @@ export interface KitMaterial {
   unidadMedida?: string;
   cantidad: number | null;
   notasKit?: string | null;
+  /** false cuando el material fue eliminado (soft-delete) del sistema. */
+  activo?: boolean;
 }

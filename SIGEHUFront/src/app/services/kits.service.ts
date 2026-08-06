@@ -34,12 +34,18 @@ export interface KitMaterialInput {
   Notas?: string | null;
 }
 
+const parseActivo = (v: unknown): boolean => {
+  if (typeof v === 'string') return v.toLowerCase() === 'true' || v === '1';
+  return !!v;
+};
+
 const mapMaterial = (raw: Record<string, unknown>): KitMaterial => ({
   idMaterial: (raw['IDMATERIAL'] ?? raw['idMaterial']) as number,
   nombre: (raw['NOMBRE'] ?? raw['nombre'] ?? '') as string,
   unidadMedida: (raw['UNIDADMEDIDA'] ?? raw['unidadMedida'] ?? '') as string,
   cantidad: (raw['CANTIDAD'] ?? raw['cantidad'] ?? null) as number | null,
   notasKit: (raw['NOTASKIT'] ?? raw['notasKit'] ?? null) as string | null,
+  activo: raw['ACTIVO'] !== undefined ? parseActivo(raw['ACTIVO']) : raw['activo'] !== undefined ? parseActivo(raw['activo']) : true,
 });
 
 const mapKit = (raw: Record<string, unknown>, materiales?: KitMaterial[]): KitInstalacion => ({
