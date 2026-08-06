@@ -120,7 +120,9 @@ export class OmniboxComponent implements OnInit, OnDestroy {
     this.query = '';
     this.open = false;
     this.groups = [];
-    this.router.navigate([r.ruta]);
+    // Navega al listado con `?ver=<id>`; la página abre automáticamente la
+    // vista de detalle ("Ver Detalle") del registro seleccionado.
+    this.router.navigate([r.ruta], { queryParams: { ver: r.id } });
   }
 
   cerrar(): void {

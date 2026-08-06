@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { KitsService } from '../../../services/kits.service';
 import { KitInstalacion } from '../../../core/models/kit.model';
@@ -8,6 +8,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 
 /* =========================================================================
    SIGEHU — Kits de Instalación (listado).
@@ -19,18 +20,24 @@ import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/
 @Component({
   selector: 'app-kits',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './kits.component.html',
   styleUrl: './kits.component.scss',
 })
 export class KitsComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private service = inject(KitsService);
   private toast = inject(ToastService);
 
   kits: KitInstalacion[] = [];
   searchTerm = '';
   cargando = false;
+
+  // Modal de detalle ("Ver Detalle").
+  selectedKit: KitInstalacion | null = null;
+  detalleCargando = false;
+  private detallePendienteId: number | null = null;
 
   kitAEliminar: KitInstalacion | null = null;
   confirmarEliminacion = false;
@@ -45,17 +52,34 @@ export class KitsComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarKits();
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
   }
 
   async cargarKits(): Promise<void> {
     this.cargando = true;
     try {
       this.kits = await firstValueFrom(this.service.listar());
+      this.abrirDetallePendiente();
     } catch {
       this.kits = [];
     } finally {
       this.cargando = false;
     }
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const kit = this.kits.find(k => k.idKit === id);
+    if (!kit) return;
+    this.detallePendienteId = null;
+    this.verDetalle(kit);
   }
 
   get kitsFiltrados(): KitInstalacion[] {
@@ -74,6 +98,22 @@ export class KitsComponent implements OnInit {
 
   editar(kit: KitInstalacion): void {
     this.router.navigate(['/admin/kits/nuevo'], { queryParams: { id: kit.idKit } });
+  }
+
+  async verDetalle(kit: KitInstalacion): Promise<void> {
+    this.selectedKit = kit;
+    this.detalleCargando = true;
+    try {
+      this.selectedKit = await firstValueFrom(this.service.obtener(kit.idKit!));
+    } catch {
+      // Si falla el detalle completo, se muestra la fila del listado.
+    } finally {
+      this.detalleCargando = false;
+    }
+  }
+
+  cerrarDetalle(): void {
+    this.selectedKit = null;
   }
 
   eliminar(kit: KitInstalacion): void {

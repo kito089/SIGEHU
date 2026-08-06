@@ -6,6 +6,7 @@
   --field-border: var(--sigehu-border-subtle, #2a3552);
   --accent: var(--sigehu-accent, #2f8fef);
   --accent-soft: var(--sigehu-accent-soft, rgba(47,143,239,0.12));
+  --sigehu-required-color: var(--sigehu-danger, #f4574f);
 
   --text-primary: var(--sigehu-text-primary, #eef1f7);
   --text-secondary: var(--sigehu-text-secondary, #8992a8);
@@ -65,6 +66,101 @@
   margin: 0;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* ---------- Selector Persona / Empresa ---------- */
+.tipo-selector{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tipo-btn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 12px;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+
+.tipo-btn:hover{ border-color: var(--accent); }
+
+.tipo-btn.active{
+  background: var(--sigehu-active-bg, #1e3a8a);
+  border-color: var(--sigehu-active-text, #3b82f6);
+  color: var(--sigehu-active-text, #3b82f6);
+}
+
+.tipo-btn-icon{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.tipo-btn-label{ white-space: nowrap; }
+
+.tipo-block{ padding-top: 4px; }
+
+.contactos-wrap{ margin: 4px 0 18px; }
+
+.form-level-error{ margin-top: -8px; margin-bottom: 12px; }
+
+/* ---------- Combo (searchable single-select) ---------- */
+.combo-list{
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+
+.combo-item{
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.combo-item:hover{ background: var(--accent-soft); color: var(--accent); }
+
+.combo-empty{
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.field{ position: relative; }
+
+/* ---------- Indicadores de campos obligatorios (2.10) ---------- */
+.required-label::after{
+  content: "*";
+  color: var(--sigehu-required-color);
+  margin-left: 4px;
 }
 
 /* ---------- Fields ---------- */
@@ -225,9 +321,9 @@ select{ cursor: pointer; }
 
 /* ---------- Bloque de datos fiscales ---------- */
 .fiscal-block{
-  background: var(--field-bg);
-  border: 1px solid var(--field-border);
-  border-radius: 10px;
+  background: var(--sigehu-card-bg, #0f172a);
+  border: 1px solid var(--sigehu-border-divider, #334155);
+  border-radius: var(--sigehu-radius-md, 8px);
   padding: 14px 14px 2px;
   margin-top: 4px;
   margin-bottom: 16px;

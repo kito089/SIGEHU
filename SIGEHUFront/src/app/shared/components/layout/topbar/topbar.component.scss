@@ -17,6 +17,21 @@
 
 .topbar-left {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sigehu-space-3);
+  min-width: 0;
+}
+
+.topbar-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.topbar-titles {
+  display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 2px;

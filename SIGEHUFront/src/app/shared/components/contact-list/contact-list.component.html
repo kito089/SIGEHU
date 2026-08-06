@@ -1,27 +1,46 @@
 <div class="cl">
   <div class="cl__header">
-    <h4 class="cl__title">Contactos ({{ contacts.length }})</h4>
+    <h4 class="cl__title">Contactos ({{ contactos.length }})</h4>
     <app-button variant="ghost" (buttonClick)="showForm = !showForm">
       <ion-icon name="add"></ion-icon> {{ showForm ? 'Cancelar' : 'Agregar' }}
     </app-button>
   </div>
 
-  <app-contact-form *ngIf="showForm" (saved)="onSaved($event)" (cancelled)="showForm = false"></app-contact-form>
+  <app-contact-form
+    *ngIf="showForm"
+    [existentes]="contactos"
+    (saved)="onSaved($event)"
+    (cancelled)="showForm = false"></app-contact-form>
 
-  <div class="cl__list" *ngIf="contacts.length > 0; else empty">
-    <div class="cl__item" *ngFor="let c of contacts; let i = index">
+  <div class="cl__list" *ngIf="contactos.length > 0; else empty">
+    <div class="cl__item" *ngFor="let c of contactos; let i = index">
       <div class="cl__info">
         <strong>{{ c.nombreCompleto }}</strong>
         <span *ngIf="c.telefono">{{ c.telefono }}</span>
         <span *ngIf="c.correo">{{ c.correo }}</span>
       </div>
-      <button class="cl__remove" (click)="contactRemoved.emit(i)" title="Eliminar contacto">
+      <button
+        class="cl__remove"
+        (click)="solicitarEliminar(i)"
+        [attr.aria-label]="'Eliminar contacto ' + c.nombreCompleto"
+        title="Eliminar contacto">
         <ion-icon name="trash-outline"></ion-icon>
       </button>
     </div>
   </div>
 
+  <p class="cl__live" role="status" aria-live="polite">{{ contactos.length }} contactos registrados</p>
+
   <ng-template #empty>
     <p class="cl__empty">No hay contactos registrados</p>
   </ng-template>
+
+  <app-confirm-modal
+    *ngIf="indiceEliminar !== null"
+    variant="danger"
+    title="Eliminar contacto"
+    message="Esta acción es irreversible. ¿Deseas eliminar este contacto?"
+    confirmLabel="Eliminar"
+    (confirmed)="confirmarEliminar()"
+    (cancelled)="cancelarEliminar()"></app-confirm-modal>
 </div>

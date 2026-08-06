@@ -1,0 +1,234 @@
+/* ============================================================
+   SIGEHU — Modal de Detalle (patrón "Ver Detalle" estándar)
+   ============================================================ */
+
+/* Backdrop */
+.detail-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-overlay);
+  backdrop-filter: blur(4px);
+  padding: var(--spacing-lg);
+  animation: detailModalFade var(--transition-base) ease;
+}
+
+/* Panel */
+.detail-modal__panel {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  animation: detailModalScale var(--transition-base) ease;
+}
+
+/* Header */
+.detail-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.detail-modal__heading { min-width: 0; }
+
+.detail-modal__tag {
+  color: var(--accent-blue);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-modal__title {
+  margin: 4px 0 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.detail-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.detail-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.detail-modal__edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.detail-modal__edit svg { color: var(--accent-blue); flex-shrink: 0; }
+
+.detail-modal__edit:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--accent-blue);
+}
+
+.detail-modal__close:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+/* Body */
+.detail-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Carga */
+.detail-modal__loading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-modal__skeleton {
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  animation: detailModalShimmer 1.4s ease infinite;
+}
+
+.detail-modal__skeleton--short { width: 60%; }
+
+/* ---- Contenido proyectado: campos de detalle estándar ---- */
+.detail-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.detail-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detail-modal__field--span-2 { grid-column: span 2; }
+
+.detail-modal__label {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.detail-modal__value {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  word-break: break-word;
+}
+
+/* Sección (bloque con separación vertical) */
+.detail-modal__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--spacing-sm);
+}
+
+/* Lista (obras, materiales, contactos…) */
+.detail-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.detail-modal__list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+}
+
+.detail-modal__list-item svg { color: var(--accent-blue); flex-shrink: 0; }
+
+.detail-modal__list-meta {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.detail-modal__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+}
+
+/* Animaciones */
+@keyframes detailModalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes detailModalScale {
+  from { opacity: 0; transform: scale(0.96) translateY(-8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes detailModalShimmer {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}
+
+/* Responsive */
+@media (max-width: 560px) {
+  .detail-modal__grid { grid-template-columns: 1fr; }
+  .detail-modal__field--span-2 { grid-column: auto; }
+}

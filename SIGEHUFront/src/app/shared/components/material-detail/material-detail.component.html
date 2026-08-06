@@ -1,0 +1,32 @@
+<div class="material-detail">
+  <div class="md-header">
+    <div>
+      <div class="md-tag">Material</div>
+      <h2>{{ material?.nombre || '-' }}</h2>
+    </div>
+    <button class="md-close" (click)="cerrar.emit()" aria-label="Cerrar detalle de material" title="Cerrar">✕</button>
+  </div>
+
+  <div class="md-grid">
+    <div class="md-row">
+      <span class="k">Descripción</span>
+      <span class="v">{{ material?.descripcion || '-' }}</span>
+    </div>
+    <div class="md-row">
+      <span class="k">Unidad</span>
+      <span class="v">{{ material?.unidadMedida || '-' }}</span>
+    </div>
+    <div class="md-row">
+      <span class="k">Precio referencia</span>
+      <span class="v">{{ precioMostrable }}</span>
+    </div>
+    <div class="md-row">
+      <span class="k">Proveedor</span>
+      <span class="v">{{ material?.proveedor || '-' }}</span>
+    </div>
+    <div class="md-row">
+      <span class="k">Stock</span>
+      <span class="v">{{ material?.stock ?? '-' }}</span>
+    </div>
+  </div>
+</div>

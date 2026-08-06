@@ -8,3 +8,4 @@
 .cl__info span { font-size: var(--font-size-xs); color: var(--text-secondary); }
 .cl__remove { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: var(--radius-sm); &:hover { color: var(--error); } }
 .cl__empty { color: var(--text-muted); font-size: var(--font-size-sm); text-align: center; padding: var(--spacing-lg) 0; }
+.cl__live { font-size: var(--font-size-xs); color: var(--text-muted); margin: var(--spacing-md) 0 0; }

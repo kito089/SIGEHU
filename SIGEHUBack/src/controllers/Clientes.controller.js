@@ -69,6 +69,7 @@ const create = async (req, res) => {
             CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null,
             Observaciones: Observaciones ?? null,
             contactos: contactos ?? null,
+            tipo: req.body.tipo ?? null,
             idTrabajadorCtx: req.user?.idTrabajador
         });
 
@@ -98,6 +99,8 @@ const update = async (req, res) => {
                 Correo: Correo ?? null, idRegimenFiscal: idRegimenFiscal ?? null,
                 CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null,
                 Observaciones: Observaciones ?? null,
+                contactos: req.body.contactos ?? null,
+                tipo: req.body.tipo ?? null,
                 idTrabajadorCtx: req.user?.idTrabajador
             }
         );

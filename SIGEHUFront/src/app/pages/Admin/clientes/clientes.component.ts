@@ -1,12 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 
 /* =========================================================================
    SIGEHU — Gestión de Clientes (listado)
@@ -15,28 +16,30 @@ import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/
    con modal de confirmación reutilizable).
    ========================================================================= */
 
-type FiltroClientes = 'todos' | 'con_obras' | 'con_sat' | 'sin_sat';
+type FiltroClientes = 'todos' | 'persona' | 'empresa' | 'con_obras' | 'con_sat' | 'sin_sat';
 
 interface Cliente {
   id: number;
   nombre: string;
+  tipo: 'persona' | 'empresa';
   telefono: string;
+  correo: string;
   rfc: string;
   obrasActivas: number;
   datosSat: boolean;
   direccion: string;
-  correo: string;
 }
 
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
 })
 export class ClientesComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private api = inject(ApiService);
   private toast = inject(ToastService);
 
@@ -45,20 +48,26 @@ export class ClientesComponent implements OnInit {
   filtro: FiltroClientes = 'todos';
   selectedCliente: Cliente | null = null;
   cargando = false;
+  private detallePendienteId: number | null = null;
 
   clienteAEliminar: Cliente | null = null;
   confirmarEliminacion = false;
   eliminando = false;
 
   columns: DataTableColumn[] = [
+    { key: 'tipo', label: 'Tipo' },
     { key: 'nombre', label: 'Nombre / Razón social' },
     { key: 'telefono', label: 'Teléfono' },
+    { key: 'correo', label: 'Correo' },
+    { key: 'rfc', label: 'RFC' },
     { key: 'obrasActivas', label: 'Obras activas' },
     { key: 'datosSat', label: 'Datos SAT' },
   ];
 
   filterOptions = [
     { value: 'todos', label: 'Todos los clientes' },
+    { value: 'persona', label: 'Solo Personas' },
+    { value: 'empresa', label: 'Solo Empresas' },
     { value: 'con_obras', label: 'Con obras activas' },
     { value: 'con_sat', label: 'Con datos SAT' },
     { value: 'sin_sat', label: 'Sin datos SAT' },
@@ -66,12 +75,20 @@ export class ClientesComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarClientes();
+
+    // Apertura directa del detalle desde el buscador global (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
   }
 
   async cargarClientes(): Promise<void> {
     this.cargando = true;
     try {
       this.clientes = await this.fetchClientes();
+      this.abrirDetallePendiente();
     } catch {
       this.clientes = [];
     } finally {
@@ -79,16 +96,28 @@ export class ClientesComponent implements OnInit {
     }
   }
 
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const cliente = this.clientes.find(c => c.id === id);
+    if (!cliente) return;
+    this.detallePendienteId = null;
+    this.verCliente(cliente);
+  }
+
   private mapCliente(raw: any): Cliente {
+    const tipoValor = raw.TIPOCLIENTE ?? raw.tipoCliente ?? raw.TipoCliente ?? '';
+    const tipo: 'persona' | 'empresa' = /persona|fisic/i.test(String(tipoValor)) ? 'persona' : 'empresa';
     return {
       id: raw.IDCLIENTE ?? raw.idCliente,
       nombre: raw.NOMBRE ?? raw.Nombre ?? raw.nombre ?? '',
+      tipo,
       telefono: raw.TELEFONO ?? raw.Telefono ?? raw.telefono ?? '',
+      correo: raw.CORREO ?? raw.Correo ?? raw.correo ?? '',
       rfc: raw.RFC ?? raw.rfc ?? '',
       obrasActivas: Number(raw.TOTALOBRASACTIVAS ?? raw.TotalObrasActivas ?? raw.totalObrasActivas ?? 0),
       datosSat: Boolean(raw.TIENEDATOSFISCALES ?? raw.TieneDatosFiscales ?? raw.tieneDatosFiscales ?? false),
       direccion: raw.DIRECCION ?? raw.Direccion ?? raw.direccion ?? '',
-      correo: raw.CORREO ?? raw.Correo ?? raw.correo ?? '',
     };
   }
 
@@ -104,10 +133,13 @@ export class ClientesComponent implements OnInit {
       const matchesSearch = !term
         || c.nombre.toLowerCase().includes(term)
         || c.telefono.includes(term)
+        || c.correo.toLowerCase().includes(term)
         || c.rfc.toLowerCase().includes(term);
 
       const matchesFiltro =
         this.filtro === 'todos' ? true :
+        this.filtro === 'persona' ? c.tipo === 'persona' :
+        this.filtro === 'empresa' ? c.tipo === 'empresa' :
         this.filtro === 'con_obras' ? c.obrasActivas > 0 :
         this.filtro === 'con_sat' ? c.datosSat :
         !c.datosSat;

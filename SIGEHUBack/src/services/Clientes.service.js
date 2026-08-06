@@ -4,6 +4,21 @@ import audit from "./Auditoria.service.js";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RFC_REGEX = /^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/;
 const PHONE_REGEX = /^\d{10,15}$/;
+const CP_REGEX = /^\d{5}$/;
+const TIPOS_VALIDOS = ['persona', 'empresa'];
+
+const validateTipo = (tipo) => {
+    if (tipo === null || tipo === undefined) return true;
+    return TIPOS_VALIDOS.includes(String(tipo).toLowerCase());
+};
+
+const validateCP = (cp) => {
+    if (!cp) return true;
+    return CP_REGEX.test(String(cp));
+};
+
+// DEPRECATED: Phase 2 - removed from frontend
+// (requiereFactura / direccionInstalacion ya no forman parte del modelo Clientes)
 
 const validateRFC = (rfc) => {
     if (!rfc) return true;
@@ -108,9 +123,19 @@ const getClienteById = async (id) => {
         [id]
     )
 
+    const contactos = await db.query(
+        `SELECT cc.idContactoCliente, cc.NombreCompleto, cc.Telefono, cc.Correo,
+                cc.Observaciones
+         FROM ContactosClientes cc
+         WHERE cc.Clientes_idCliente = ?
+         ORDER BY cc.idContactoCliente`,
+        [id]
+    );
+
     return {
         ...Clientes[0],
-        Obras: Obras
+        Obras: Obras,
+        contactos: contactos
     };
 };
 
@@ -133,7 +158,7 @@ const getObrasByCliente = async (idCliente) => {
 // ─── INSERT ───────────────────────────────────────────────────────────────────
 const createCliente = async ({
     Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal,
-    idUsoCFDI, Observaciones, contactos, Correo, Telefono, idTrabajadorCtx = 1
+    idUsoCFDI, Observaciones, contactos, Correo, Telefono, tipo = 'persona', idTrabajadorCtx = 1
 }) => {
     if (RFC && !validateRFC(RFC)) {
         throw new Error("Formato de RFC invalido (ej. AAAA123456XXX)");
@@ -143,6 +168,27 @@ const createCliente = async ({
     }
     if (Correo && !validateEmail(Correo)) {
         throw new Error("Formato de correo invalido");
+    }
+    if (CodigoPostal && !validateCP(CodigoPostal)) {
+        throw new Error("Codigo postal invalido (5 digitos)");
+    }
+    if (!validateTipo(tipo)) {
+        throw new Error("Tipo de cliente invalido (debe ser 'persona' o 'empresa')");
+    }
+
+    const tipoNormalizado = tipo ? String(tipo).toLowerCase() : 'persona';
+
+    // Regla 2.4/2.8: una Persona requiere al menos telefono o correo.
+    if (tipoNormalizado === 'persona') {
+        if (!Telefono && !Correo) {
+            throw new Error("Para una persona se requiere al menos un telefono o un correo");
+        }
+    }
+
+    // Regla 2.8: una Empresa requiere al menos un contacto.
+    const contactosLista = Array.isArray(contactos) ? contactos : [];
+    if (tipoNormalizado === 'empresa' && contactosLista.length === 0) {
+        throw new Error("Para una empresa se requiere al menos un contacto");
     }
 
     const db = await getConnection();
@@ -175,8 +221,8 @@ const createCliente = async ({
         const nuevoId = Array.isArray(rows) ? rows[0] : rows?.IDCLIENTE;
 
         const contactosFinales =
-            contactos && contactos.length > 0
-                ? contactos
+            contactosLista.length > 0
+                ? contactosLista
                 : (Telefono || Correo)
                     ? [{ NombreCompleto: Nombre, Telefono, Correo, Observaciones: null }]
                     : [];
@@ -211,7 +257,7 @@ const createCliente = async ({
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
 const updateCliente = async (id, {
     Nombre, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
-    idUsoCFDI, Observaciones, idTrabajadorCtx = 1
+    idUsoCFDI, Observaciones, contactos, tipo, idTrabajadorCtx = 1
 }) => {
     if (RFC && !validateRFC(RFC)) {
         throw new Error("Formato de RFC invalido (12-13 caracteres, ej. AAAA123456XXX)");
@@ -221,6 +267,18 @@ const updateCliente = async (id, {
     }
     if (Correo && !validateEmail(Correo)) {
         throw new Error("Formato de correo invalido");
+    }
+    if (CodigoPostal && !validateCP(CodigoPostal)) {
+        throw new Error("Codigo postal invalido (5 digitos)");
+    }
+    if (!validateTipo(tipo)) {
+        throw new Error("Tipo de cliente invalido (debe ser 'persona' o 'empresa')");
+    }
+
+    const tipoNormalizado = tipo ? String(tipo).toLowerCase() : null;
+    const contactosLista = Array.isArray(contactos) ? contactos : null;
+    if (tipoNormalizado === 'empresa' && contactosLista && contactosLista.length === 0) {
+        throw new Error("Para una empresa se requiere al menos un contacto");
     }
 
     const db = await getConnection();
@@ -269,7 +327,29 @@ const updateCliente = async (id, {
             ]
         );
 
-        if (Telefono || Correo) {
+        // MERGE de contactos: si el cliente envia la lista completa, se
+        // reemplaza (se eliminan los no incluidos y se insertan/actualizan).
+        if (contactosLista) {
+            await txUpdate.execute(
+                "DELETE FROM ContactosClientes WHERE Clientes_idCliente = ?",
+                [id]
+            );
+            for (const c of contactosLista) {
+                if (c.Telefono && !validatePhone(c.Telefono)) {
+                    throw new Error(`Telefono invalido para contacto "${c.NombreCompleto}"`);
+                }
+                if (c.Correo && !validateEmail(c.Correo)) {
+                    throw new Error(`Correo invalido para contacto "${c.NombreCompleto}"`);
+                }
+                await txUpdate.execute(
+                    `INSERT INTO ContactosClientes
+                     (Clientes_idCliente, NombreCompleto, Telefono, Correo, Observaciones)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [id, c.NombreCompleto, c.Telefono ?? null, c.Correo ?? null,
+                     c.Observaciones != null ? Buffer.from(String(c.Observaciones), "utf8") : null]
+                );
+            }
+        } else if (Telefono || Correo) {
             const principal = await txUpdate.query(
                 `SELECT FIRST 1 IdContactoCliente FROM ContactosClientes
                  WHERE Clientes_idCliente = ? ORDER BY IdContactoCliente`,

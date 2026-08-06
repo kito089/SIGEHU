@@ -1,4 +1,13 @@
-export type { Contacto, Cliente } from './cliente.model';
+export type {
+  Contacto,
+  Cliente,
+  ClienteTipo,
+  DatosFiscales,
+  DatosFiscalesEmpresa,
+  ClientePersona,
+  ClienteEmpresa,
+  ClienteFormData
+} from './cliente.model';
 export type { Obra, FotoObra, NotaObra, ObraMaterial, KanbanColumn } from './obra.model';
 export type { Trabajador, TrabajadorObra } from './trabajador.model';
 export type { User, AuthResponse, LoginCredentials } from './user.model';

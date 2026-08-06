@@ -1,9 +1,12 @@
 <header class="topbar" role="banner">
   <div class="topbar-left">
-    <h1 class="page-title">{{ pageTitle() }}</h1>
-    @if (pageSubtitle()) {
-      <p class="page-subtitle">{{ pageSubtitle() }}</p>
-    }
+    <img src="assets/logo/logo-placeholder.svg" alt="SIGEHU" class="topbar-logo" />
+    <div class="topbar-titles">
+      <h1 class="page-title">{{ pageTitle() }}</h1>
+      @if (pageSubtitle()) {
+        <p class="page-subtitle">{{ pageSubtitle() }}</p>
+      }
+    </div>
   </div>
 
   <div class="topbar-right">

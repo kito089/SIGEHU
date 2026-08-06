@@ -1,11 +1,11 @@
-<div class="page">
+﻿<div class="page">
 
   <section class="panel-frame">
 
     <div class="panel-header">
       <div>
-        <h1>Gestión de Obras / Proyectos</h1>
-        <p>Múltiples obras independientes por cliente, con ciclo de vida y doble validación de estado</p>
+        <h1>GestiÃ³n de Obras / Proyectos</h1>
+        <p>MÃºltiples obras independientes por cliente, con ciclo de vida y doble validaciÃ³n de estado</p>
       </div>
       <button class="btn-primary" (click)="nuevoObra()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
@@ -15,7 +15,7 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por obra, cliente o dirección…'"
+      [searchPlaceholder]="'Buscar por obra, cliente o direcciÃ³nâ€¦'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
@@ -29,10 +29,10 @@
         @switch (col.key) {
           @case ('nombre') {
             <button class="td-nombre" (click)="verObra(row)">{{ row.nombre }}</button>
-            <div class="td-direccion">{{ row.direccion || 'Sin dirección' }}</div>
+            <div class="td-direccion">{{ row.direccion || 'Sin direcciÃ³n' }}</div>
           }
           @case ('cliente') {
-            <span class="td-muted">{{ row.nombreCliente || '—' }}</span>
+            <span class="td-muted">{{ row.nombreCliente || 'â€”' }}</span>
           }
           @case ('estado') {
             <span class="estado-pill" [style.background-color]="estadoColor(row.estadoObra)">
@@ -48,10 +48,10 @@
 
       <ng-template #actions let-row>
         <div class="acciones-group">
-          <button class="icon-btn" (click)="abrirCambioEstado(row)" aria-label="Cambiar estado" title="Transición de estado">
+          <button class="icon-btn" (click)="abrirCambioEstado(row)" aria-label="Cambiar estado" title="TransiciÃ³n de estado">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
           </button>
-          <button class="icon-btn" (click)="verObra(row)" aria-label="Ver obra" title="Ver detalle">
+          <button class="icon-btn" (click)="verObra(row)" aria-label="Ver obra" title="Ver Detalle">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
@@ -62,7 +62,44 @@
 
 </div>
 
-<!-- Modal de confirmación para transición de estado (RF-08 / RNF-07) -->
+<!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+<app-detail-modal
+  *ngIf="selectedObra"
+  tag="Ficha de Obra"
+  [title]="selectedObra.nombre"
+  [editable]="true"
+  (editar)="editarObra(selectedObra)"
+  (cerrar)="cerrarDetalle()"
+>
+  <div class="detail-modal__grid">
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Cliente</span>
+      <span class="detail-modal__value">{{ selectedObra.nombreCliente || 'â€”' }}</span>
+    </div>
+
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Estado</span>
+      <span class="detail-modal__value">
+        <span class="estado-pill" [style.background-color]="estadoColor(selectedObra.estadoObra ?? '')">
+          <span class="estado-dot" [style.background-color]="estadoColor(selectedObra.estadoObra ?? '')"></span>
+          {{ selectedObra.estadoObra || 'â€”' }}
+        </span>
+      </span>
+    </div>
+
+    <div class="detail-modal__field detail-modal__field--span-2">
+      <span class="detail-modal__label">DirecciÃ³n</span>
+      <span class="detail-modal__value">{{ selectedObra.direccion || 'Sin direcciÃ³n' }}</span>
+    </div>
+
+    <div class="detail-modal__field detail-modal__field--span-2">
+      <span class="detail-modal__label">Ãšltima actualizaciÃ³n</span>
+      <span class="detail-modal__value">{{ selectedObra.fechaUltimaActualizacion || 'â€”' }}</span>
+    </div>
+  </div>
+</app-detail-modal>
+
+<!-- Modal de confirmaciÃ³n para transiciÃ³n de estado (RF-08 / RNF-07) -->
 <app-confirm-modal
   *ngIf="confirmarCambio && obraEstado"
   variant="default"
