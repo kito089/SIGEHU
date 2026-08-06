@@ -13,7 +13,7 @@
 
       <div class="field-row">
         <div class="field">
-          <label for="usuario">Usuario</label>
+          <label for="usuario">Usuario <span class="req" aria-hidden="true">*</span></label>
           <input
             id="usuario"
             type="text"
@@ -28,7 +28,7 @@
         </div>
 
         <div class="field">
-          <label for="nombre">Nombre Completo</label>
+          <label for="nombre">Nombre Completo <span class="req" aria-hidden="true">*</span></label>
           <input
             id="nombre"
             type="text"
@@ -40,21 +40,31 @@
         </div>
       </div>
 
+      <div class="field">
+        <label for="oficio">Oficio / Especialidad <span class="req" aria-hidden="true">*</span></label>
+        <select id="oficio" formControlName="oficio">
+          <option value="" disabled>Selecciona el oficio del trabajador</option>
+          <option *ngFor="let oficio of oficios" [value]="oficio">{{ oficio }}</option>
+        </select>
+        <span class="field-error" *ngIf="form.get('oficio')?.touched && form.get('oficio')?.invalid">
+          Selecciona el oficio del trabajador
+        </span>
+      </div>
+
       <div class="field-row">
         <div class="field">
-          <label for="telefono">Teléfono</label>
+          <label for="telefono">Teléfono <span class="req" aria-hidden="true">*</span></label>
           <input
             id="telefono"
             type="tel"
             formControlName="telefono"
             inputmode="tel"
-            minlength="15"
-            maxlength="16"
-            placeholder="+52 449 000 00 00"
-            title="Mínimo 15 caracteres: solo '+', números y espacios"
+            maxlength="15"
+            placeholder="+52 449 0000000"
+            title="Máximo 15 caracteres: solo '+', números y espacios"
             (input)="onTelefonoInput($event)">
           <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-            Teléfono inválido: mínimo 15 caracteres, solo "+", números y espacios
+            Teléfono inválido: usa "+", números y espacios (máx. 15 caracteres)
           </span>
         </div>
 
