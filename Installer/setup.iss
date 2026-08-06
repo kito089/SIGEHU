@@ -12,6 +12,8 @@ DefaultGroupName=SIGEHU
 OutputDir=Output
 OutputBaseFilename=SIGEHU_Setup
 
+SetupIconFile=..\SIGEHUFront\build\icon.ico
+
 Compression=lzma
 SolidCompression=yes
 

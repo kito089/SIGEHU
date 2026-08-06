@@ -1,4 +1,5 @@
 import { getConnection } from "../config/db.js";
+import audit from "./Auditoria.service.js";
 
 // Firebird 5 physical DB uses TIMESTAMP WITH TIME ZONE for FechaCompra /
 // FechaCreacion. El driver node-firebird-driver espera un objeto ZonedDate
@@ -158,6 +159,14 @@ const updateCompra = async ({
             return null;
         }
 
+        // Lee el estado previo de la cabecera para comparar campos cambiados.
+        const anteriorRows = await tx.query(
+            `SELECT Trabajadores_idTrabajador, FechaCompra, Notas
+             FROM Compras WHERE idCompra = ?`,
+            [id]
+        );
+        const anterior = anteriorRows?.[0] ?? {};
+
         await tx.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             [String(idTrabajadorCtx)]
@@ -172,25 +181,173 @@ const updateCompra = async ({
             [idTrabajador ?? idTrabajadorCtx, toZonedDate(FechaCompra), Notas != null ? Buffer.from(String(Notas), "utf8") : null, id]
         );
 
-        // Reemplaza el conjunto de detalles (patrón idéntico a Proveedores/Kits).
+        // Recupera el idAuditoria del UPDATE de cabecera ANTES de tocar detalles,
+        // porque los triggers de DetallesCompras reutilizan LAST_AUDIT_ID.
+        const auditRows = await tx.query(`
+            SELECT RDB$GET_CONTEXT('USER_SESSION', 'LAST_AUDIT_ID') AS ID
+            FROM RDB$DATABASE
+        `);
+const idAudit = auditRows?.[0]?.ID ?? null;
+
+        // Sincronización diferencial de detalles: solo se tocan las filas que
+        // realmente cambiaron. Se desactiva la auditoría independiente de la
+        // tabla puente (DetallesCompras) mientras se sincronizan, porque esos
+        // cambios se registrarán como AuditoriasDetalles de la propia compra.
         await tx.execute(
-            "DELETE FROM DetallesCompras WHERE Compras_idCompra = ?",
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'SUPRIMIR_AUDITORIA_PUENTE', '1') FROM RDB$DATABASE"
+        );
+
+        const existentes = await tx.query(
+            `SELECT idDetalleCompra,
+                    Proveedores_has_Materiales_Proveedores_idProveedor AS IdProveedor,
+                    Proveedores_has_Materiales_Materiales_idMaterial AS IdMaterial,
+                    Cantidad, Medida
+             FROM DetallesCompras WHERE Compras_idCompra = ?`,
             [id]
         );
 
-        if (detalles && detalles.length > 0) {
-            for (const d of detalles) {
+        const porClave = new Map();
+        for (const e of existentes ?? []) {
+            const clave = `${e.IDPROVEEDOR ?? e.IdProveedor}|${e.IDMATERIAL ?? e.IdMaterial}`;
+            porClave.set(clave, e);
+        }
+
+        const consumidas = new Set();
+        const nuevos = [];
+        const cambios = [];
+        const eliminados = [];
+        for (const d of detalles ?? []) {
+            const clave = `${d.idProveedor}|${d.idMaterial}`;
+            const existente = porClave.get(clave);
+            if (!existente) {
+                nuevos.push(d);
+                continue;
+            }
+            consumidas.add(clave);
+
+            const mismaCantidad = Number(existente.CANTIDAD ?? existente.Cantidad ?? 0) === Number(d.Cantidad ?? 0);
+            const mismaMedida = String(existente.MEDIDA ?? existente.Medida ?? '') === String(d.Medida ?? '');
+            if (!mismaCantidad || !mismaMedida) {
+                // Actualiza solo la cantidad/medida cambiada.
+                const idDetalle = existente.IDDETALLECOMPRA ?? existente.idDetalleCompra;
                 await tx.execute(
-                    `INSERT INTO DetallesCompras
-                     (Compras_idCompra, Proveedores_has_Materiales_Proveedores_idProveedor,
-                      Cantidad, Medida, Proveedores_has_Materiales_Materiales_idMaterial)
-                     VALUES (?, ?, ?, ?, ?)`,
-                    [id, d.idProveedor, d.Cantidad, d.Medida ?? null, d.idMaterial]
+                    `UPDATE DetallesCompras
+                     SET Cantidad = ?, Medida = ?
+                     WHERE idDetalleCompra = ?`,
+                    [d.Cantidad, d.Medida ?? null, idDetalle]
                 );
+                cambios.push({
+                    idProveedor: d.idProveedor,
+                    idMaterial: d.idMaterial,
+                    cantidadAnterior: existente.CANTIDAD ?? existente.Cantidad ?? 0,
+                    cantidadNueva: d.Cantidad ?? 0,
+                    medidaAnterior: existente.MEDIDA ?? existente.Medida ?? '',
+                    medidaNueva: d.Medida ?? ''
+                });
             }
         }
 
+        for (const e of existentes ?? []) {
+            const clave = `${e.IDPROVEEDOR ?? e.IdProveedor}|${e.IDMATERIAL ?? e.IdMaterial}`;
+            if (!consumidas.has(clave)) {
+                const idDetalle = e.IDDETALLECOMPRA ?? e.idDetalleCompra;
+                await tx.execute(
+                    "DELETE FROM DetallesCompras WHERE idDetalleCompra = ?",
+                    [idDetalle]
+                );
+                eliminados.push({
+                    idProveedor: e.IDPROVEEDOR ?? e.IdProveedor,
+                    idMaterial: e.IDMATERIAL ?? e.IdMaterial,
+                    cantidad: e.CANTIDAD ?? e.Cantidad ?? 0,
+                    medida: e.MEDIDA ?? e.Medida ?? ''
+                });
+            }
+        }
+
+        for (const d of nuevos) {
+            await tx.execute(
+                `INSERT INTO DetallesCompras
+                 (Compras_idCompra, Proveedores_has_Materiales_Proveedores_idProveedor,
+                  Cantidad, Medida, Proveedores_has_Materiales_Materiales_idMaterial)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [id, d.idProveedor, d.Cantidad, d.Medida ?? null, d.idMaterial]
+            );
+        }
+
+        // Reactiva la auditoría independiente de DetallesCompras para el resto.
+        await tx.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'SUPRIMIR_AUDITORIA_PUENTE', '') FROM RDB$DATABASE"
+        );
+
         await tx.commit();
+
+        // Registra el detalle de los campos de cabecera que cambiaron.
+        if (idAudit) {
+            const fechaAnterior = normalizeDate(anterior.FECHACOMPRA ?? anterior.FechaCompra ?? null);
+            const fechaNueva = normalizeDate(FechaCompra ?? null);
+            const notasAnterior = anterior.NOTAS != null
+                ? (Buffer.isBuffer(anterior.NOTAS) ? anterior.NOTAS.toString("utf8") : String(anterior.NOTAS))
+                : '';
+            const notasNueva = Notas != null ? String(Notas) : '';
+
+            const comparacion = [
+                { campo: 'Trabajadores_idTrabajador', anterior: String(anterior.TRABAJADORES_IDTRABAJADOR ?? anterior.Trabajadores_idTrabajador ?? ''), nuevo: String(idTrabajador ?? idTrabajadorCtx ?? '') },
+                { campo: 'FechaCompra', anterior: fechaAnterior ?? '', nuevo: fechaNueva ?? '' },
+                { campo: 'Notas', anterior: notasAnterior, nuevo: notasNueva }
+            ];
+
+            for (const { campo, anterior: ant, nuevo } of comparacion) {
+                if (String(ant ?? '') !== String(nuevo ?? '')) {
+                    await audit.createAuditoriaDetalle({
+                        pIdAuditoria: idAudit,
+                        pCampo: campo,
+                        pValorAnterior: String(ant ?? ''),
+                        pValorNuevo: String(nuevo ?? '')
+                    });
+                }
+            }
+        }
+
+        // Registra como detalles el agregado/eliminación/cambio de materiales,
+        // que ya no generan auditorías independientes por la tabla puente.
+        if (idAudit) {
+            for (const d of nuevos ?? []) {
+                await audit.createAuditoriaDetalle({
+                    pIdAuditoria: idAudit,
+                    pCampo: 'Material agregado',
+                    pValorAnterior: '',
+                    pValorNuevo: `Proveedor ${d.idProveedor} | Material ${d.idMaterial} | Cantidad ${String(d.Cantidad ?? '')} | Medida ${String(d.Medida ?? '')}`
+                });
+            }
+
+            for (const c of cambios ?? []) {
+                if (String(c.cantidadAnterior ?? '') !== String(c.cantidadNueva ?? '')) {
+                    await audit.createAuditoriaDetalle({
+                        pIdAuditoria: idAudit,
+                        pCampo: 'Cantidad',
+                        pValorAnterior: `Material ${c.idMaterial} (${c.cantidadAnterior})`,
+                        pValorNuevo: `Material ${c.idMaterial} (${c.cantidadNueva})`
+                    });
+                }
+                if (String(c.medidaAnterior ?? '') !== String(c.medidaNueva ?? '')) {
+                    await audit.createAuditoriaDetalle({
+                        pIdAuditoria: idAudit,
+                        pCampo: 'Medida',
+                        pValorAnterior: `Material ${c.idMaterial} (${c.medidaAnterior})`,
+                        pValorNuevo: `Material ${c.idMaterial} (${c.medidaNueva})`
+                    });
+                }
+            }
+
+            for (const e of eliminados ?? []) {
+                await audit.createAuditoriaDetalle({
+                    pIdAuditoria: idAudit,
+                    pCampo: 'Material eliminado',
+                    pValorAnterior: `Proveedor ${e.idProveedor} | Material ${e.idMaterial} | Cantidad ${String(e.cantidad ?? '')}${e.medida ? ' | ' + e.medida : ''}`,
+                    pValorNuevo: ''
+                });
+            }
+        }
     } catch (err) {
         await tx.rollback();
         throw err;

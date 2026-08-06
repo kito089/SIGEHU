@@ -30,29 +30,89 @@
     }
   </section>
 
+  <!-- Actividad reciente (RF-33) — fuente: Auditorias / AuditoriasDetalles -->
   <section class="panel-frame">
     <div class="panel-header">
       <div>
         <h1>Actividad reciente</h1>
-        <p>Últimos eventos de obras, instalaciones y clientes</p>
+        <p>Últimos eventos capturados por auditoría (máximo 20 registros)</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-ghost" (click)="irAlHistorial()">
+          Ver historial completo
+        </button>
       </div>
     </div>
 
-    <div class="act-list">
-      @for (act of actividades; track act.id) {
-        <div class="act-item">
-          <span class="act-item__dot" [class]="estadoClass(act.estado)"></span>
-          <div class="act-item__body">
-            <div class="act-item__top">
-              <span class="act-item__tipo">{{ tipoLabel(act.tipo) }}</span>
-              <span class="act-item__fecha">{{ act.fecha }}</span>
+    @if (cargandoActividad) {
+      <app-skeleton type="table" [lines]="5"></app-skeleton>
+    } @else if (actividad.length === 0) {
+      <app-empty-state
+        title="Sin actividad reciente"
+        subtitle="Aún no existen eventos de auditoría registrados"
+        icon="file-tray-outline"
+      ></app-empty-state>
+    } @else {
+      <div class="act-list">
+        @for (act of actividad; track act.id) {
+          <div class="act-item">
+            <span class="act-item__dot" [class]="'act-item__dot--' + dotColor(act.accion)"></span>
+            <div class="act-item__body">
+              <div class="act-item__top">
+                <span class="act-item__tipo">{{ etiquetaAccion(act.accion) }}</span>
+                <span class="act-item__fecha">{{ fechaHora(act.fecha) }}</span>
+              </div>
+              <p class="act-item__texto">{{ act.descripcion }}</p>
+              <p class="act-item__detalle">{{ act.tabla }} · {{ act.usuario }}</p>
             </div>
-            <p class="act-item__texto">{{ act.texto }}</p>
-            <p class="act-item__detalle">{{ act.detalle }}</p>
+            @if (act.accion === 'UPDATE') {
+              <button class="btn-ghost act-item__btn" (click)="verDetalles(act)">Ver detalles</button>
+            }
           </div>
-        </div>
-      }
-    </div>
+        }
+      </div>
+    }
   </section>
+
+  <!-- Modal de detalles de una actualización (AuditoriasDetalles) -->
+  @if (detalleRegistro) {
+    <app-detail-modal
+      tag="Detalles de la actualización"
+      [title]="detalleRegistro.descripcion"
+      [loading]="detalleCargando"
+      (cerrar)="cerrarDetalles()"
+    >
+      <div class="detail-modal__section">
+        <span class="detail-modal__label">Cambios por campo</span>
+      </div>
+      <div class="detalle-tabla-wrap">
+        <table class="detalle-tabla">
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Cambio</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of detalleCampos; track d.id) {
+              <tr>
+                <td class="detalle-tabla__campo">{{ d.campo }}</td>
+                <td class="detalle-tabla__cambio">
+                  <span class="d-old">{{ d.valorAnterior || '—' }}</span>
+                  <span class="d-arrow">→</span>
+                  <span class="d-new">{{ d.valorNuevo || '—' }}</span>
+                </td>
+              </tr>
+            }
+            @if (detalleCampos.length === 0 && !detalleCargando) {
+              <tr>
+                <td colspan="2" class="detalle-tabla__empty">No hay cambios de campo registrados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </app-detail-modal>
+  }
 
 </div>

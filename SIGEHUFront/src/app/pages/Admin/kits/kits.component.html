@@ -4,7 +4,7 @@
 
     <div class="panel-header">
       <div>
-        <h1>Kits de InstalaciÃ³n</h1>
+        <h1>Kits de Instalación</h1>
         <p>Paquetes de herramientas y materiales que se asignan por obra</p>
       </div>
       <button class="btn-primary" (click)="nuevoKit()">
@@ -15,7 +15,7 @@
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por nombre o descripciÃ³nâ€¦'"
+      [searchPlaceholder]="'Buscar por nombre o descripción…'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
@@ -32,7 +32,7 @@
             <span class="td-nombre">{{ row.nombre }}</span>
           }
           @case ('descripcion') {
-            <span class="td-muted">{{ row.descripcion || 'â€”' }}</span>
+            <span class="td-muted">{{ row.descripcion || '—' }}</span>
           }
           @case ('totalMateriales') {
             <span class="td-count">{{ row.totalMateriales }} material{{ row.totalMateriales !== 1 ? 'es' : '' }}</span>
@@ -60,7 +60,7 @@
 
   </section>
 
-  <!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+  <!-- MODAL DE DETALLE (patrón estándar "Ver Detalle") -->
   @if (selectedKit) {
     <app-detail-modal
       tag="Kit de Instalación"
@@ -82,8 +82,8 @@
         </div>
 
         <div class="detail-modal__field detail-modal__field--span-2">
-          <span class="detail-modal__label">DescripciÃ³n</span>
-          <span class="detail-modal__value">{{ selectedKit.descripcion || 'Sin descripciÃ³n' }}</span>
+          <span class="detail-modal__label">Descripción</span>
+          <span class="detail-modal__value">{{ selectedKit.descripcion || 'Sin descripción' }}</span>
         </div>
       </div>
 
@@ -95,7 +95,7 @@
               <span class="detail-modal__list-item">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
                 {{ mat.nombre }}
-                <span class="detail-modal__list-meta">Ã— {{ mat.cantidad ?? 'â€”' }}</span>
+                <span class="detail-modal__list-meta">× {{ mat.cantidad ?? '—' }}</span>
               </span>
             }
           </div>
@@ -108,8 +108,8 @@
 
 <app-confirm-modal
   *ngIf="confirmarEliminacion"
-  [title]="'Eliminar kit de instalaciÃ³n'"
-  [message]="'Â¿EstÃ¡s seguro de eliminar el kit â€œ' + (kitAEliminar?.nombre ?? '') + 'â€? Esta acciÃ³n no se puede deshacer.'"
+  [title]="'Eliminar kit de instalación'"
+  [message]="'¿Estás seguro de eliminar el kit “' + (kitAEliminar?.nombre ?? '') + '”? Esta acción no se puede deshacer.'"
   confirmLabel="Eliminar kit"
   [loading]="eliminando"
   (confirmed)="confirmarEliminar()"

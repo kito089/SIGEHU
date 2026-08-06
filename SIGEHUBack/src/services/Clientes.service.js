@@ -306,6 +306,7 @@ const updateCliente = async (id, {
     }
 
     const txUpdate = await db.transaction();
+    let idAudit = null;
 
     try {
         await txUpdate.execute(
@@ -327,27 +328,112 @@ const updateCliente = async (id, {
             ]
         );
 
-        // MERGE de contactos: si el cliente envia la lista completa, se
-        // reemplaza (se eliminan los no incluidos y se insertan/actualizan).
+        // Recupera el idAuditoria del UPDATE de cabecera ANTES de tocar los
+        // contactos, porque los triggers de ContactosClientes reutilizan
+        // LAST_AUDIT_ID.
+        const auditRows = await txUpdate.query(`
+            SELECT RDB$GET_CONTEXT('USER_SESSION', 'LAST_AUDIT_ID') AS ID
+            FROM RDB$DATABASE
+        `);
+        idAudit = auditRows?.[0]?.ID ?? null;
+
+        // Sincronización diferencial de contactos: solo se tocan las filas que
+        // realmente cambiaron. Las filas sin cambios no se borran ni se vuelven
+        // a insertar, evitando auditorías masivas de INSERT/DELETE en cada UPDATE.
         if (contactosLista) {
-            await txUpdate.execute(
-                "DELETE FROM ContactosClientes WHERE Clientes_idCliente = ?",
+            const existentes = await txUpdate.query(
+                `SELECT idContactoCliente, NombreCompleto, Telefono, Correo, Observaciones
+                 FROM ContactosClientes WHERE Clientes_idCliente = ?`,
                 [id]
             );
+
+            const consumidos = new Set();
+            const firmasExistentes = new Map(); // firma -> [filas]
+
+            const firma = (c) =>
+                [String(c.NombreCompleto ?? '').trim().toLowerCase(),
+                 String(c.Telefono ?? '').trim(),
+                 String(c.Correo ?? '').trim().toLowerCase()].join('|');
+
+            for (const e of existentes ?? []) {
+                const f = firma({
+                    NombreCompleto: e.NOMBRECOMPLETO,
+                    Telefono: e.TELEFONO,
+                    Correo: e.CORREO
+                });
+                if (!firmasExistentes.has(f)) firmasExistentes.set(f, []);
+                firmasExistentes.get(f).push(e);
+            }
+
             for (const c of contactosLista) {
                 if (c.Telefono && !validatePhone(c.Telefono)) {
+                    await txUpdate.rollback();
                     throw new Error(`Telefono invalido para contacto "${c.NombreCompleto}"`);
                 }
                 if (c.Correo && !validateEmail(c.Correo)) {
+                    await txUpdate.rollback();
                     throw new Error(`Correo invalido para contacto "${c.NombreCompleto}"`);
                 }
-                await txUpdate.execute(
-                    `INSERT INTO ContactosClientes
-                     (Clientes_idCliente, NombreCompleto, Telefono, Correo, Observaciones)
-                     VALUES (?, ?, ?, ?, ?)`,
-                    [id, c.NombreCompleto, c.Telefono ?? null, c.Correo ?? null,
-                     c.Observaciones != null ? Buffer.from(String(c.Observaciones), "utf8") : null]
-                );
+
+                // 1) Coincidencia explícita por id (cuando el frontend la envía).
+                let match = c.idContactoCliente != null
+                    ? (existentes ?? []).find(
+                        (e) => String(e.IDCONTACTOCLIENTE ?? e.idContactoCliente) === String(c.idContactoCliente)
+                    )
+                    : null;
+
+                // 2) Si no, coincidencia por contenido (misma firma) sin consumir.
+                if (!match) {
+                    const filas = firmasExistentes.get(firma(c)) ?? [];
+                    match = filas.find((e) => !consumidas.has(String(e.IDCONTACTOCLIENTE ?? e.idContactoCliente)));
+                }
+
+                if (!match) {
+                    // Contacto nuevo: INSERT.
+                    await txUpdate.execute(
+                        `INSERT INTO ContactosClientes
+                         (Clientes_idCliente, NombreCompleto, Telefono, Correo, Observaciones)
+                         VALUES (?, ?, ?, ?, ?)`,
+                        [id, c.NombreCompleto, c.Telefono ?? null, c.Correo ?? null,
+                         c.Observaciones != null ? Buffer.from(String(c.Observaciones), "utf8") : null]
+                    );
+                    continue;
+                }
+
+                consumidas.add(String(match.IDCONTACTOCLIENTE ?? match.idContactoCliente));
+
+                const idContacto = match.IDCONTACTOCLIENTE ?? match.idContactoCliente;
+                const obsExistentes = match.OBSERVACIONES != null && !Buffer.isBuffer(match.OBSERVACIONES)
+                    ? String(match.OBSERVACIONES)
+                    : (Buffer.isBuffer(match.OBSERVACIONES) ? match.OBSERVACIONES.toString("utf8") : '');
+
+                const iguales =
+                    String(match.NOMBRECOMPLETO ?? '') === String(c.NombreCompleto ?? '')
+                    && String(match.TELEFONO ?? '') === String(c.Telefono ?? '')
+                    && String(match.CORREO ?? '') === String(c.Correo ?? '')
+                    && obsExistentes === String(c.Observaciones ?? '');
+
+                if (!iguales) {
+                    // Solo se actualiza si efectivamente cambió.
+                    await txUpdate.execute(
+                        `UPDATE ContactosClientes
+                         SET NombreCompleto = ?, Telefono = ?, Correo = ?, Observaciones = ?
+                         WHERE IdContactoCliente = ?`,
+                        [c.NombreCompleto, c.Telefono ?? null, c.Correo ?? null,
+                         c.Observaciones != null ? Buffer.from(String(c.Observaciones), "utf8") : null, idContacto]
+                    );
+                }
+            }
+
+            // Elimina los contactos que ya no están en la lista.
+            for (const e of existentes ?? []) {
+                const k = String(e.IDCONTACTOCLIENTE ?? e.idContactoCliente);
+                if (!consumidas.has(k)) {
+                    await txUpdate.execute(
+                        "DELETE FROM ContactosClientes WHERE IdContactoCliente = ?",
+                        [e.IDCONTACTOCLIENTE ?? e.idContactoCliente]
+                    );
+                }
             }
         } else if (Telefono || Correo) {
             const principal = await txUpdate.query(
@@ -379,25 +465,9 @@ const updateCliente = async (id, {
         await txUpdate.rollback();
         throw err;
     }
-    const txAudit = await db.transaction();
-    let idAudit;
 
-    try {
-        const rows = await txAudit.query(`
-            SELECT
-                RDB$GET_CONTEXT(
-                    'USER_SESSION',
-                    'LAST_AUDIT_ID'
-                ) AS ID
-            FROM RDB$DATABASE
-        `);
-
-        idAudit = rows[0]?.ID;
-        await txAudit.commit();
-    } catch (err) {
-        await txAudit.rollback();
-        throw err;
-    }
+    // El idAuditoria ya se capturó dentro de la transacción, inmediatamente
+    // después del UPDATE de cabecera y ANTES de tocar los contactos.
     const comparacion = [
         { campo: 'Nombre', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre ?? null },
         { campo: 'Direccion', anterior: anterior.DIRECCION, nuevo: Direccion ?? null },

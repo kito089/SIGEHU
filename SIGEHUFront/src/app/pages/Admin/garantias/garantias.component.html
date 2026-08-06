@@ -4,25 +4,25 @@
 
     <div class="panel-header">
       <div>
-        <h1>GarantÃ­as</h1>
-        <p>Control de garantÃ­as de obra: pendientes, en proceso y cerradas</p>
+        <h1>Garantías</h1>
+        <p>Control de garantías de obra: pendientes, en proceso y cerradas</p>
       </div>
       <button class="btn-primary" (click)="nuevaGarantia()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        Nueva GarantÃ­a
+        Nueva Garantía
       </button>
     </div>
 
     <app-filter-bar
       [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por folio, obra o descripciÃ³nâ€¦'"
+      [searchPlaceholder]="'Buscar por folio, obra o descripción…'"
       (searchTermChange)="onSearchChange($event)"
     ></app-filter-bar>
 
     <app-data-table
       [columns]="columns"
       [data]="garantiasFiltradas"
-      [emptyMessage]="'No se encontraron garantÃ­as con ese criterio.'"
+      [emptyMessage]="'No se encontraron garantías con ese criterio.'"
       rowKey="id"
     >
       <ng-template #cell let-row let-col="column">
@@ -55,7 +55,7 @@
             Reporte
           </button>
           @if (row.estado !== 'Cerrada') {
-            <button class="btn-ghost" (click)="cerrarGarantia(row)" title="Cerrar garantÃ­a">
+            <button class="btn-ghost" (click)="cerrarGarantia(row)" title="Cerrar garantía">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
               Cerrar
             </button>
@@ -64,10 +64,10 @@
       </ng-template>
     </app-data-table>
 
-    <!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
+    <!-- MODAL DE DETALLE (patrón estándar "Ver Detalle") -->
     @if (selectedGarantia) {
       <app-detail-modal
-        tag="GarantÃ­a"
+        tag="Garantía"
         [title]="selectedGarantia.obra"
         (cerrar)="cerrarDetalle()"
       >
@@ -90,7 +90,7 @@
           </div>
 
           <div class="detail-modal__field detail-modal__field--span-2">
-            <span class="detail-modal__label">DescripciÃ³n</span>
+            <span class="detail-modal__label">Descripción</span>
             <span class="detail-modal__value">{{ selectedGarantia.descripcion }}</span>
           </div>
 
@@ -105,9 +105,9 @@
     <app-confirm-modal
       *ngIf="pendienteCierre"
       variant="danger"
-      title="Cerrar garantÃ­a"
+      title="Cerrar garantía"
       [message]="mensajeCierre"
-      confirmLabel="Cerrar garantÃ­a"
+      confirmLabel="Cerrar garantía"
       cancelLabel="Cancelar"
       (confirmed)="confirmarCierre()"
       (cancelled)="cancelarCierre()"

@@ -1,32 +1,38 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
+import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
+import { AuditoriaService, AuditoriaRegistro, AuditoriaDetalle } from '../../../services/auditoria.service';
 
 /* =========================================================================
-   SIGEHU — Reportes / Consultas generales (componente Angular standalone)
-   RF-30 (Ver reportes y consultas generales) y RF-31 (Búsqueda global).
-   Sustituye los datos simulados por tus llamadas reales al backend cuando
-   esté disponible.
-   ========================================================================= */
+   SIGEHU — Reportes / Consultas generales (RF-30 / RF-33).
 
-interface ActividadItem {
-  id: number;
-  tipo: 'obra' | 'instalacion' | 'cliente';
-  texto: string;
-  detalle: string;
-  fecha: string;
-  estado: 'ok' | 'pendiente' | 'info';
-}
+   La "Actividad reciente" del sistema vive únicamente aquí y se alimenta
+   exclusivamente de Auditorias / AuditoriasDetalles vía el backend
+   (GET /Auditoria/actividad y /:id/detalles). Máximo 20 registros en el
+   feed; el historial completo vive en /admin/reportes/historial.
+   ========================================================================= */
 
 @Component({
   selector: 'app-reportes',
   standalone: true,
-  imports: [CommonModule, KpiCardComponent],
+  imports: [
+    CommonModule,
+    KpiCardComponent,
+    DetailModalComponent,
+    EmptyStateComponent,
+    SkeletonComponent,
+  ],
   templateUrl: './reportes.component.html',
   styleUrl: './reportes.component.scss',
 })
 export class ReportesComponent implements OnInit {
+  private router = inject(Router);
+  private auditoria = inject(AuditoriaService);
 
   kpis = [
     {
@@ -59,27 +65,79 @@ export class ReportesComponent implements OnInit {
     },
   ];
 
-  actividades: ActividadItem[] = [
-    { id: 1, tipo: 'obra', texto: 'Obra "Puerta de acceso principal" terminada', detalle: 'Fachada Norte · Cliente ACME', fecha: 'Hace 2 h', estado: 'ok' },
-    { id: 2, tipo: 'instalacion', texto: 'Instalación programada en "Bodega Central"', detalle: 'Sucursal Sur · Viernes 10:00', fecha: 'Hoy', estado: 'info' },
-    { id: 3, tipo: 'obra', texto: 'Obra "Protecciones ventanas" pendiente de validación', detalle: 'Edificio 3 · Dueño por validar', fecha: 'Hace 1 día', estado: 'pendiente' },
-    { id: 4, tipo: 'cliente', texto: 'Nuevo cliente registrado: Laura Méndez', detalle: 'Particular', fecha: 'Hace 3 días', estado: 'ok' },
-  ];
+  // ── Actividad reciente (máx. 20 registros) ────────────────────────────────
+  actividad: AuditoriaRegistro[] = [];
+  cargandoActividad = false;
 
-  constructor(private router: Router) {}
+  // ── Modal de detalles de una actualización ────────────────────────────────
+  detalleRegistro: AuditoriaRegistro | null = null;
+  detalleCampos: AuditoriaDetalle[] = [];
+  detalleCargando = false;
 
-  ngOnInit(): void {}
-
-  estadoClass(estado: ActividadItem['estado']): string {
-    return `act-item__dot--${estado}`;
+  ngOnInit(): void {
+    this.cargarActividad();
   }
 
-  tipoLabel(tipo: ActividadItem['tipo']): string {
-    switch (tipo) {
-      case 'obra': return 'Obra';
-      case 'instalacion': return 'Instalación';
-      case 'cliente': return 'Cliente';
+  // ── Actividad reciente ────────────────────────────────────────────────────
+  async cargarActividad(): Promise<void> {
+    this.cargandoActividad = true;
+    try {
+      this.actividad = await firstValueFrom(this.auditoria.listarActividad(20));
+    } catch {
+      this.actividad = [];
+    } finally {
+      this.cargandoActividad = false;
     }
+  }
+
+  irAlHistorial(): void {
+    this.router.navigate(['/admin/reportes/historial']);
+  }
+
+  // ── Detalles de una actualización ─────────────────────────────────────────
+  async verDetalles(registro: AuditoriaRegistro): Promise<void> {
+    this.detalleRegistro = registro;
+    this.detalleCampos = [];
+    this.detalleCargando = true;
+    try {
+      this.detalleCampos = await firstValueFrom(this.auditoria.detalles(registro.id));
+    } catch {
+      this.detalleCampos = [];
+    } finally {
+      this.detalleCargando = false;
+    }
+  }
+
+  cerrarDetalles(): void {
+    this.detalleRegistro = null;
+    this.detalleCampos = [];
+  }
+
+  // ── Helpers de presentación ───────────────────────────────────────────────
+  etiquetaAccion(accion: string): string {
+    switch (accion) {
+      case 'INSERT': return 'Creación';
+      case 'UPDATE': return 'Actualización';
+      case 'DELETE': return 'Eliminación';
+      default: return accion;
+    }
+  }
+
+  dotColor(accion: string): string {
+    switch (accion) {
+      case 'INSERT': return 'ok';
+      case 'UPDATE': return 'info';
+      case 'DELETE': return 'danger';
+      default: return 'info';
+    }
+  }
+
+  fechaHora(fecha: Date): string {
+    const dd = String(fecha.getDate()).padStart(2, '0');
+    const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+    const hh = String(fecha.getHours()).padStart(2, '0');
+    const min = String(fecha.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${fecha.getFullYear()} · ${hh}:${min}`;
   }
 
   nuevaBusqueda(): void {
