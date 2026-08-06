@@ -73,6 +73,37 @@
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
+.detail-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.detail-modal__edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.detail-modal__edit svg { color: var(--accent-blue); flex-shrink: 0; }
+
+.detail-modal__edit:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--accent-blue);
+}
+
 .detail-modal__close:hover {
   color: var(--text-primary);
   background-color: var(--bg-hover);

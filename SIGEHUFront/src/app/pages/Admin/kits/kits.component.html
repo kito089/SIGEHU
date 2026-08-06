@@ -63,9 +63,11 @@
   <!-- MODAL DE DETALLE (patrÃ³n estÃ¡ndar "Ver Detalle") -->
   @if (selectedKit) {
     <app-detail-modal
-      tag="Kit de InstalaciÃ³n"
+      tag="Kit de Instalación"
       [title]="selectedKit.nombre"
       [loading]="detalleCargando"
+      [editable]="true"
+      (editar)="editar(selectedKit)"
       (cerrar)="cerrarDetalle()"
     >
       <div class="detail-modal__grid">

@@ -33,7 +33,9 @@ export class DetailModalComponent {
   @Input() tag = '';
   @Input() title = '';
   @Input() loading = false;
+  @Input() editable = false;
   @Output() cerrar = new EventEmitter<void>();
+  @Output() editar = new EventEmitter<void>();
 
   @HostListener('document:keydown.escape')
   onEscape(): void {

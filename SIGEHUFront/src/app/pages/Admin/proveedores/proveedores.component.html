@@ -70,6 +70,8 @@
   *ngIf="selectedProveedor"
   tag="Proveedor"
   [title]="selectedProveedor.nombre"
+  [editable]="true"
+  (editar)="editarProveedor(selectedProveedor)"
   (cerrar)="cerrarDetalle()"
 >
   <div class="detail-modal__grid">

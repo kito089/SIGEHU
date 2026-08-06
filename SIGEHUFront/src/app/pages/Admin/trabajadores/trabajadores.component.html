@@ -90,6 +90,8 @@
   *ngIf="selectedTrabajador"
   tag="Ficha de Trabajador"
   [title]="selectedTrabajador.nombre"
+  [editable]="true"
+  (editar)="actualizarDatos(selectedTrabajador)"
   (cerrar)="cerrarDetalle()"
 >
   <div class="detail-modal__grid">

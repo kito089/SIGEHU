@@ -1,9 +1,9 @@
-import { Component, OnInit, inject, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ProveedoresService } from '../../../services/proveedores.service';
-import { Proveedor, ProveedorMaterial } from '../../../core/models/proveedor.model';
+import { Proveedor } from '../../../core/models/proveedor.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
@@ -15,8 +15,7 @@ import { DetailModalComponent } from '../../../shared/components/detail-modal/de
    Datos reales vía GET /Proveedores. Acciones: Ver catálogo (modal con
    datos descriptivos), Editar (navega al formulario con queryParam id) y
    Eliminar (soft-delete del proveedor con modal de confirmación, RNF-07).
-   El modal de detalles muestra la lista completa de materiales donde cada
-   uno expone un botón "Detalles" que abre la vista reusable MaterialDetail.
+   El modal de detalles muestra la lista de materiales del catálogo.
    ======================================================================== */
 
 @Component({
@@ -107,15 +106,6 @@ export class ProveedoresComponent implements OnInit {
 
   cerrarDetalle(): void {
     this.selectedProveedor = null;
-  }
-
-  onMaterialDetailClick(material: ProveedorMaterial): void {
-    this.selectedMaterialForDetail = material;
-    this.materialDetailClick.emit(material);
-  }
-
-  cerrarDetalleMaterial(): void {
-    this.selectedMaterialForDetail = null;
   }
 
   editarProveedor(proveedor: Proveedor): void {

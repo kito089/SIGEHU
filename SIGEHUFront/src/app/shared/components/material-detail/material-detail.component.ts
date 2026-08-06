@@ -6,7 +6,7 @@ import { Material } from '../../../core/models/material.model';
    SIGEHU — Vista reusable de detalle de un material.
    Label-value grid con todos los campos descriptivos de un material. No
    modifica datos: solo presenta la información del material que recibe como
-   Input. Emite `close` para que el consumidor (ej. modal de Proveedores)
+   Input. Emite `cerrar` para que el consumidor (ej. modal de Proveedores)
    cierre la vista.
    ========================================================================= */
 
@@ -26,7 +26,7 @@ export type MaterialDetailData = Material & {
 })
 export class MaterialDetailComponent {
   @Input() material: MaterialDetailData | null = null;
-  @Output() close = new EventEmitter<void>();
+  @Output() cerrar = new EventEmitter<void>();
 
   get precioMostrable(): string {
     const precio = this.material?.precio;

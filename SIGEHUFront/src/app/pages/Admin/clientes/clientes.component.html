@@ -80,14 +80,43 @@
 
 </div>
 
-<div class="modal-overlay" [class.open]="selectedCliente" (click)="cerrarDetalle()">
-  <div class="modal" *ngIf="selectedCliente" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <div>
-        <div class="cliente-tag">{{ selectedCliente.tipo === 'persona' ? 'Persona' : 'Empresa' }}</div>
-        <h2>{{ selectedCliente.nombre }}</h2>
-      </div>
-      <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
+<app-detail-modal
+  *ngIf="selectedCliente"
+  tag="Cliente"
+  [title]="selectedCliente.nombre"
+  [editable]="true"
+  (editar)="editarCliente(selectedCliente)"
+  (cerrar)="cerrarDetalle()"
+>
+  <div class="detail-modal__grid">
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Teléfono</span>
+      <span class="detail-modal__value">{{ selectedCliente.telefono || 'No registrado' }}</span>
+    </div>
+
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">RFC</span>
+      <span class="detail-modal__value">{{ selectedCliente.rfc || 'No registrado' }}</span>
+    </div>
+
+    <div class="detail-modal__field detail-modal__field--span-2">
+      <span class="detail-modal__label">Correo Electrónico</span>
+      <span class="detail-modal__value">{{ selectedCliente.correo || 'No registrado' }}</span>
+    </div>
+
+    <div class="detail-modal__field detail-modal__field--span-2">
+      <span class="detail-modal__label">Dirección</span>
+      <span class="detail-modal__value">{{ selectedCliente.direccion || 'No registrada' }}</span>
+    </div>
+
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Obras activas</span>
+      <span class="detail-modal__value">{{ selectedCliente.obrasActivas }}</span>
+    </div>
+
+    <div class="detail-modal__field">
+      <span class="detail-modal__label">Datos SAT</span>
+      <span class="detail-modal__value">{{ selectedCliente.datosSat ? 'Registrados' : 'No Provistos' }}</span>
     </div>
   </div>
 </app-detail-modal>

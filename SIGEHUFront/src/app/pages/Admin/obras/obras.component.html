@@ -67,6 +67,8 @@
   *ngIf="selectedObra"
   tag="Ficha de Obra"
   [title]="selectedObra.nombre"
+  [editable]="true"
+  (editar)="editarObra(selectedObra)"
   (cerrar)="cerrarDetalle()"
 >
   <div class="detail-modal__grid">

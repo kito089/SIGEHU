@@ -1,10 +1,19 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
 .kanban-board {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: var(--sigehu-kanban-column-width);
   gap: var(--sigehu-kanban-gap);
-  align-items: start;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: var(--sigehu-space-4);
   margin: calc(var(--sigehu-space-4) * -1) calc(var(--sigehu-space-8) * -1);
   padding: 0 var(--sigehu-space-8) var(--sigehu-space-4);

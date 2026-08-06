@@ -25,6 +25,13 @@
   margin-bottom: var(--sigehu-space-3);
 }
 
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
 .logo-text {
   display: flex;
   flex-direction: column;

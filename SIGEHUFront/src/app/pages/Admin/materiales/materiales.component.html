@@ -62,6 +62,8 @@
     <app-detail-modal
       tag="Material"
       [title]="selectedMaterial.nombre"
+      [editable]="true"
+      (editar)="editar(selectedMaterial)"
       (cerrar)="cerrarDetalle()"
     >
       <div class="detail-modal__grid">
