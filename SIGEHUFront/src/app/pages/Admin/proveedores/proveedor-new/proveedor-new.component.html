@@ -1,24 +1,25 @@
 <div class="page">
   <app-entity-form
     [title]="esEdicion ? 'Editar Proveedor' : 'Nuevo Proveedor'"
-    subtitle="Registra la información de contacto y condiciones comerciales del proveedor"
+    subtitle="Registra la información de contacto y el catálogo de materiales del proveedor"
     badgeText="Proveedor"
     [loading]="loading"
     [submitting]="guardando"
-    submitLabel="Guardar Proveedor"
+    [submitLabel]="esEdicion ? 'Guardar Cambios' : 'Guardar Proveedor'"
     (submitRequested)="onSubmit()"
     (cancelRequested)="cancelar()"
   >
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
       <div class="field">
-        <label for="empresa">Nombre de la Empresa / Distribuidor</label>
+        <label for="nombre">Nombre de la Empresa / Distribuidor</label>
         <input
-          id="empresa"
+          id="nombre"
           type="text"
-          formControlName="empresa"
+          formControlName="nombre"
+          maxlength="100"
           placeholder="Ej. Aceros Monterrey">
-        <span class="field-error" *ngIf="form.get('empresa')?.touched && form.get('empresa')?.invalid">
+        <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
           Ingresa el nombre de la empresa
         </span>
       </div>
@@ -29,20 +30,19 @@
           id="giroPrincipal"
           type="text"
           formControlName="giroPrincipal"
+          maxlength="100"
           placeholder="Ej. Distribuidor de perfiles y lámina">
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label for="contacto">Contacto de Compras</label>
+          <label for="contactoCompras">Contacto de Compras</label>
           <input
-            id="contacto"
+            id="contactoCompras"
             type="text"
-            formControlName="contacto"
+            formControlName="contactoCompras"
+            maxlength="150"
             placeholder="Nombre de la persona de contacto">
-          <span class="field-error" *ngIf="form.get('contacto')?.touched && form.get('contacto')?.invalid">
-            Ingresa el nombre del contacto
-          </span>
         </div>
 
         <div class="field">
@@ -51,32 +51,25 @@
             id="telefono"
             type="tel"
             formControlName="telefono"
-            placeholder="10 dígitos">
+            maxlength="15"
+            placeholder="Ej. 3312345678">
           <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-            Ingresa un teléfono válido a 10 dígitos
+            Ingresa un teléfono válido
           </span>
         </div>
       </div>
 
-      <div class="field-row">
-        <div class="field">
-          <label for="correo">Correo Electrónico</label>
-          <input
-            id="correo"
-            type="email"
-            formControlName="correo"
-            placeholder="ventas@proveedor.com">
-          <span class="field-error" *ngIf="form.get('correo')?.touched && form.get('correo')?.invalid">
-            Ingresa un correo válido
-          </span>
-        </div>
-
-        <div class="field">
-          <label for="datoFinanciero">Datos Financieros</label>
-          <select id="datoFinanciero" formControlName="datoFinanciero">
-            <option *ngFor="let o of opcionesFinancieras" [value]="o.value">{{ o.label }}</option>
-          </select>
-        </div>
+      <div class="field">
+        <label for="correo">Correo Electrónico</label>
+        <input
+          id="correo"
+          type="email"
+          formControlName="correo"
+          maxlength="254"
+          placeholder="ventas@proveedor.com">
+        <span class="field-error" *ngIf="form.get('correo')?.touched && form.get('correo')?.invalid">
+          Ingresa un correo válido
+        </span>
       </div>
 
       <div class="field">
@@ -85,17 +78,147 @@
           id="direccion"
           type="text"
           formControlName="direccion"
-          placeholder="Calle, número, colonia, ciudad">
+          placeholder="Zona Industrial, Guadalajara, Jal.">
       </div>
 
       <div class="field">
-        <label for="observaciones">Observaciones</label>
+        <label for="notas">Observaciones</label>
         <textarea
-          id="observaciones"
+          id="notas"
           rows="3"
-          formControlName="observaciones"
+          formControlName="notas"
           placeholder="Condiciones de entrega, pedido mínimo, notas internas, etc."></textarea>
       </div>
+
+      <!-- ── Catálogo de materiales del proveedor ───────────────────────── -->
+      <div class="prov-materiales">
+        <div class="section-title">
+          <h2>Catálogo de materiales</h2>
+          <span class="section-count" *ngIf="materialesSeleccionados.length">
+            {{ materialesSeleccionados.length }} material{{ materialesSeleccionados.length !== 1 ? 'es' : '' }}
+          </span>
+        </div>
+
+        <div class="selector" #buscarWrap>
+          <div class="selector-input-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input
+              type="text"
+              [value]="busquedaMaterial"
+              (input)="onBusquedaMaterial($event)"
+              (focus)="onFocoBuscador()"
+              (keydown.escape)="cerrarSelector()"
+              placeholder="Buscar y asociar materiales…"
+              autocomplete="off"
+              role="combobox"
+              aria-label="Buscar materiales para el proveedor"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="selectorAbierto">
+          </div>
+
+          @if (selectorAbierto) {
+            <div class="selector-lista" role="listbox">
+              @for (m of materialesFiltradosBuscador; track m.idMaterial) {
+                <button
+                  type="button"
+                  class="selector-item"
+                  role="option"
+                  [attr.aria-selected]="yaEstaEnProveedor(m.idMaterial)"
+                  (click)="seleccionarMaterial(m)">
+                  <span class="selector-item-nombre">{{ m.nombre }}</span>
+                  <span class="selector-item-unidad">{{ m.unidadMedida }}</span>
+                  <span class="selector-item-estado" *ngIf="yaEstaEnProveedor(m.idMaterial)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+                    Asociado
+                  </span>
+                </button>
+              } @empty {
+                <div class="selector-empty">No se encontraron materiales.</div>
+              }
+
+              <div class="selector-divider"></div>
+
+              <button type="button" class="selector-item selector-item--nuevo" (click)="abrirNuevoMaterial()">
+                + Agregar nuevo material
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (materialesSeleccionados.length > 0) {
+          <div class="mat-table">
+            <div class="mat-table-head">
+              <span>Material</span>
+              <span>Unidad</span>
+              <span class="w-precio">Precio unitario</span>
+              <span class="w-notas">Notas</span>
+              <span class="w-acc"></span>
+            </div>
+            @for (mat of materialesSeleccionados; track mat.idMaterial; let i = $index) {
+              <div class="mat-table-row">
+                <span class="mat-nombre">{{ mat.nombre }}</span>
+                <span class="mat-unidad">{{ mat.unidadMedida }}</span>
+                <span class="w-precio">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    [value]="mat.precio ?? ''"
+                    (input)="onPrecioChange(i, $event)"
+                    placeholder="0.00">
+                </span>
+                <span class="w-notas">
+                  <input
+                    type="text"
+                    [value]="mat.notasProveedor ?? ''"
+                    (input)="onNotasChange(i, $event)"
+                    placeholder="Opcionales">
+                </span>
+                <span class="w-acc">
+                  <button type="button" class="icon-btn icon-btn--danger" (click)="quitarMaterial(i)" aria-label="Desasociar material">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2z"/></svg>
+                  </button>
+                </span>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="prov-empty">Aún no has asociado materiales al proveedor. Busca y selecciona materiales arriba.</div>
+        }
+      </div>
+
+      @if (nuevoMaterialAbierto) {
+        <div class="nuevo-material-panel">
+          <div class="nuevo-material-head">
+            <h3>Nuevo Material</h3>
+            <button type="button" class="icon-btn" (click)="cerrarNuevoMaterial()" aria-label="Cerrar">X</button>
+          </div>
+
+          <div class="field">
+            <label for="matNombre">Nombre del Material</label>
+            <input type="text" id="matNombre" [formControl]="matNombreControl" maxlength="150" placeholder="Ej. PTR 2x2 Cal14">
+            <span class="field-error" *ngIf="nuevoMaterialForm.get('nombre')?.touched && nuevoMaterialForm.get('nombre')?.invalid">Ingresa el nombre del material</span>
+          </div>
+
+          <div class="field">
+            <label for="matUnidad">Unidad de Medida</label>
+            <input type="text" id="matUnidad" [formControl]="matUnidadControl" maxlength="20" placeholder="Tramo, Pieza, Litro">
+            <span class="field-error" *ngIf="nuevoMaterialForm.get('unidadMedida')?.touched && nuevoMaterialForm.get('unidadMedida')?.invalid">Ingresa la unidad de medida</span>
+          </div>
+
+          <div class="field">
+            <label for="matDesc">Descripción (opcional)</label>
+            <textarea id="matDesc" rows="2" [formControl]="matDescripcionControl" placeholder="Características…"></textarea>
+          </div>
+
+          <div class="nuevo-material-actions">
+            <button type="button" class="btn-secondary" (click)="cerrarNuevoMaterial()">Cancelar</button>
+            <button type="button" class="btn-primary" [disabled]="guardandoMaterial" (click)="guardarNuevoMaterial()">
+              {{ guardandoMaterial ? 'Guardando…' : 'Guardar Material' }}
+            </button>
+          </div>
+        </div>
+      }
 
     </form>
   </app-entity-form>

@@ -1,70 +1,63 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { ProveedoresService } from '../../../services/proveedores.service';
+import { Proveedor } from '../../../core/models/proveedor.model';
+import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 /* =========================================================================
-   SIGEHU — Gestión de Proveedores (componente Angular standalone)
-   Sustituye fetchProveedores() por tu llamada real (GET /api/proveedores)
-   cuando conectes el backend.
-   ========================================================================= */
-
-type DatoFinanciero = 'credito' | 'contado' | 'anticipo' | null;
-
-interface Proveedor {
-  id: number;
-  empresa: string;
-  giroPrincipal: string; // aún no se usa en BD, pero ya viene contemplado (se agregará después)
-  contacto: string;
-  telefono: string;
-  datoFinanciero: DatoFinanciero;
-  totalMateriales: number;
-}
+   SIGEHU — Proveedores (listado).
+   Datos reales vía GET /Proveedores. Acciones: Ver catálogo (modal con
+   datos descriptivos), Editar (navega al formulario con queryParam id) y
+   Eliminar (soft-delete del proveedor con modal de confirmación, RNF-07).
+   ======================================================================== */
 
 @Component({
   selector: 'app-proveedores',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
   templateUrl: './proveedores.component.html',
   styleUrl: './proveedores.component.scss',
 })
 export class ProveedoresComponent implements OnInit {
+  private router = inject(Router);
+  private service = inject(ProveedoresService);
+  private toast = inject(ToastService);
 
   proveedores: Proveedor[] = [];
   searchTerm = '';
+  cargando = false;
+
   selectedProveedor: Proveedor | null = null;
 
+  proveedorAEliminar: Proveedor | null = null;
+  confirmarEliminacion = false;
+  eliminando = false;
+
   columns: DataTableColumn[] = [
-    { key: 'empresa', label: 'Empresa / Distribuidor' },
-    { key: 'contacto', label: 'Contacto de Compras' },
+    { key: 'nombre', label: 'Empresa / Distribuidor' },
+    { key: 'contactoCompras', label: 'Contacto de Compras' },
     { key: 'telefono', label: 'Teléfono' },
-    { key: 'datoFinanciero', label: 'Datos Financieros' },
+    { key: 'materiales', label: 'Materiales', align: 'center' },
   ];
 
   ngOnInit(): void {
-    this.fetchProveedores().then(proveedores => {
-      this.proveedores = proveedores;
-    });
+    this.cargarProveedores();
   }
 
-  // Ajusta esto a tu endpoint real cuando conectes el backend, p. ej.:
-  // constructor(private proveedoresService: ProveedoresService) {}
-  // private fetchProveedores(): Promise<Proveedor[]> {
-  //   return firstValueFrom(this.proveedoresService.listar());
-  // }
-  private async fetchProveedores(): Promise<Proveedor[]> {
-    return [
-      { id: 1, empresa: 'Aceros Monterrey', giroPrincipal: 'Distribuidor de perfiles y lámina',
-        contacto: 'Ing. Berta Vda. de Silva', telefono: '333-664-0286',
-        datoFinanciero: 'credito', totalMateriales: 18 },
-      { id: 2, empresa: 'Herrajes y Chapas de Occidente', giroPrincipal: 'Ferretería industrial',
-        contacto: 'Lic. Martha Gómez', telefono: '331-825-1785',
-        datoFinanciero: null, totalMateriales: 9 },
-      { id: 3, empresa: 'Pinturas y Recubrimientos del Valle', giroPrincipal: 'Pinturas industriales y anticorrosivos',
-        contacto: 'Sr. Raúl Peña', telefono: '333-210-4477',
-        datoFinanciero: 'contado', totalMateriales: 12 },
-    ];
+  async cargarProveedores(): Promise<void> {
+    this.cargando = true;
+    try {
+      this.proveedores = await firstValueFrom(this.service.listar());
+    } catch {
+      this.proveedores = [];
+    } finally {
+      this.cargando = false;
+    }
   }
 
   get proveedoresFiltrados(): Proveedor[] {
@@ -72,9 +65,9 @@ export class ProveedoresComponent implements OnInit {
     if (!term) return this.proveedores;
 
     return this.proveedores.filter(p =>
-      p.empresa.toLowerCase().includes(term) ||
-      p.contacto.toLowerCase().includes(term) ||
-      p.telefono.includes(term)
+      p.nombre.toLowerCase().includes(term) ||
+      (p.contactoCompras ?? '').toLowerCase().includes(term) ||
+      (p.telefono ?? '').includes(term)
     );
   }
 
@@ -82,18 +75,12 @@ export class ProveedoresComponent implements OnInit {
     this.searchTerm = term;
   }
 
-  financieroLabel(dato: DatoFinanciero): string {
-    switch (dato) {
-      case 'credito':  return 'Política de crédito';
-      case 'contado':  return 'Pago de contado';
-      case 'anticipo': return 'Requiere anticipo';
-      default:         return '—';
-    }
+  totalMateriales(proveedor: Proveedor): number {
+    return proveedor.materiales?.length ?? 0;
   }
 
   verCatalogo(proveedor: Proveedor): void {
     this.selectedProveedor = proveedor;
-    // Alternativa: this.router.navigate(['/proveedores', proveedor.id, 'catalogo']);
   }
 
   cerrarDetalle(): void {
@@ -101,23 +88,36 @@ export class ProveedoresComponent implements OnInit {
   }
 
   editarProveedor(proveedor: Proveedor): void {
-    // this.router.navigate(['/proveedores/editar', proveedor.id]);
-    alert(`Aquí se abriría el formulario de edición para "${proveedor.empresa}".`);
+    this.router.navigate(['/admin/proveedores/nuevo'], { queryParams: { id: proveedor.idProveedor } });
   }
 
   eliminarProveedor(proveedor: Proveedor): void {
-    const confirmado = confirm(`¿Eliminar a "${proveedor.empresa}"? Esta acción no se puede deshacer.`);
-    if (!confirmado) return;
+    this.proveedorAEliminar = proveedor;
+    this.confirmarEliminacion = true;
+  }
 
-    // Sustituir por la llamada real, p. ej.:
-    // this.proveedoresService.eliminar(proveedor.id).subscribe(() => { ... });
-    this.proveedores = this.proveedores.filter(p => p.id !== proveedor.id);
-    if (this.selectedProveedor?.id === proveedor.id) {
-      this.selectedProveedor = null;
+  cancelarEliminacion(): void {
+    this.confirmarEliminacion = false;
+    this.proveedorAEliminar = null;
+  }
+
+  async confirmarEliminar(): Promise<void> {
+    if (!this.proveedorAEliminar) return;
+    this.eliminando = true;
+    try {
+      await firstValueFrom(this.service.desactivar(this.proveedorAEliminar.idProveedor!));
+      this.proveedores = this.proveedores.filter(p => p.idProveedor !== this.proveedorAEliminar!.idProveedor);
+      this.toast.success('Proveedor desactivado correctamente');
+      this.confirmarEliminacion = false;
+      this.proveedorAEliminar = null;
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.eliminando = false;
     }
   }
 
   nuevoProveedor(): void {
-    //this.router.navigate(['/proveedores/nuevo']);
+    this.router.navigate(['/admin/proveedores/nuevo']);
   }
 }

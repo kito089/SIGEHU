@@ -22,34 +22,32 @@
     <app-data-table
       [columns]="columns"
       [data]="proveedoresFiltrados"
+      [loading]="cargando"
       [emptyMessage]="'No se encontraron proveedores con ese criterio.'"
-      rowKey="id"
+      rowKey="idProveedor"
     >
       <ng-template #cell let-row let-col="column">
         @switch (col.key) {
-          @case ('empresa') {
+          @case ('nombre') {
             <div>
-              <div class="td-empresa">{{ row.empresa }}</div>
-              <div class="td-giro">{{ row.giroPrincipal }}</div>
+              <div class="td-empresa">{{ row.nombre }}</div>
+              <div class="td-giro">{{ row.giroPrincipal || '—' }}</div>
             </div>
           }
-          @case ('contacto') {
-            <span class="td-muted">{{ row.contacto }}</span>
+          @case ('contactoCompras') {
+            <span class="td-muted">{{ row.contactoCompras || '—' }}</span>
           }
           @case ('telefono') {
-            <span class="td-muted">{{ row.telefono }}</span>
+            <span class="td-muted">{{ row.telefono || '—' }}</span>
           }
-          @case ('datoFinanciero') {
-            <span class="tag" [ngClass]="row.datoFinanciero ? 'tag-financiero' : 'tag-financiero-empty'">
-              {{ financieroLabel(row.datoFinanciero) }}
-            </span>
+          @case ('materiales') {
+            <span class="td-count">{{ totalMateriales(row) }} material{{ totalMateriales(row) !== 1 ? 'es' : '' }}</span>
           }
         }
       </ng-template>
 
       <ng-template #actions let-row>
         <div class="acciones-group">
-          <span class="materiales-count">{{ row.totalMateriales }} insumos</span>
           <button class="icon-btn" (click)="verCatalogo(row)" aria-label="Ver catálogo" title="Ver catálogo">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
@@ -72,14 +70,27 @@
     <div class="modal-header">
       <div>
         <div class="proveedor-tag">Proveedor</div>
-        <h2>{{ selectedProveedor.empresa }}</h2>
+        <h2>{{ selectedProveedor.nombre }}</h2>
       </div>
       <button class="modal-close" (click)="cerrarDetalle()" aria-label="Cerrar">✕</button>
     </div>
-    <div class="modal-row"><span class="k">Giro principal</span><span class="v">{{ selectedProveedor.giroPrincipal }}</span></div>
-    <div class="modal-row"><span class="k">Contacto de compras</span><span class="v">{{ selectedProveedor.contacto }}</span></div>
-    <div class="modal-row"><span class="k">Teléfono</span><span class="v">{{ selectedProveedor.telefono }}</span></div>
-    <div class="modal-row"><span class="k">Datos financieros</span><span class="v">{{ financieroLabel(selectedProveedor.datoFinanciero) }}</span></div>
-    <div class="modal-row"><span class="k">Materiales en catálogo</span><span class="v">{{ selectedProveedor.totalMateriales }}</span></div>
+    <div class="modal-row"><span class="k">Giro principal</span><span class="v">{{ selectedProveedor.giroPrincipal || '—' }}</span></div>
+    <div class="modal-row"><span class="k">Contacto de compras</span><span class="v">{{ selectedProveedor.contactoCompras || '—' }}</span></div>
+    <div class="modal-row"><span class="k">Teléfono</span><span class="v">{{ selectedProveedor.telefono || '—' }}</span></div>
+    <div class="modal-row"><span class="k">Correo electrónico</span><span class="v">{{ selectedProveedor.correo || '—' }}</span></div>
+    <div class="modal-row"><span class="k">Dirección</span><span class="v">{{ selectedProveedor.direccion || '—' }}</span></div>
+    <div class="modal-row"><span class="k">Observaciones</span><span class="v">{{ selectedProveedor.notas || '—' }}</span></div>
+    <div class="modal-row"><span class="k">Materiales en catálogo</span><span class="v">{{ totalMateriales(selectedProveedor) }}</span></div>
   </div>
 </div>
+
+<app-confirm-modal
+  *ngIf="confirmarEliminacion"
+  [title]="'Desactivar proveedor'"
+  [message]="'¿Estás seguro de desactivar el proveedor “' + (proveedorAEliminar?.nombre ?? '') + '”? Los proveedores desactivados no se considerarán para nuevas compras.'"
+  confirmLabel="Desactivar proveedor"
+  [loading]="eliminando"
+  (confirmed)="confirmarEliminar()"
+  (cancelled)="cancelarEliminacion()"
+  variant="danger"
+></app-confirm-modal>
