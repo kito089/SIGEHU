@@ -5,6 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--sigehu-space-6);
   padding: 0 var(--sigehu-space-6);
   position: sticky;
   top: 0;
@@ -20,7 +21,9 @@
   flex-direction: row;
   align-items: center;
   gap: var(--sigehu-space-3);
-  min-width: 0;
+  flex-shrink: 0;
+  margin-right: var(--sigehu-space-8);
+  min-width: 180px;
 }
 
 .topbar-logo {
@@ -68,8 +71,9 @@
 
 /* Buscador */
 .topbar-search {
-  width: 320px;
-  max-width: 40vw;
+  flex: 1 1 auto;
+  max-width: 420px;
+  min-width: 0;
 }
 
 .topbar-search ::ng-deep .omnibox {
@@ -205,13 +209,34 @@
     margin-left: 0;
     width: 100%;
     padding: 0 var(--sigehu-space-4);
+    gap: var(--sigehu-space-3);
   }
 
   .topbar-search {
     display: none; // En móvil se usa omnibox full-screen
   }
 
+  .topbar-left {
+    flex-shrink: 1;
+    min-width: 0;
+    margin-right: var(--sigehu-space-4);
+  }
+
   .page-title {
     font-size: var(--sigehu-font-size-xl);
+  }
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 var(--sigehu-space-3);
+  }
+
+  .topbar-left {
+    gap: var(--sigehu-space-2);
+  }
+
+  .topbar-right {
+    gap: var(--sigehu-space-2);
   }
 }

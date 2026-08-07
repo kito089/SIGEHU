@@ -1,23 +1,23 @@
 ﻿<div class="page">
 
+  <div class="page-header">
+    <h1>Kits de Instalación</h1>
+    <p>Paquetes de herramientas y materiales que se asignan por obra</p>
+  </div>
+
   <section class="panel-frame">
 
-    <div class="panel-header">
-      <div>
-        <h1>Kits de Instalación</h1>
-        <p>Paquetes de herramientas y materiales que se asignan por obra</p>
-      </div>
+    <div class="panel-toolbar">
+      <app-filter-bar
+        [searchTerm]="searchTerm"
+        [searchPlaceholder]="'Buscar por nombre o descripción.'"
+        (searchTermChange)="onSearchChange($event)"
+      ></app-filter-bar>
       <button class="btn-primary" (click)="nuevoKit()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         Nuevo Kit
       </button>
     </div>
-
-    <app-filter-bar
-      [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por nombre o descripción…'"
-      (searchTermChange)="onSearchChange($event)"
-    ></app-filter-bar>
 
     <app-data-table
       [columns]="columns"

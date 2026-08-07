@@ -7,24 +7,22 @@ import { ApiService } from '../../../../services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
 import { ContactListComponent } from '../../../../shared/components/contact-list/contact-list.component';
-import type { ClienteTipo, Contacto } from '../../../../core/models/cliente.model';
+import type { Contacto } from '../../../../core/models/cliente.model';
 import {
-  TELEFONO_PATTERN,
   RFC_PATTERN,
   CODIGO_POSTAL_PATTERN,
-  EMAIL_MAX,
   NOMBRE_MAX,
   DIRECCION_MAX,
   OBSERVACIONES_MAX,
   RAZON_SOCIAL_MAX,
-  telefonoOcorreoRequired,
 } from '../../../../shared/validators/custom-validators';
 
 /* =========================================================================
    SIGEHU — Agregar / Editar Cliente (componente Angular standalone)
 
-   Registra tanto Personas como Empresas mediante un selector de dos botones
-   mutuamente excluyentes que reconstruye el formulario según el tipo.
+   Todos los clientes se registran como Empresa: la pantalla asume ese tipo
+   directamente y no muestra el selector Persona/Empresa. Los datos fiscales
+   se muestran siempre (sin switch) y se persisten tal cual.
 
    Conexión al backend (pertenencia: módulo Clientes):
      - GET    /Clientes/RegimenesFiscales  → catálogo de regímenes
@@ -55,9 +53,6 @@ export class ClienteFormComponent implements OnInit {
 
   @Input() clienteId: number | null = null;
 
-  tipo = signal<ClienteTipo>('persona');
-  showDatosFiscalesPersona = signal(false);
-  showDatosFiscalesEmpresa = signal(false);
   contactos = signal<Contacto[]>([]);
 
   form: FormGroup;
@@ -67,29 +62,22 @@ export class ClienteFormComponent implements OnInit {
   regimenesFiscales: OpcionCatalogo[] = [];
   usosCfdi: OpcionCatalogo[] = [];
 
-  busquedaRegimenPersona = signal('');
-  busquedaRegimenEmpresa = signal('');
-  busquedaUsoPersona = signal('');
-  busquedaUsoEmpresa = signal('');
+  busquedaRegimen = signal('');
+  busquedaUso = signal('');
 
   // Tarea: ComboBox abiertos con un solo clic. La lista se despliega al
   // enfocar/activar el campo completo (y también al escribir), sin requerir
   // un segundo clic. `comboAbierto` guarda cuál catálogo está desplegado.
   comboAbierto = signal<string | null>(null);
 
-  listadoRegimenPersona = computed(() => this.filtrarCatalogo(this.busquedaRegimenPersona(), this.regimenesFiscales));
-  listadoRegimenEmpresa = computed(() => this.filtrarCatalogo(this.busquedaRegimenEmpresa(), this.regimenesFiscales));
-  listadoUsoPersona = computed(() => this.filtrarCatalogo(this.busquedaUsoPersona(), this.usosCfdi));
-  listadoUsoEmpresa = computed(() => this.filtrarCatalogo(this.busquedaUsoEmpresa(), this.usosCfdi));
+  listadoRegimen = computed(() => this.filtrarCatalogo(this.busquedaRegimen(), this.regimenesFiscales));
+  listadoUso = computed(() => this.filtrarCatalogo(this.busquedaUso(), this.usosCfdi));
 
-  mostrarListaRegimenPersona = computed(() => this.comboAbierto() === 'regPersona' || this.busquedaRegimenPersona().trim() !== '');
-  mostrarListaRegimenEmpresa = computed(() => this.comboAbierto() === 'regEmpresa' || this.busquedaRegimenEmpresa().trim() !== '');
-  mostrarListaUsoPersona = computed(() => this.comboAbierto() === 'usoPersona' || this.busquedaUsoPersona().trim() !== '');
-  mostrarListaUsoEmpresa = computed(() => this.comboAbierto() === 'usoEmpresa' || this.busquedaUsoEmpresa().trim() !== '');
+  mostrarListaRegimen = computed(() => this.comboAbierto() === 'regimen' || this.busquedaRegimen().trim() !== '');
+  mostrarListaUso = computed(() => this.comboAbierto() === 'uso' || this.busquedaUso().trim() !== '');
 
   constructor() {
-    this.form = this.buildPersonaForm();
-    this.form.setValidators([telefonoOcorreoRequired]);
+    this.form = this.buildForm();
   }
 
   ngOnInit(): void {
@@ -116,69 +104,28 @@ export class ClienteFormComponent implements OnInit {
     return this.clienteId !== null;
   }
 
-  get esPersona(): boolean {
-    return this.tipo() === 'persona';
+  get fiscalGroup(): FormGroup {
+    return this.form.get('fiscal') as FormGroup;
   }
 
-  get esEmpresa(): boolean {
-    return this.tipo() === 'empresa';
-  }
+  // --- Construcción del formulario (siempre Empresa) ----------------------
 
-  get fiscalPersonaGroup(): FormGroup {
-    return this.form.get('fiscalPersona') as FormGroup;
-  }
-
-  get fiscalEmpresaGroup(): FormGroup {
-    return this.form.get('fiscalEmpresa') as FormGroup;
-  }
-
-  setTipo(t: ClienteTipo): void {
-    if (this.tipo() === t) return;
-    this.tipo.set(t);
-    this.form = t === 'persona' ? this.buildPersonaForm() : this.buildEmpresaForm();
-    if (t === 'persona') {
-      this.form.setValidators([telefonoOcorreoRequired]);
-    } else {
-      this.form.setValidators([]);
-    }
-  }
-
-  // --- Construcción de formularios por tipo (wave 2) --------------------
-
-  private buildPersonaForm(): FormGroup {
-    return this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(NOMBRE_MAX)]],
-      telefono: ['', [Validators.pattern(TELEFONO_PATTERN)]],
-      correo: ['', [Validators.email, Validators.maxLength(EMAIL_MAX)]],
-      observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
-      fiscalPersona: this.fb.group({
-        rfc: ['', [Validators.pattern(RFC_PATTERN)]],
-        razonSocial: ['', [Validators.maxLength(RAZON_SOCIAL_MAX)]],
-        regimenFiscal: ['', []],
-        usoCFDI: ['', []],
-        codigoPostal: ['', [Validators.pattern(CODIGO_POSTAL_PATTERN)]],
-        direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
-      }),
-    });
-  }
-
-  private buildEmpresaForm(): FormGroup {
+  private buildForm(): FormGroup {
     return this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(NOMBRE_MAX)]],
       direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
       observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
-      fiscalEmpresa: this.fb.group({
+      fiscal: this.fb.group({
         rfc: ['', [Validators.pattern(RFC_PATTERN)]],
         razonSocial: ['', [Validators.maxLength(RAZON_SOCIAL_MAX)]],
         regimenFiscal: ['', []],
         usoCFDI: ['', []],
         codigoPostal: ['', [Validators.pattern(CODIGO_POSTAL_PATTERN)]],
-        direccionFiscal: ['', [Validators.maxLength(DIRECCION_MAX)]],
       }),
     });
   }
 
-  // Searchers reutilizados (consumen catálogos del módulo Clientes) ------
+  // Catálogos del módulo Clientes ------------------------------------------
 
   private async cargarCatalogos(): Promise<void> {
     try {
@@ -207,27 +154,15 @@ export class ClienteFormComponent implements OnInit {
     return catalogo.filter(o => o.label.toLowerCase().includes(q));
   }
 
-  seleccionarRegimenPersona(opcion: OpcionCatalogo): void {
-    this.form.get(['fiscalPersona', 'regimenFiscal'])?.setValue(opcion.value);
-    this.busquedaRegimenPersona.set('');
+  seleccionarRegimen(opcion: OpcionCatalogo): void {
+    this.form.get(['fiscal', 'regimenFiscal'])?.setValue(opcion.value);
+    this.busquedaRegimen.set('');
     this.comboAbierto.set(null);
   }
 
-  seleccionarRegimenEmpresa(opcion: OpcionCatalogo): void {
-    this.form.get(['fiscalEmpresa', 'regimenFiscal'])?.setValue(opcion.value);
-    this.busquedaRegimenEmpresa.set('');
-    this.comboAbierto.set(null);
-  }
-
-  seleccionarUsoPersona(opcion: OpcionCatalogo): void {
-    this.form.get(['fiscalPersona', 'usoCFDI'])?.setValue(opcion.value);
-    this.busquedaUsoPersona.set('');
-    this.comboAbierto.set(null);
-  }
-
-  seleccionarUsoEmpresa(opcion: OpcionCatalogo): void {
-    this.form.get(['fiscalEmpresa', 'usoCFDI'])?.setValue(opcion.value);
-    this.busquedaUsoEmpresa.set('');
+  seleccionarUso(opcion: OpcionCatalogo): void {
+    this.form.get(['fiscal', 'usoCFDI'])?.setValue(opcion.value);
+    this.busquedaUso.set('');
     this.comboAbierto.set(null);
   }
 
@@ -243,14 +178,6 @@ export class ClienteFormComponent implements OnInit {
     return catalogo.find(o => o.value === valor)?.label ?? '';
   }
 
-  onToggleDatosFiscalesPersona(activo: boolean): void {
-    this.showDatosFiscalesPersona.set(activo);
-  }
-
-  onToggleDatosFiscalesEmpresa(activo: boolean): void {
-    this.showDatosFiscalesEmpresa.set(activo);
-  }
-
   onContactosChange(lista: Contacto[]): void {
     this.contactos.set(lista);
   }
@@ -260,9 +187,9 @@ export class ClienteFormComponent implements OnInit {
   // ----------------------------------------------------------------------
 
   async onSubmit(): Promise<void> {
-    if (this.form.invalid || (this.esEmpresa && this.contactos().length === 0)) {
+    if (this.form.invalid || this.contactos().length === 0) {
       this.form.markAllAsTouched();
-      this.toast.warning(this.esEmpresa && this.contactos().length === 0
+      this.toast.warning(this.contactos().length === 0
         ? 'Registra al menos un contacto para la empresa.'
         : 'Corrige los campos marcados antes de guardar.');
       return;
@@ -291,60 +218,45 @@ export class ClienteFormComponent implements OnInit {
 
   private async guardar(): Promise<void> {
     const raw = this.form.getRawValue();
-    const esPersonaCliente = this.tipo() === 'persona';
-
-    const fiscalesActivos = esPersonaCliente
-      ? this.showDatosFiscalesPersona()
-      : this.showDatosFiscalesEmpresa();
-
-    const fiscal = esPersonaCliente ? raw.fiscalPersona : raw.fiscalEmpresa;
+    const fiscal = raw.fiscal;
 
     const payload: Record<string, unknown> = {
       Nombre: raw.nombre,
-      RazonSocial: fiscalesActivos ? (fiscal.razonSocial || null) : null,
+      RazonSocial: fiscal.razonSocial || null,
       Observaciones: raw.observaciones || null,
-      RFC: fiscalesActivos ? (fiscal.rfc || null) : null,
-      idRegimenFiscal: fiscalesActivos && fiscal.regimenFiscal ? Number(fiscal.regimenFiscal) : null,
-      idUsoCFDI: fiscalesActivos && fiscal.usoCFDI ? Number(fiscal.usoCFDI) : null,
-      CodigoPostal: fiscalesActivos ? (fiscal.codigoPostal || null) : null,
-      Direccion: fiscalesActivos ? (fiscal.direccion || fiscal.direccionFiscal || null) : null,
-      tipo: this.tipo(),
+      RFC: fiscal.rfc || null,
+      idRegimenFiscal: fiscal.regimenFiscal ? Number(fiscal.regimenFiscal) : null,
+      idUsoCFDI: fiscal.usoCFDI ? Number(fiscal.usoCFDI) : null,
+      CodigoPostal: fiscal.codigoPostal || null,
+      Direccion: raw.direccion || null,
+      tipo: 'empresa',
     };
 
-    if (esPersonaCliente) {
-      payload['Telefono'] = String(raw.telefono || '').replace(/\D/g, '');
-      payload['Correo'] = raw.correo || null;
-    }
-
+    // Se envían también los idContactoCliente para que el backend pueda
+    // distinguir un contacto editado (UPDATE) de uno nuevo (INSERT), y así
+    // el historial registra correctamente la operación.
     const contactos = this.contactos().map(c => ({
+      idContactoCliente: c.id ?? null,
       NombreCompleto: c.nombreCompleto,
       Telefono: String(c.telefono || '').replace(/\D/g, ''),
       Correo: c.correo || null,
+      Observaciones: c.observaciones || null,
     }));
 
+    payload['contactos'] = contactos;
+
     if (this.clienteId) {
-      payload['contactos'] = esPersonaCliente
-        ? [{ NombreCompleto: raw.nombre, Telefono: payload['Telefono'], Correo: payload['Correo'] }, ...contactos]
-        : contactos;
       await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, payload));
     } else {
-      payload['contactos'] = esPersonaCliente
-        ? [{ NombreCompleto: raw.nombre, Telefono: payload['Telefono'], Correo: payload['Correo'] }, ...contactos]
-        : contactos;
       await firstValueFrom(this.api.post('/Clientes', payload));
     }
   }
 
   private async fetchCliente(id: number): Promise<ClienteForm> {
     const raw: any = await firstValueFrom(this.api.get('/Clientes/' + id));
-    const tipoValor = raw.TIPOCLIENTE ?? raw.tipoCliente ?? raw.TIPO ?? raw.Tipo ?? '';
-    const tipo: ClienteTipo = /persona|fisic/i.test(tipoValor) ? 'persona' : 'empresa';
     return {
-      tipo,
-      nombre: raw.NOMBRE ?? raw.nombre ?? '',
-      direccion: raw.DIRECCION ?? raw.direccion ?? '',
-      telefono: raw.TELEFONO ?? raw.telefono ?? '',
-      correo: raw.CORREO ?? raw.correo ?? '',
+      nombre: raw.NOMBRE ?? raw.Nombre ?? raw.nombre ?? '',
+      direccion: raw.DIRECCION ?? raw.Direccion ?? raw.direccion ?? '',
       observaciones: raw.OBSERVACIONES ?? raw.observaciones ?? '',
       rfc: raw.RFC ?? raw.rfc ?? '',
       razonSocial: raw.RAZONSOCIAL ?? raw.RazonSocial ?? raw.razonSocial ?? '',
@@ -358,46 +270,24 @@ export class ClienteFormComponent implements OnInit {
         nombreCompleto: c.NOMBRECOMPLETO ?? c.NombreCompleto ?? c.nombreCompleto ?? '',
         telefono: c.TELEFONO ?? c.Telefono ?? c.telefono ?? '',
         correo: c.CORREO ?? c.Correo ?? c.correo ?? '',
+        observaciones: c.OBSERVACIONES ?? c.observaciones ?? '',
       })) : [],
     };
   }
 
   private aplicarEdicion(data: ClienteForm): void {
-    this.setTipo(data.tipo === 'empresa' ? 'empresa' : 'persona');
-    const tieneFiscales = !!data.rfc;
-
-    if (data.tipo === 'persona') {
-this.form.patchValue({
-        nombre: data.nombre,
-        telefono: data.telefono ?? '',
-        correo: data.correo ?? '',
-        observaciones: data.observaciones ?? '',
-        fiscalPersona: {
-          rfc: data.rfc ?? '',
-          razonSocial: data.razonSocial ?? '',
-          regimenFiscal: data.idRegimenFiscal != null ? String(data.idRegimenFiscal) : '',
-          usoCFDI: data.idUsoCFDI != null ? String(data.idUsoCFDI) : '',
-          codigoPostal: data.codigoPostal ?? '',
-          direccion: data.direccion ?? '',
-        },
-      });
-      if (data.rfc) this.showDatosFiscalesPersona.set(true);
-    } else {
-      this.form.patchValue({
-        nombre: data.nombre,
-        direccion: data.direccion ?? '',
-        observaciones: data.observaciones ?? '',
-        fiscalEmpresa: {
-          rfc: data.rfc ?? '',
-          razonSocial: data.razonSocial ?? '',
-          regimenFiscal: data.idRegimenFiscal != null ? String(data.idRegimenFiscal) : '',
-          usoCFDI: data.idUsoCFDI != null ? String(data.idUsoCFDI) : '',
-          codigoPostal: data.codigoPostal ?? '',
-          direccionFiscal: data.direccion ?? '',
-        },
-      });
-      if (data.rfc) this.showDatosFiscalesEmpresa.set(true);
-    }
+    this.form.patchValue({
+      nombre: data.nombre,
+      direccion: data.direccion ?? '',
+      observaciones: data.observaciones ?? '',
+      fiscal: {
+        rfc: data.rfc ?? '',
+        razonSocial: data.razonSocial ?? '',
+        regimenFiscal: data.idRegimenFiscal != null ? String(data.idRegimenFiscal) : '',
+        usoCFDI: data.idUsoCFDI != null ? String(data.idUsoCFDI) : '',
+        codigoPostal: data.codigoPostal ?? '',
+      },
+    });
 
     if (data.contactos && data.contactos.length) {
       this.contactos.set(data.contactos);
@@ -406,11 +296,8 @@ this.form.patchValue({
 }
 
 interface ClienteForm {
-  tipo: ClienteTipo;
   nombre: string;
   direccion?: string;
-  telefono?: string;
-  correo?: string;
   observaciones?: string;
   rfc?: string;
   razonSocial?: string;

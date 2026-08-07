@@ -1,26 +1,26 @@
 ﻿<div class="page">
 
+  <div class="page-header">
+    <h1>Gestión de Clientes</h1>
+    <p>Directorio maestro, historial de obras y configuraciones de facturación SAT</p>
+  </div>
+
   <section class="panel-frame">
 
-    <div class="panel-header">
-      <div>
-        <h1>Gestión de Clientes</h1>
-        <p>Directorio maestro, historial de obras y configuraciones de facturación SAT</p>
-      </div>
+    <div class="panel-toolbar">
+      <app-filter-bar
+        [searchTerm]="searchTerm"
+        [searchPlaceholder]="'Buscar por nombre, teléfono, correo o RFC…'"
+        [options]="filterOptions"
+        [filterValue]="filtro"
+        (searchTermChange)="onSearchChange($event)"
+        (filterValueChange)="onFilterChange($event)"
+      ></app-filter-bar>
       <button class="btn-primary" (click)="nuevoCliente()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         Nuevo Cliente
       </button>
     </div>
-
-    <app-filter-bar
-      [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por nombre, teléfono, correo o RFC…'"
-      [options]="filterOptions"
-      [filterValue]="filtro"
-      (searchTermChange)="onSearchChange($event)"
-      (filterValueChange)="onFilterChange($event)"
-    ></app-filter-bar>
 
     <app-data-table
       [columns]="columns"
@@ -31,11 +31,6 @@
     >
       <ng-template #cell let-row let-col="column">
         @switch (col.key) {
-          @case ('tipo') {
-            <span class="badge" [class.badge-info]="row.tipo === 'persona'" [class.badge-primary]="row.tipo === 'empresa'">
-              {{ row.tipo === 'persona' ? 'Persona' : 'Empresa' }}
-            </span>
-          }
           @case ('nombre') {
             <span class="td-nombre">{{ row.nombre }}</span>
           }
@@ -88,34 +83,17 @@
   (editar)="editarCliente(selectedCliente)"
   (cerrar)="cerrarDetalle()"
 >
-  <div class="detail-modal__field">
-    <span class="detail-modal__label">Tipo</span>
-    <span class="detail-modal__value">
-      {{ selectedCliente.tipo === 'persona' ? 'Persona' : 'Empresa' }}
-    </span>
-  </div>
-
   <div class="detail-modal__section">
     <span class="detail-modal__label">Datos generales</span>
     <div class="detail-modal__grid">
       <div class="detail-modal__field">
-        <span class="detail-modal__label">Nombre / Razón Social</span>
+        <span class="detail-modal__label">Nombre de la Empresa</span>
         <span class="detail-modal__value">{{ selectedCliente.nombre || 'No registrado' }}</span>
       </div>
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">Teléfono</span>
-        <span class="detail-modal__value">{{ selectedCliente.telefono || 'No registrado' }}</span>
-      </div>
       <div class="detail-modal__field detail-modal__field--span-2">
-        <span class="detail-modal__label">Correo Electrónico</span>
-        <span class="detail-modal__value">{{ selectedCliente.correo || 'No registrado' }}</span>
+        <span class="detail-modal__label">Dirección</span>
+        <span class="detail-modal__value">{{ selectedCliente.direccion || 'No registrado' }}</span>
       </div>
-      @if (selectedCliente.direccion) {
-        <div class="detail-modal__field detail-modal__field--span-2">
-          <span class="detail-modal__label">Dirección</span>
-          <span class="detail-modal__value">{{ selectedCliente.direccion }}</span>
-        </div>
-      }
       @if (selectedCliente.observaciones) {
         <div class="detail-modal__field detail-modal__field--span-2">
           <span class="detail-modal__label">Observaciones</span>
@@ -125,9 +103,9 @@
     </div>
   </div>
 
-  @if (selectedCliente.contactos && selectedCliente.contactos.length > 0) {
-    <div class="detail-modal__section">
-      <span class="detail-modal__label">Contactos ({{ selectedCliente.contactos.length }})</span>
+  <div class="detail-modal__section">
+    <span class="detail-modal__label">Contactos ({{ selectedCliente.contactos?.length ?? 0 }})</span>
+    @if (selectedCliente.contactos && selectedCliente.contactos.length > 0) {
       <div class="detail-modal__list">
         @for (c of selectedCliente.contactos; track $index) {
           <div class="detail-modal__list-item">
@@ -137,36 +115,36 @@
           </div>
         }
       </div>
-    </div>
-  }
+    } @else {
+      <p class="detail-modal__empty">No hay contactos registrados</p>
+    }
+  </div>
 
-  @if (selectedCliente.rfc) {
-    <div class="detail-modal__section">
-      <span class="detail-modal__label">Datos fiscales</span>
-      <div class="detail-modal__grid">
-        <div class="detail-modal__field">
-          <span class="detail-modal__label">RFC</span>
-          <span class="detail-modal__value">{{ selectedCliente.rfc }}</span>
-        </div>
-        <div class="detail-modal__field">
-          <span class="detail-modal__label">Razón Social</span>
-          <span class="detail-modal__value">{{ selectedCliente.razonSocial || 'No registrada' }}</span>
-        </div>
-        <div class="detail-modal__field">
-          <span class="detail-modal__label">Régimen Fiscal</span>
-          <span class="detail-modal__value">{{ selectedCliente.regimenFiscal || 'No registrado' }}</span>
-        </div>
-        <div class="detail-modal__field">
-          <span class="detail-modal__label">Uso de CFDI</span>
-          <span class="detail-modal__value">{{ selectedCliente.usoCFDI || 'No registrado' }}</span>
-        </div>
-        <div class="detail-modal__field">
-          <span class="detail-modal__label">Código Postal</span>
-          <span class="detail-modal__value">{{ selectedCliente.codigoPostal || 'No registrado' }}</span>
-        </div>
+  <div class="detail-modal__section">
+    <span class="detail-modal__label">Datos fiscales</span>
+    <div class="detail-modal__grid">
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">RFC</span>
+        <span class="detail-modal__value">{{ selectedCliente.rfc || 'No registrado' }}</span>
+      </div>
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">Razón Social</span>
+        <span class="detail-modal__value">{{ selectedCliente.razonSocial || 'No registrado' }}</span>
+      </div>
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">Uso de CFDI</span>
+        <span class="detail-modal__value">{{ selectedCliente.usoCFDI || 'No registrado' }}</span>
+      </div>
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">Régimen Fiscal</span>
+        <span class="detail-modal__value">{{ selectedCliente.regimenFiscal || 'No registrado' }}</span>
+      </div>
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">Código Postal Fiscal</span>
+        <span class="detail-modal__value">{{ selectedCliente.codigoPostal || 'No registrado' }}</span>
       </div>
     </div>
-  }
+  </div>
 
   <div class="detail-modal__section">
     <span class="detail-modal__label">Resumen</span>

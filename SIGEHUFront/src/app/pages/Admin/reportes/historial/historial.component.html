@@ -87,11 +87,15 @@
           <tbody>
             @for (d of detalleCampos; track d.id) {
               <tr>
-                <td class="detalle-tabla__campo">{{ d.campo }}</td>
+                <td class="detalle-tabla__campo">{{ etiquetaCampo(d.campo) }}</td>
                 <td class="detalle-tabla__cambio">
-                  <span class="d-old">{{ d.valorAnterior || '—' }}</span>
-                  <span class="d-arrow">→</span>
-                  <span class="d-new">{{ d.valorNuevo || '—' }}</span>
+                  @if (esAccionContacto(d.campo)) {
+                    <span class="d-new">{{ textoAccionContacto(d) }}</span>
+                  } @else {
+                    <span class="d-old">{{ d.valorAnterior || '—' }}</span>
+                    <span class="d-arrow">→</span>
+                    <span class="d-new">{{ d.valorNuevo || '—' }}</span>
+                  }
                 </td>
               </tr>
             }

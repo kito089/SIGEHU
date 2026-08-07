@@ -183,4 +183,34 @@ export class HistorialComponent implements OnInit {
     const [yyyy, mm, dd] = dia.split('-');
     return `${dd}/${mm}/${yyyy}`;
   }
+
+  // ── Mensajes amigables para cambios de contactos (RF historial) ─────────
+  // Los triggers de ContactosClientes registran la operación en el campo:
+  //   'Contacto agregado'  → se agregó un contacto
+  //   'Contacto eliminado' → se eliminó un contacto
+  //   'Contacto'/'Telefono'/'Correo' → se editó un contacto
+  esAccionContacto(campo: string): boolean {
+    return ['Contacto agregado', 'Contacto eliminado', 'Contacto', 'Telefono', 'Correo'].includes(campo);
+  }
+
+  etiquetaCampo(campo: string): string {
+    return this.esAccionContacto(campo) ? 'Contacto' : campo;
+  }
+
+  textoAccionContacto(d: AuditoriaDetalle): string {
+    switch (d.campo) {
+      case 'Contacto agregado':
+        return `Se agregó un contacto${d.valorNuevo ? ': ' + d.valorNuevo : ''}`;
+      case 'Contacto eliminado':
+        return `Se eliminó un contacto${d.valorAnterior ? ': ' + d.valorAnterior : ''}`;
+      case 'Contacto':
+        return `Se editó un contacto${d.valorAnterior ? ': ' + d.valorAnterior : ''}${d.valorNuevo ? ' → ' + d.valorNuevo : ''}`;
+      case 'Telefono':
+        return `Se editó un contacto (Teléfono)${d.valorAnterior ? ': ' + d.valorAnterior : ''}${d.valorNuevo ? ' → ' + d.valorNuevo : ''}`;
+      case 'Correo':
+        return `Se editó un contacto (Correo)${d.valorAnterior ? ': ' + d.valorAnterior : ''}${d.valorNuevo ? ' → ' + d.valorNuevo : ''}`;
+      default:
+        return '';
+    }
+  }
 }
