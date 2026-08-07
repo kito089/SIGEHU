@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ProveedoresService } from '../../../services/proveedores.service';
-import { Proveedor } from '../../../core/models/proveedor.model';
+import { Proveedor, ProveedorMaterial } from '../../../core/models/proveedor.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
+import { MaterialDetailComponent, MaterialDetailData } from '../../../shared/components/material-detail/material-detail.component';
 
 /* =========================================================================
    SIGEHU — Proveedores (listado).
@@ -21,7 +22,7 @@ import { DetailModalComponent } from '../../../shared/components/detail-modal/de
 @Component({
   selector: 'app-proveedores',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent, MaterialDetailComponent],
   templateUrl: './proveedores.component.html',
   styleUrl: './proveedores.component.scss',
 })
@@ -36,6 +37,7 @@ export class ProveedoresComponent implements OnInit {
   cargando = false;
 
   selectedProveedor: Proveedor | null = null;
+  selectedMaterialForDetail: MaterialDetailData | null = null;
   private detallePendienteId: number | null = null;
 
   proveedorAEliminar: Proveedor | null = null;
@@ -106,6 +108,23 @@ export class ProveedoresComponent implements OnInit {
 
   cerrarDetalle(): void {
     this.selectedProveedor = null;
+    this.selectedMaterialForDetail = null;
+  }
+
+  onMaterialDetailClick(material: ProveedorMaterial): void {
+    this.selectedMaterialForDetail = {
+      idMaterial: material.idMaterial,
+      nombre: material.nombre,
+      unidadMedida: material.unidadMedida,
+      descripcion: material.descripcion,
+      precio: material.precio,
+      proveedor: this.selectedProveedor?.nombre ?? null,
+      stock: null,
+    };
+  }
+
+  cerrarMaterialDetail(): void {
+    this.selectedMaterialForDetail = null;
   }
 
   editarProveedor(proveedor: Proveedor): void {

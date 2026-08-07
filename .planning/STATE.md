@@ -75,7 +75,7 @@
 
 ## PHASE 2: MÓDULO CLIENTES COMPLETO — Planificado (2026-08-05)
 
-**Estado:** Planned
+**Estado:** Complete ✅
 **Total Waves:** 8
 **Total Tareas:** ~52 (subatómicas)
 **Fecha Creación:** 2026-08-05
@@ -145,16 +145,16 @@
 - [x] 6.4 ✅ VERIFY WAVE 6 BACKEND: Ejecutar migración + test integración — ✅ Migración ejecutada: TIPO column agregada, 4 SPs creados, VW_CLIENTES_CON_OBRAS actualizado con TIPO, VW_CLIENTES_COMPLETO creado. Backend healthy en :3000, consulta API retorna 200 OK. No requiere restart (queries directas a vistas/columnas ya aplicadas).
 
 ### Phase 2 Wave 7: Validation Wave - Comparación Exhaustiva REQUIREMENTS.md
-- [ ] 7.1 🔍 SEARCH: Checklist RF-03 (CRUD Clientes & Contactos 1:N)
-- [ ] 7.2 🔍 SEARCH: Checklist RF-04 (Historial Cliente)
-- [ ] 7.3 🔍 SEARCH: Checklist RF-05 (Filtros Clientes)
-- [ ] 7.4 🔍 SEARCH: Checklist RF-06 (Validación Estricta)
-- [ ] 7.5 📝 EDIT: Documentar Gaps - `phase2-gaps.md` (SOLO VERIFICACIÓN)
+- [x] 7.1 🔍 SEARCH: Checklist RF-03 (CRUD Clientes & Contactos 1:N)
+- [x] 7.2 🔍 SEARCH: Checklist RF-04 (Historial Cliente)
+- [x] 7.3 🔍 SEARCH: Checklist RF-05 (Filtros Clientes)
+- [x] 7.4 🔍 SEARCH: Checklist RF-06 (Validación Estricta)
+- [x] 7.5 📝 EDIT: Documentar Gaps - `phase2-gaps.md` (SOLO VERIFICACIÓN)
 
 ### Phase 2 Wave 8: Verificación Técnica - Build Frontend + Backend
-- [ ] 8.1 ✅ VERIFY: Build Frontend - Solo errores de esta fase
-- [ ] 8.2 ✅ VERIFY: Backend - Inicio servidor + test endpoints Clientes
-- [ ] 8.3 📝 EDIT: Actualizar STATE.md + ROADMAP.md - Fase 2 Completa
+- [x] 8.1 ✅ VERIFY: Build Frontend - Solo errores de esta fase — ✅ `npm run build` exit 0 (único warning: `OrdenesCompraComponent` NG8113 preexistente, ajeno a Fase 2)
+- [x] 8.2 ✅ VERIFY: Backend - Inicio servidor + test endpoints Clientes — ✅ servidor inicia (:3000), CRUD Clientes + RegimenesFiscales (26) + UsosCFDI (24) responden; `GET /:id/obras` OK
+- [x] 8.3 📝 EDIT: Actualizar STATE.md + ROADMAP.md - Fase 2 Completa
 
 ---
 
@@ -175,6 +175,11 @@
 | KI-11 | `src/environments/environment.prod.ts` no existe (path de `fileReplacements` en angular.json). Carpeta `src/environments/` es gitignored y autogenerada por `build.bat` (archivo protegido). Bloquea `npm run build` en HEAD sin depender de Wave 1. | Alta | **Bloquea build — preexistente, fuera de ola** (resolver vía `build.bat`)
    | Wave 1.7 |
 | KI-12 | Plan Wave 2.5/2.9 pedía reutilizar `RegimenFiscalSelectorComponent`/`UsoCFDISelectorComponent` de Proveedores, pero **no existen** en `proveedores/` (grep 0 resultados). Decisión: reutilizar catálogos backend de Clientes (`GET /Clientes/RegimenesFiscales`, `GET /Clientes/UsosCFDI`) y construir combobox searchable single-select en el propio formulario. Sin componentes nuevos ni cambios backend. | Media | Resuelto (combobox searchable en `cliente-form.component.ts/html`) | Wave 2.5
+| KI-13 | G-01: Botón "Detalles" por material + integración `MaterialDetailComponent` en modal Proveedores no estaban implementados pese a marcarse Done en STATE. Corregido: `onMaterialDetailClick` + `selectedMaterialForDetail` + `<app-material-detail>` + botón "Detalles" | Alta | Resuelto (auditoría Fase 2) | Wave 1.2/1.8
+| KI-14 | G-03: Bug runtime `consumidas is not defined` en `updateCliente` (MERGE contactos) - variable `consumidos` declarada pero se referenciaba `consumidas` en 3 puntos. Corregido. | Alta | Resuelto (auditoría Fase 2) | Wave 4.4
+| KI-15 | G-04: `findObras` del controlador Clientes leía `req.params.idCliente` pero la ruta es `/:id/obras` → recibía `undefined`. Corregido a `req.params.id`. | Media | Resuelto (auditoría Fase 2) | Wave 4.3
+| KI-16 | G-05: `--sigehu-required-color` solo definido local en `cliente-form.component.css`; añadido al design system global `src/theme/variables.scss` | Baja | Resuelto (auditoría Fase 2) | Wave 2.10
+| KI-17 | G-02: Filtro "Activos/Inactivos" (RF-05) faltaba en listado Clientes; añadido campo `activo` al mapeo y opciones de filtro | Media | Resuelto (auditoría Fase 2) | Wave 3.4
 
 ---
 
@@ -300,5 +305,14 @@
 | 2026-08-06 | Agent | P2 W5.6 | Actualizada VW_CLIENTES_CON_OBRAS (incluye Tipo); creada VW_CLIENTES_COMPLETO | Done |
 | 2026-08-06 | Agent | P2 W5.7 | VERIFICACIÓN: Backend inicia (BD conectada, :3000), Build frontend exit 0. Wave 5 completa | Done |
 | 2026-08-06 | Agent | P2 W6.1-W6.4 | Migración Phase 2 Clientes ejecutada: DDL (ADD TIPO + CHECK + INDEX), 4 SPs (DROP/CREATE), VW_CLIENTES_CON_OBRAS actualizado con TIPO, VW_CLIENTES_COMPLETO creado con DESCRIPCION correcta. Backend healthy, API responde 200. | Done |
+| 2026-08-07 | Auditor | P2 W1.2/1.8 | Fix G-01: botón "Detalles" por material + integración `MaterialDetailComponent` (onMaterialDetailClick, selectedMaterialForDetail, styles) en modal Proveedores | Done |
+| 2026-08-07 | Auditor | P2 W3.4 | Fix G-02: añadido campo `activo` al listado Clientes + opciones de filtro activos/inactivos (RF-05) | Done |
+| 2026-08-07 | Auditor | P2 W4.4 | Fix G-03: bug `consumidas`→`consumidos` en `updateCliente` (MERGE contactos) | Done |
+| 2026-08-07 | Auditor | P2 W4.3 | Fix G-04: `findObras` → `req.params.id` (ruta `/:id/obras`) | Done |
+| 2026-08-07 | Auditor | P2 W2.10 | Fix G-05: token `--sigehu-required-color` añadido a variables.scss global | Done |
+| 2026-08-07 | Auditor | P2 W1.7 | VERIFICACIÓN FE: `npm run build` exit 0 (warning único NG8113 OrdenesCompra preexistente, ajeno a Fase 2) | Done |
+| 2026-08-07 | Auditor | P2 W4.8/5.7/6.4 | VERIFICACIÓN BE: `node src/app.js` inicia (:3000, BD conectada); test CRUD Clientes (create persona/empresa, update MERGE contactos 1→2, soft delete, validación empresa sin contactos→400, `/:id/obras` OK); RegimenesFiscales 26, UsosCFDI 24 | Done |
+| 2026-08-07 | Auditor | P2 W7 | Validation Wave: checklists RF-03/04/05/06 verificados, `phase2-gaps.md` creado | Done |
+| 2026-08-07 | Auditor | P2 W8.3 | STATE.md + ROADMAP.md actualizados → **PHASE 2 COMPLETE** | Done |
 
 > **Formato:** `YYYY-MM-DD` | `Agent-Type` | `Wave X.Y` | `Descripción corta` | `Done/Blocked/Partial`

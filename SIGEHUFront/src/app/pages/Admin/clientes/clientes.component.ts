@@ -16,7 +16,7 @@ import { DetailModalComponent } from '../../../shared/components/detail-modal/de
    con modal de confirmación reutilizable).
    ========================================================================= */
 
-type FiltroClientes = 'todos' | 'persona' | 'empresa' | 'con_obras' | 'con_sat' | 'sin_sat';
+type FiltroClientes = 'todos' | 'persona' | 'empresa' | 'activos' | 'inactivos' | 'con_obras' | 'con_sat' | 'sin_sat';
 
 interface Cliente {
   id: number;
@@ -28,6 +28,7 @@ interface Cliente {
   obrasActivas: number;
   datosSat: boolean;
   direccion: string;
+  activo: boolean;
 }
 
 @Component({
@@ -68,6 +69,8 @@ export class ClientesComponent implements OnInit {
     { value: 'todos', label: 'Todos los clientes' },
     { value: 'persona', label: 'Solo Personas' },
     { value: 'empresa', label: 'Solo Empresas' },
+    { value: 'activos', label: 'Activos' },
+    { value: 'inactivos', label: 'Inactivos' },
     { value: 'con_obras', label: 'Con obras activas' },
     { value: 'con_sat', label: 'Con datos SAT' },
     { value: 'sin_sat', label: 'Sin datos SAT' },
@@ -118,6 +121,7 @@ export class ClientesComponent implements OnInit {
       obrasActivas: Number(raw.TOTALOBRASACTIVAS ?? raw.TotalObrasActivas ?? raw.totalObrasActivas ?? 0),
       datosSat: Boolean(raw.TIENEDATOSFISCALES ?? raw.TieneDatosFiscales ?? raw.tieneDatosFiscales ?? false),
       direccion: raw.DIRECCION ?? raw.Direccion ?? raw.direccion ?? '',
+      activo: raw.ACTIVO ?? raw.Activo ?? raw.activo ?? true,
     };
   }
 
@@ -140,6 +144,8 @@ export class ClientesComponent implements OnInit {
         this.filtro === 'todos' ? true :
         this.filtro === 'persona' ? c.tipo === 'persona' :
         this.filtro === 'empresa' ? c.tipo === 'empresa' :
+        this.filtro === 'activos' ? c.activo :
+        this.filtro === 'inactivos' ? !c.activo :
         this.filtro === 'con_obras' ? c.obrasActivas > 0 :
         this.filtro === 'con_sat' ? c.datosSat :
         !c.datosSat;

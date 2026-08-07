@@ -142,10 +142,21 @@
 - 7.4 Checklist RF-06 (Validación Estricta)
 - 7.5 Documentar gaps en `.planning/phase2-gaps.md` - **SOLO VERIFICACIÓN, NO IMPLEMENTACIÓN**
 
+> **Progreso Wave 7:** ✅ completada. RF-03/04/05/06 verificados contra código real; gaps
+> documentados en `.planning/phase2-gaps.md`. Se detectaron y corrigieron en la auditoría final:
+> botón "Detalles"/MaterialDetail en modal Proveedores (G-01), filtro activos/inactivos (G-02),
+> bug `consumidas` en MERGE contactos (G-03), `findObras` parámetro `idCliente`→`id` (G-04),
+> token `--sigehu-required-color` global (G-05).
+
 ### **Wave 8: Verificación Técnica - Build Frontend + Backend** (Día 14)
 - 8.1 `npm run build` (Frontend) - Fix SOLO errores Fase 2
 - 8.2 `node src/app.js` (Backend) - Fix SOLO errores Fase 2
 - 8.3 Actualizar `STATE.md`, `ROADMAP.md`, `phase-2-plan.md` - Fase marcada Complete
+
+> **Progreso Wave 8:** ✅ **PHASE 2 COMPLETE** (2026-08-07). `npm run build` exit 0 (warning único
+> NG8113 en OrdenesCompra, preexistente y ajeno a la fase). Backend inicia en :3000 con BD
+> conectada; test CRUD Clientes completo verificado (create persona/empresa con validaciones,
+> update MERGE de contactos, soft-delete, `/:id/obras`) + catálogos RegimenesFiscales/UsosCFDI.
 
 ---
 

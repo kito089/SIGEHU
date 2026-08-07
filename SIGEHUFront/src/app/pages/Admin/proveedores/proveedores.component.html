@@ -110,10 +110,16 @@
     <span class="detail-modal__label">Materiales en catálogo ({{ totalMateriales(selectedProveedor) }})</span>
     <div class="detail-modal__list">
       <ng-container *ngIf="selectedProveedor.materiales?.length; else sinMateriales">
-        <span class="detail-modal__list-item" *ngFor="let m of selectedProveedor.materiales">
+        <div class="detail-modal__list-item detail-modal__material" *ngFor="let m of selectedProveedor.materiales">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
-          {{ m.nombre }}
-        </span>
+          <div class="detail-modal__material-info">
+            <span class="detail-modal__material-name">{{ m.nombre }}</span>
+            <span class="detail-modal__material-meta">{{ m.unidadMedida || '—' }}</span>
+          </div>
+          <button type="button" class="detail-modal__material-btn" (click)="onMaterialDetailClick(m)" aria-label="Ver detalles del material {{ m.nombre }}" title="Detalles">
+            Detalles
+          </button>
+        </div>
       </ng-container>
       <ng-template #sinMateriales>
         <p class="detail-modal__empty">Sin materiales registrados en el catálogo.</p>
@@ -121,6 +127,12 @@
     </div>
   </div>
 </app-detail-modal>
+
+<app-material-detail
+  *ngIf="selectedMaterialForDetail"
+  [material]="selectedMaterialForDetail"
+  (cerrar)="cerrarMaterialDetail()">
+</app-material-detail>
 
 <app-confirm-modal
   *ngIf="confirmarEliminacion"

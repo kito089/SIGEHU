@@ -385,7 +385,7 @@ const updateCliente = async (id, {
                 // 2) Si no, coincidencia por contenido (misma firma) sin consumir.
                 if (!match) {
                     const filas = firmasExistentes.get(firma(c)) ?? [];
-                    match = filas.find((e) => !consumidas.has(String(e.IDCONTACTOCLIENTE ?? e.idContactoCliente)));
+                    match = filas.find((e) => !consumidos.has(String(e.IDCONTACTOCLIENTE ?? e.idContactoCliente)));
                 }
 
                 if (!match) {
@@ -400,7 +400,7 @@ const updateCliente = async (id, {
                     continue;
                 }
 
-                consumidas.add(String(match.IDCONTACTOCLIENTE ?? match.idContactoCliente));
+                consumidos.add(String(match.IDCONTACTOCLIENTE ?? match.idContactoCliente));
 
                 const idContacto = match.IDCONTACTOCLIENTE ?? match.idContactoCliente;
                 const obsExistentes = match.OBSERVACIONES != null && !Buffer.isBuffer(match.OBSERVACIONES)
@@ -428,7 +428,7 @@ const updateCliente = async (id, {
             // Elimina los contactos que ya no están en la lista.
             for (const e of existentes ?? []) {
                 const k = String(e.IDCONTACTOCLIENTE ?? e.idContactoCliente);
-                if (!consumidas.has(k)) {
+                if (!consumidos.has(k)) {
                     await txUpdate.execute(
                         "DELETE FROM ContactosClientes WHERE IdContactoCliente = ?",
                         [e.IDCONTACTOCLIENTE ?? e.idContactoCliente]

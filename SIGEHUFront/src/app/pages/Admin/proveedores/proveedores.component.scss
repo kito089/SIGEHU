@@ -113,6 +113,62 @@
 .icon-btn:hover { color: var(--sigehu-accent, #2f8fef); border-color: var(--sigehu-accent, #2f8fef); }
 .icon-btn-danger:hover { color: var(--danger); border-color: var(--danger); }
 
+/* ---- Lista de materiales del modal de detalle ---- */
+.detail-modal__material {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.detail-modal__material-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.detail-modal__material-name {
+  color: var(--sigehu-text-primary, #eef1f7);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.detail-modal__material-meta {
+  color: var(--sigehu-text-tertiary, #5c6580);
+  font-size: 12px;
+}
+
+.detail-modal__material-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--sigehu-accent, #2f8fef);
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.detail-modal__material-btn:hover {
+  background: var(--sigehu-accent-soft, rgba(47,143,239,0.12));
+}
+
+/* Vista de material a pantalla completa dentro del flujo de Proveedores */
+app-material-detail {
+  display: block;
+  padding: 24px 32px 48px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+@media (max-width: 720px) {
+  app-material-detail { padding: 16px; }
+}
+
 @media (max-width: 720px) {
   .page { padding: 20px 16px 50px; }
   .panel-frame { padding: 16px; }

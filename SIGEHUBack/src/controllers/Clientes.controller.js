@@ -120,7 +120,7 @@ const update = async (req, res) => {
 // Obtiene todas las obras activas de un Cliente.
 const findObras = async (req, res) => {
     try {
-        const Obras = await service.getObrasByCliente(req.params.idCliente);
+        const Obras = await service.getObrasByCliente(req.params.id);
         res.json(Obras);
     } catch (e) {
         res.status(500).json({ error: e.message });
