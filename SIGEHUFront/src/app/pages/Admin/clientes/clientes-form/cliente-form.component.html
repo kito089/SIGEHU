@@ -1,7 +1,7 @@
 <div class="page">
   <app-entity-form
     [title]="esEdicion ? 'Editar Cliente' : 'Agregar Nuevo Cliente'"
-    subtitle="Registra o actualiza la información general de contacto e instalación del cliente"
+    subtitle="Registra o actualiza la información general, contactos y configuración de facturación SAT del cliente"
     badgeText="Cliente"
     [loading]="loading"
     [submitting]="guardando"
@@ -11,303 +11,113 @@
   >
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
-      <!-- 2.3 Selector Persona / Empresa (botones mutuamente excluyentes) -->
-      <div class="tipo-selector" role="group" aria-label="Tipo de cliente">
-        <button
-          type="button"
-          class="tipo-btn"
-          [class.active]="esPersona"
-          (click)="setTipo('persona')"
-        >
-          <span class="tipo-btn-icon" aria-hidden="true">&#9787;</span>
-          <span class="tipo-btn-label">Persona</span>
-        </button>
-        <button
-          type="button"
-          class="tipo-btn"
-          [class.active]="esEmpresa"
-          (click)="setTipo('empresa')"
-        >
-          <span class="tipo-btn-icon" aria-hidden="true">&#127970;</span>
-          <span class="tipo-btn-label">Empresa</span>
-        </button>
-      </div>
+      <div class="tipo-block">
+        <div class="field">
+          <label for="nombre" class="required-label">Nombre de la Empresa</label>
+          <input
+            id="nombre"
+            type="text"
+            formControlName="nombre"
+            placeholder="Razón social o nombre comercial">
+          <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+            Ingresa el nombre de la empresa
+          </span>
+        </div>
 
-      <!-- ============ FORMULARIO PERSONA ============ -->
-      @if (esPersona) {
-        <div class="tipo-block">
-          <div class="field">
-            <label for="nombre" class="required-label">Nombre Completo</label>
-            <input
-              id="nombre"
-              type="text"
-              formControlName="nombre"
-              placeholder="Ej. Carlos Eduardo Utrilla Canal">
-            <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
-              Ingresa el nombre (máx. 150 caracteres)
-            </span>
-          </div>
+        <div class="field">
+          <label for="direccion">Dirección</label>
+          <input
+            id="direccion"
+            type="text"
+            formControlName="direccion"
+            placeholder="Calle, número, colonia, ciudad">
+        </div>
 
-          <!-- 2.4 Validación XOR teléfono/correo -->
+        <div class="field">
+          <label for="observaciones">Observaciones / Notas internas</label>
+          <textarea
+            id="observaciones"
+            rows="2"
+            formControlName="observaciones"
+            placeholder="Notas sobre el trato, acceso, referencias, etc."></textarea>
+        </div>
+
+        <!-- Contactos (min 1) -->
+        <div class="contactos-wrap">
+          <app-contact-list
+            [contactos]="contactos()"
+            (contactosChange)="onContactosChange($event)">
+          </app-contact-list>
+        </div>
+
+        <!-- Datos fiscales: siempre visibles, sin switch -->
+        <div class="fiscal-block" [formGroup]="fiscalGroup">
           <div class="field-row">
             <div class="field">
-              <label for="telefono" [class.required-label]="!form.get('correo')?.value">Teléfono</label>
-              <input
-                id="telefono"
-                type="tel"
-                formControlName="telefono"
-                placeholder="10 a 15 dígitos">
-              <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-                Teléfono inválido (10-15 dígitos)
+              <label for="rfc">RFC</label>
+              <input id="rfc" type="text" formControlName="rfc" placeholder="Ej. UTCA850101AB1">
+              <span class="field-error" *ngIf="form.get('fiscal')?.get('rfc')?.touched && form.get('fiscal')?.get('rfc')?.invalid">
+                RFC inválido (12-13 caracteres)
               </span>
             </div>
-
             <div class="field">
-              <label for="correo" [class.required-label]="!form.get('telefono')?.value">Correo Electrónico</label>
+              <label for="razonSocial">Razón Social</label>
+              <input id="razonSocial" type="text" formControlName="razonSocial" placeholder="Razón social fiscal">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="regimen">Régimen Fiscal</label>
               <input
-                id="correo"
-                type="email"
-                formControlName="correo"
-                placeholder="correo@ejemplo.com">
-              <span class="field-error" *ngIf="form.get('correo')?.touched && form.get('correo')?.invalid">
-                Ingresa un correo válido
+                id="regimen"
+                type="text"
+                autocomplete="off"
+                [value]="labelCatalogo(form.get('fiscal')?.get('regimenFiscal')?.value ?? '', regimenesFiscales)"
+                (focus)="abrirCombo('regimen')"
+                (click)="abrirCombo('regimen')"
+                (blur)="cerrarCombo()"
+                (input)="busquedaRegimen.set($any($event.target).value)"
+                placeholder="Busca un régimen…">
+              <div class="combo-list" *ngIf="mostrarListaRegimen()">
+                <button type="button" class="combo-item" *ngFor="let r of listadoRegimen()" (click)="seleccionarRegimen(r)">
+                  {{ r.label }}
+                </button>
+                <div class="combo-empty" *ngIf="listadoRegimen().length === 0">Sin resultados</div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="uso">Uso de CFDI</label>
+              <input
+                id="uso"
+                type="text"
+                autocomplete="off"
+                [value]="labelCatalogo(form.get('fiscal')?.get('usoCFDI')?.value ?? '', usosCfdi)"
+                (focus)="abrirCombo('uso')"
+                (click)="abrirCombo('uso')"
+                (blur)="cerrarCombo()"
+                (input)="busquedaUso.set($any($event.target).value)"
+                placeholder="Selecciona un uso…">
+              <div class="combo-list" *ngIf="mostrarListaUso()">
+                <button type="button" class="combo-item" *ngFor="let u of listadoUso()" (click)="seleccionarUso(u)">
+                  {{ u.label }}
+                </button>
+                <div class="combo-empty" *ngIf="listadoUso().length === 0">Sin resultados</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="cp">Código Postal Fiscal</label>
+              <input id="cp" type="text" formControlName="codigoPostal" placeholder="5 dígitos">
+              <span class="field-error" *ngIf="form.get('fiscal')?.get('codigoPostal')?.touched && form.get('fiscal')?.get('codigoPostal')?.invalid">
+                Código postal de 5 dígitos
               </span>
             </div>
           </div>
-
-          <span class="field-error form-level-error" *ngIf="form.errors?.['telefonoOcorreo'] && form.touched">
-            Captura al menos un teléfono o un correo.
-          </span>
-
-          <div class="field">
-            <label for="observaciones">Observaciones / Notas internas</label>
-            <textarea
-              id="observaciones"
-              rows="2"
-              formControlName="observaciones"
-              placeholder="Notas sobre el trato, acceso al domicilio, referencias, etc."></textarea>
-          </div>
-
-          <!-- 2.5 Datos fiscales Persona -->
-          <div class="toggle-row">
-            <div>
-              <span class="toggle-label">Datos Fiscales</span>
-              <p class="toggle-hint">Actívalo para capturar RFC, régimen fiscal y demás datos de facturación.</p>
-            </div>
-            <label class="switch">
-              <input
-                type="checkbox"
-                [checked]="showDatosFiscalesPersona()"
-                (change)="onToggleDatosFiscalesPersona($any($event.target).checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          @if (showDatosFiscalesPersona()) {
-            <div class="fiscal-block" [formGroup]="fiscalPersonaGroup">
-              <div class="field-row">
-                <div class="field">
-                  <label for="rfcPersona">RFC</label>
-                  <input id="rfcPersona" type="text" formControlName="rfc" placeholder="Ej. UTCA850101AB1">
-                  <span class="field-error" *ngIf="form.get('fiscalPersona.rfc')?.touched && form.get('fiscalPersona.rfc')?.invalid">
-                    RFC inválido (12-13 caracteres)
-                  </span>
-                </div>
-                <div class="field">
-                  <label for="razonSocialPersona">Razón Social</label>
-                  <input id="razonSocialPersona" type="text" formControlName="razonSocial" placeholder="Razón social o nombre fiscal">
-                </div>
-              </div>
-
-              <div class="field-row">
-                <div class="field">
-                  <label for="regimenPersona">Régimen Fiscal</label>
-                  <input
-                    id="regimenPersona"
-                    type="text"
-                    autocomplete="off"
-                    [value]="labelCatalogo(form.get('fiscalPersona')?.get('regimenFiscal')?.value ?? '', regimenesFiscales)"
-                    (focus)="abrirCombo('regPersona')"
-                    (click)="abrirCombo('regPersona')"
-                    (blur)="cerrarCombo()"
-                    (input)="busquedaRegimenPersona.set($any($event.target).value)"
-                    placeholder="Busca un régimen…">
-                  <div class="combo-list" *ngIf="mostrarListaRegimenPersona()">
-                    <button type="button" class="combo-item" *ngFor="let r of listadoRegimenPersona()" (click)="seleccionarRegimenPersona(r)">
-                      {{ r.label }}
-                    </button>
-                    <p class="combo-empty" *ngIf="listadoRegimenPersona().length === 0">Sin resultados</p>
-                  </div>
-                </div>
-                <div class="field">
-                  <label for="usoPersona">Uso de CFDI</label>
-                  <input
-                    id="usoPersona"
-                    type="text"
-                    autocomplete="off"
-                    [value]="labelCatalogo(form.get('fiscalPersona')?.get('usoCFDI')?.value ?? '', usosCfdi)"
-                    (focus)="abrirCombo('usoPersona')"
-                    (click)="abrirCombo('usoPersona')"
-                    (blur)="cerrarCombo()"
-                    (input)="busquedaUsoPersona.set($any($event.target).value)"
-                    placeholder="Selecciona un uso…">
-                  <div class="combo-list" *ngIf="mostrarListaUsoPersona()">
-                    <button type="button" class="combo-item" *ngFor="let u of listadoUsoPersona()" (click)="seleccionarUsoPersona(u)">
-                      {{ u.label }}
-                    </button>
-                    <div class="combo-empty" *ngIf="listadoUsoPersona().length === 0">Sin resultados</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="field-row">
-                <div class="field">
-                  <label for="cpPersona">Código Postal Fiscal</label>
-                  <input id="cpPersona" type="text" formControlName="codigoPostal" placeholder="5 dígitos">
-                  <span class="field-error" *ngIf="form.get('fiscalPersona')?.get('codigoPostal')?.touched && form.get('fiscalPersona')?.get('codigoPostal')?.invalid">
-                    Código postal de 5 dígitos
-                  </span>
-                </div>
-                <div class="field">
-                  <label for="dirPersona">Dirección Fiscal</label>
-                  <input id="dirPersona" type="text" formControlName="direccion" placeholder="Calle, número, colonia, ciudad">
-                </div>
-              </div>
-            </div>
-          }
         </div>
-      }
-
-      <!-- ============ FORMULARIO EMPRESA ============ -->
-      @if (esEmpresa) {
-        <div class="tipo-block">
-          <div class="field">
-            <label for="nombreEmpresa" class="required-label">Nombre de la Empresa</label>
-            <input
-              id="nombreEmpresa"
-              type="text"
-              formControlName="nombre"
-              placeholder="Razón social o nombre comercial">
-            <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
-              Ingresa el nombre de la empresa
-            </span>
-          </div>
-
-          <div class="field">
-            <label for="direccionEmpresa">Dirección</label>
-            <input
-              id="direccionEmpresa"
-              type="text"
-              formControlName="direccion"
-              placeholder="Calle, número, colonia, ciudad">
-          </div>
-
-          <div class="field">
-            <label for="observacionesEmpresa">Observaciones / Notas internas</label>
-            <textarea
-              id="observacionesEmpresa"
-              rows="2"
-              formControlName="observaciones"
-              placeholder="Notas sobre el trato, acceso, referencias, etc."></textarea>
-          </div>
-
-          <!-- 2.7/2.8 Contactos (integrado, min 1) -->
-          <div class="contactos-wrap">
-            <app-contact-list
-              [contactos]="contactos()"
-              (contactosChange)="onContactosChange($event)">
-            </app-contact-list>
-          </div>
-
-          <!-- 2.9 Datos fiscales Empresa -->
-          <div class="toggle-row">
-            <div>
-              <span class="toggle-label">Datos Fiscales</span>
-              <p class="toggle-hint">Actívalo para capturar RFC, régimen fiscal y demás datos de facturación.</p>
-            </div>
-            <label class="switch">
-              <input
-                type="checkbox"
-                [checked]="showDatosFiscalesEmpresa()"
-                (change)="onToggleDatosFiscalesEmpresa($any($event.target).checked)">
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          @if (showDatosFiscalesEmpresa()) {
-            <div class="fiscal-block" [formGroup]="fiscalEmpresaGroup">
-              <div class="field-row">
-                <div class="field">
-                  <label for="rfcEmpresa">RFC</label>
-                  <input id="rfcEmpresa" type="text" formControlName="rfc" placeholder="Ej. UTCA850101AB1">
-                  <span class="field-error" *ngIf="form.get('fiscalEmpresa')?.get('rfc')?.touched && form.get('fiscalEmpresa')?.get('rfc')?.invalid">
-                    RFC inválido (12-13 caracteres)
-                  </span>
-                </div>
-                <div class="field">
-                  <label for="razonSocialEmpresa">Razón Social</label>
-                  <input id="razonSocialEmpresa" type="text" formControlName="razonSocial" placeholder="Razón social fiscal">
-                </div>
-              </div>
-
-              <div class="field-row">
-                <div class="field">
-                  <label for="regimenEmpresa">Régimen Fiscal</label>
-                  <input
-                    id="regimenEmpresa"
-                    type="text"
-                    autocomplete="off"
-                    [value]="labelCatalogo(form.get('fiscalEmpresa')?.get('regimenFiscal')?.value ?? '', regimenesFiscales)"
-                    (focus)="abrirCombo('regEmpresa')"
-                    (click)="abrirCombo('regEmpresa')"
-                    (blur)="cerrarCombo()"
-                    (input)="busquedaRegimenEmpresa.set($any($event.target).value)"
-                    placeholder="Busca un régimen…">
-                  <div class="combo-list" *ngIf="mostrarListaRegimenEmpresa()">
-                    <button type="button" class="combo-item" *ngFor="let r of listadoRegimenEmpresa()" (click)="seleccionarRegimenEmpresa(r)">
-                      {{ r.label }}
-                    </button>
-                    <div class="combo-empty" *ngIf="listadoRegimenEmpresa().length === 0">Sin resultados</div>
-                  </div>
-                </div>
-                <div class="field">
-                  <label for="usoEmpresa">Uso de CFDI</label>
-                  <input
-                    id="usoEmpresa"
-                    type="text"
-                    autocomplete="off"
-                    [value]="labelCatalogo(form.get('fiscalEmpresa')?.get('usoCFDI')?.value ?? '', usosCfdi)"
-                    (focus)="abrirCombo('usoEmpresa')"
-                    (click)="abrirCombo('usoEmpresa')"
-                    (blur)="cerrarCombo()"
-                    (input)="busquedaUsoEmpresa.set($any($event.target).value)"
-                    placeholder="Selecciona un uso…">
-                  <div class="combo-list" *ngIf="mostrarListaUsoEmpresa()">
-                    <button type="button" class="combo-item" *ngFor="let u of listadoUsoEmpresa()" (click)="seleccionarUsoEmpresa(u)">
-                      {{ u.label }}
-                    </button>
-                    <div class="combo-empty" *ngIf="listadoUsoEmpresa().length === 0">Sin resultados</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="field-row">
-                <div class="field">
-                  <label for="cpEmpresa">Código Postal Fiscal</label>
-                  <input id="cpEmpresa" type="text" formControlName="codigoPostal" placeholder="5 dígitos">
-                  <span class="field-error" *ngIf="form.get('fiscalEmpresa')?.get('codigoPostal')?.touched && form.get('fiscalEmpresa')?.get('codigoPostal')?.invalid">
-                    Código postal de 5 dígitos
-                  </span>
-                </div>
-                <div class="field">
-                  <label for="dirFiscalEmpresa">Dirección Fiscal</label>
-                  <input id="dirFiscalEmpresa" type="text" formControlName="direccionFiscal" placeholder="Dirección fiscal">
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      }
+      </div>
 
     </form>
   </app-entity-form>

@@ -1,23 +1,23 @@
 ﻿<div class="page">
 
+  <div class="page-header">
+    <h1>Garantías</h1>
+    <p>Control de garantías de obra: pendientes, en proceso y cerradas</p>
+  </div>
+
   <section class="panel-frame">
 
-    <div class="panel-header">
-      <div>
-        <h1>Garantías</h1>
-        <p>Control de garantías de obra: pendientes, en proceso y cerradas</p>
-      </div>
+    <div class="panel-toolbar">
+      <app-filter-bar
+        [searchTerm]="searchTerm"
+        [searchPlaceholder]="'Buscar por folio, obra o descripción.'"
+        (searchTermChange)="onSearchChange($event)"
+      ></app-filter-bar>
       <button class="btn-primary" (click)="nuevaGarantia()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         Nueva Garantía
       </button>
     </div>
-
-    <app-filter-bar
-      [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por folio, obra o descripción…'"
-      (searchTermChange)="onSearchChange($event)"
-    ></app-filter-bar>
 
     <app-data-table
       [columns]="columns"

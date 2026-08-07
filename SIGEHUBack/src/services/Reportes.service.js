@@ -213,12 +213,15 @@ const getClientesPorObras = async () => {
 /* -------------------------------------------------------------------------
    5) CLIENTES — Nuevos por mes (serie para línea + listado).
    Clientes no registra fecha de creación; se deriva de la auditoría INSERT.
+   Solo se consideran clientes activos (los eliminados quedan fuera de las
+   estadísticas de clientes vigentes).
    ------------------------------------------------------------------------- */
 const getClientesNuevos = async () => {
   const db = await getConnection();
   const serie = await db.query(
     `SELECT EXTRACT(YEAR FROM a.Fecha) AS ANIO, EXTRACT(MONTH FROM a.Fecha) AS MES, COUNT(*) AS TOTAL
      FROM Auditorias a
+     JOIN Clientes c ON c.idCliente = a.RegistroAfectado AND c.Activo = TRUE
      WHERE a.Tabla = 'Clientes' AND a.Accion = 'INSERT'
      GROUP BY 1, 2
      ORDER BY 1, 2`,
@@ -228,7 +231,7 @@ const getClientesNuevos = async () => {
     `SELECT a.RegistroAfectado AS ID, c.NombreCompleto AS NOMBRE, a.Fecha AS FECHA
      FROM Auditorias a
      JOIN Clientes c ON c.idCliente = a.RegistroAfectado
-     WHERE a.Tabla = 'Clientes' AND a.Accion = 'INSERT'
+     WHERE a.Tabla = 'Clientes' AND a.Accion = 'INSERT' AND c.Activo = TRUE
      ORDER BY a.Fecha DESC
      ROWS 50`,
     []

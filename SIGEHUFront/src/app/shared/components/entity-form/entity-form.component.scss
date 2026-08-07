@@ -16,7 +16,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: var(--sigehu-space-5, 18px);
+  margin-bottom: var(--sigehu-space-6, 24px);
   flex-wrap: wrap;
 }
 
@@ -31,14 +31,15 @@
 
 .entity-form__header h1 {
   margin: 0 0 4px;
-  font-size: 19px;
+  font-size: var(--sigehu-font-size-2xl, 24px);
   font-weight: 700;
+  line-height: 1.2;
   letter-spacing: -0.01em;
 }
 
 .entity-form__header p {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--sigehu-font-size-md, 14px);
   color: var(--sigehu-text-secondary, #8992a8);
 }
 

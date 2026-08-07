@@ -1,23 +1,23 @@
 ﻿<div class="page">
 
+  <div class="page-header">
+    <h1>Materiales / Herramientas</h1>
+    <p>Catálogo de materiales e insumos del taller (Fuente: API /Materiales)</p>
+  </div>
+
   <section class="panel-frame">
 
-    <div class="panel-header">
-      <div>
-        <h1>Materiales / Herramientas</h1>
-        <p>Catálogo de materiales e insumos del taller (Fuente: API /Materiales)</p>
-      </div>
+    <div class="panel-toolbar">
+      <app-filter-bar
+        [searchTerm]="searchTerm"
+        [searchPlaceholder]="'Buscar por material, unidad o descripción.'"
+        (searchTermChange)="onSearchChange($event)"
+      ></app-filter-bar>
       <button class="btn-primary" (click)="nuevoMaterial()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         Nuevo Material
       </button>
     </div>
-
-    <app-filter-bar
-      [searchTerm]="searchTerm"
-      [searchPlaceholder]="'Buscar por material, unidad o descripción…'"
-      (searchTermChange)="onSearchChange($event)"
-    ></app-filter-bar>
 
     <app-data-table
       [columns]="columns"

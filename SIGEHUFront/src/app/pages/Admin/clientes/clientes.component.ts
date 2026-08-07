@@ -16,12 +16,11 @@ import { DetailModalComponent } from '../../../shared/components/detail-modal/de
    con modal de confirmación reutilizable).
    ========================================================================= */
 
-type FiltroClientes = 'todos' | 'persona' | 'empresa' | 'con_obras' | 'con_sat' | 'sin_sat';
+type FiltroClientes = 'todos' | 'con_obras' | 'con_sat' | 'sin_sat';
 
 interface Cliente {
   id: number;
   nombre: string;
-  tipo: 'persona' | 'empresa';
   telefono: string;
   correo: string;
   rfc: string;
@@ -68,7 +67,6 @@ export class ClientesComponent implements OnInit {
   eliminando = false;
 
   columns: DataTableColumn[] = [
-    { key: 'tipo', label: 'Tipo' },
     { key: 'nombre', label: 'Nombre / Razón social' },
     { key: 'telefono', label: 'Teléfono' },
     { key: 'correo', label: 'Correo' },
@@ -79,8 +77,6 @@ export class ClientesComponent implements OnInit {
 
   filterOptions = [
     { value: 'todos', label: 'Todos los clientes' },
-    { value: 'persona', label: 'Solo Personas' },
-    { value: 'empresa', label: 'Solo Empresas' },
     { value: 'con_obras', label: 'Con obras activas' },
     { value: 'con_sat', label: 'Con datos SAT' },
     { value: 'sin_sat', label: 'Sin datos SAT' },
@@ -119,12 +115,9 @@ export class ClientesComponent implements OnInit {
   }
 
   private mapCliente(raw: any): Cliente {
-    const tipoValor = raw.TIPOCLIENTE ?? raw.tipoCliente ?? raw.TipoCliente ?? '';
-    const tipo: 'persona' | 'empresa' = /persona|fisic/i.test(String(tipoValor)) ? 'persona' : 'empresa';
     return {
       id: raw.IDCLIENTE ?? raw.idCliente,
       nombre: raw.NOMBRE ?? raw.Nombre ?? raw.nombre ?? '',
-      tipo,
       telefono: raw.TELEFONO ?? raw.Telefono ?? raw.telefono ?? '',
       correo: raw.CORREO ?? raw.Correo ?? raw.correo ?? '',
       rfc: raw.RFC ?? raw.rfc ?? '',
@@ -144,6 +137,8 @@ export class ClientesComponent implements OnInit {
     const term = this.searchTerm.trim().toLowerCase();
 
     return this.clientes.filter(c => {
+      if (c.activo === false) return false;
+
       const matchesSearch = !term
         || c.nombre.toLowerCase().includes(term)
         || c.telefono.includes(term)
@@ -152,8 +147,6 @@ export class ClientesComponent implements OnInit {
 
       const matchesFiltro =
         this.filtro === 'todos' ? true :
-        this.filtro === 'persona' ? c.tipo === 'persona' :
-        this.filtro === 'empresa' ? c.tipo === 'empresa' :
         this.filtro === 'con_obras' ? c.obrasActivas > 0 :
         this.filtro === 'con_sat' ? c.datosSat :
         !c.datosSat;

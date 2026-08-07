@@ -182,7 +182,31 @@
 
 ---
 
-## Problemas Conocidos (Known Issues)
+## Correcciones de Clientes (Waves 10/7/8 + documento de correcciones)
+
+**Estado:** Wave 10 COMPLETA (2026-08-07). Siguientes tareas del documento en curso.
+
+**Resumen Wave 10:** Formulario de cliente ahora es Empresa-only — sin selector Persona/Empresa ni toggle fiscal; datos fiscales siempre visibles (Razón Social, RFC, Régimen, Uso CFDI, CP, Dirección) y combos searchable con focus/clic de una sola vez.
+
+**Archivos modificados:**
+- Frontend: `SIGEHUFront/src/app/pages/Admin/clientes/clientes-form/cliente-form.component.ts/html/css`
+- Frontend: `SIGEHUFront/src/app/pages/Admin/clientes/clientes.component.ts/html` (listado sin Tipo/filtros persona-empresa, solo activos)
+- Frontend: `SIGEHUFront/src/app/pages/Admin/reportes/historial/historial.component.ts/html` (mensajes amigables de contactos)
+- Backend: `SIGEHUBack/src/services/Reportes.service.js` (`getClientesNuevos` solo activos)
+- Backend: `SIGEHUBack/src/services/Clientes.service.js` (ya enviaba/recibía `contactos` con `idContactoCliente`; listado `Activo = TRUE`)
+
+**Validaciones realizadas (runtime HTTP, backend PID 7696):**
+- POST /Clientes (empresa + RazonSocial + RFC + contacto) → 201 ✅
+- GET /Clientes/:id → RazonSocial + fiscales + contactos con `IDCONTACTOCLIENTE` ✅
+- PUT edita contacto → auditoría `Contacto: viejo → nuevo` ✅
+- PUT agrega contacto → `Contacto agregado: (nuevo) → Ana Torres` ✅
+- PUT elimina contacto → `Contacto eliminado: Ana Torres → ` ✅
+- DELETE soft → listado vacío, reporte excluye eliminado ✅
+- `npm run build` frontend → exit 0 ✅
+
+**Próxima tarea pendiente:** resto del documento de correcciones de Clientes (detalles read-only por estructura Empresa, filtros y reportes, terminología Eliminar, etc.).
+
+---
 
 | ID | Descripción | Severidad | Estado | Asignado |
 |----|-------------|-----------|--------|----------|
@@ -347,5 +371,12 @@
 | 2026-08-07 | Developer | T1-ANDROID | **Log nativo Android en Logcat**: `SigehuLogPlugin.java` (tag `SIGEHU`, `android.util.Log` e/i/w/d por nivel) + registro en `MainActivity.onCreate` (`registerPlugin`) + puente TS `core/services/sigehu-log.plugin.ts` (`registerPlugin('SigehuLog')`). `LogService.emit` → plugin nativo cuando `env.isCapacitor` (independiente de `console.*`, sobrevive builds prod que dropan console) | Done |
 | 2026-08-07 | Developer | T1-FORMAT | **Serializer de logs**: bug `[object Object]` corregido — `LogService.format` ahora pasa el detalle sanitizado por `stringify()` (JSON indentado); `sanitize()` ya no trunca/coerciona, `stringify()` aplica truncado `MAX_DETAIL_CHARS` y nunca devuelve `[object Object]`. `writeToFile`/`writeToNative` reciben el texto ya formateado | Done |
 | 2026-08-07 | Developer | T1-VALID | **Validación final**: `ng build` exit 0 (www fresco), `ng lint` 0 errores (fix `!=`→`!==` compra-form:124; quedan 2 warnings OnInit preexistentes), `www/` sin referencias CDN/unpkg/fonts.googleapis, `node --check` build-sea.mjs/main/preload/log OK | Done |
+| 2026-08-07 | Developer | W10 | **Formulario Cliente Empresa-only**: elimina selector Persona/Empresa y toggle fiscal; datos fiscales siempre visibles; combos searchable régimen/uso con focus+clic (`comboAbierto` signal). `cliente-form.component.ts/html/css`. Build exit 0 | Done |
+| 2026-08-07 | Developer | W7 | **Razón Social / fiscales**: payload siempre envía `tipo:'empresa'`, `RazonSocial`, `RFC`, `idRegimenFiscal`, `idUsoCFDI`, `CodigoPostal`, `Direccion`; carga edición mapea claves UPPERCASE del driver Firebird | Done |
+| 2026-08-07 | Developer | W8 | **Contactos flujo completo**: payload envía `idContactoCliente` para distinguir INSERT/UPDATE; `fetchCliente` mapea `IDCONTACTOCLIENTE`; verificado por HTTP create/edit/add/remove contacto | Done |
+| 2026-08-07 | Developer | CORR | **Listado Clientes**: elimina columna Tipo y filtros persona/empresa (módulo 100% Empresa); listado solo muestra activos (`Activo = TRUE` en `getClientes`) | Done |
+| 2026-08-07 | Developer | CORR | **Historial semántico contactos**: triggers ContactosClientes registran "Contacto agregado"/"Contacto eliminado"/"Contacto"(edit) dentro de `LAST_AUDIT_ID`; frontend historial muestra mensajes amigables (`esAccionContacto`/`etiquetaCampo`/`textoAccionContacto` en `historial.component.ts/html`). Verificado por HTTP: `Auditoria/cliente/2` → detalles con Campo `Contacto agregado`/`Contacto eliminado`/`Contacto` | Done |
+| 2026-08-07 | Developer | CORR | **Reporte Nuevos clientes por mes**: `Reportes.service.js` `getClientesNuevos` filtra solo activos (`JOIN Clientes c ... AND c.Activo = TRUE`). Verificado: serie `{anio,mes,total}` + listado; cliente eliminado queda excluido | Done |
+| 2026-08-07 | Developer | W10-VAL | **Validación runtime HTTP**: login kito089/123456 OK; POST /Clientes (empresa, RazonSocial, RFC, contacto) → 201; GET /Clientes/2 → RazonSocial+fiscal+contactos (IDCONTACTOCLIENTE); PUT edita contacto → auditoría "Contacto: Juan Pérez → Juan Pérez López"; PUT agrega contacto → "Contacto agregado: (nuevo) → Ana Torres"; PUT elimina contacto → "Contacto eliminado: Ana Torres → "; DELETE soft → listado vacío + reporte vacío. Backend reiniciado (PID 7696). Build frontend exit 0 | Done |
 
 > **Formato:** `YYYY-MM-DD` | `Agent-Type` | `Wave X.Y` | `Descripción corta` | `Done/Blocked/Partial`
