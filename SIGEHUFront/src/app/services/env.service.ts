@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
-import { EnvironmentDetector } from './environment-detector.service';
+import { EnvironmentDetector, Runtime } from './environment-detector.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,6 +8,7 @@ import { EnvironmentDetector } from './environment-detector.service';
 export class EnvService {
   private detector = inject(EnvironmentDetector);
 
+  readonly runtime: Runtime;
   readonly isElectron: boolean;
   readonly isCapacitor: boolean;
   readonly isWeb: boolean;
@@ -16,24 +17,17 @@ export class EnvService {
   constructor() {
     const detector = this.detector;
 
+    this.runtime = detector.runtime;
     this.isElectron = detector.isElectron;
     this.isCapacitor = detector.isCapacitor;
     this.isWeb = detector.isWeb;
-    this.apiUrl = this.isElectron
-      ? 'http://localhost:3000'
-      : this.isCapacitor
-        ? environment.cloudflareDomain
-        : this.isLocalDevBrowser()
-          ? 'http://localhost:3000'
-          : environment.cloudflareDomain;
-  }
 
-  private isLocalDevBrowser(): boolean {
-    if (!this.isWeb || typeof window === 'undefined') {
-      return false;
-    }
-    const host = window.location.hostname;
-    return host === 'localhost' || host === '127.0.0.1';
+    // Única fuente de verdad de la URL del backend.
+    // - Android (Ionic + Capacitor nativo) -> túnel zrok2 (HTTPS).
+    // - Navegador (ng serve) y Electron -> backend local.
+    this.apiUrl = this.isCapacitor
+      ? environment.cloudflareDomain
+      : 'http://localhost:3000';
   }
 
   getBaseUrl(): string {
