@@ -36,3 +36,12 @@ export interface CompraPayload {
   Notas?: string | null;
   detalles: CompraDetalleInput[];
 }
+
+/** Compra todavía no recibida (para el bloque "Compras pendientes"). */
+export interface CompraPendiente {
+  idCompra: number;
+  fechaCompra: string;
+  proveedores: string;
+  materiales: string;
+  lineas: number;
+}

@@ -1,0 +1,27 @@
+<div class="stacked">
+  <ul class="stacked__rows">
+    @for (cat of categories(); track cat.category) {
+      <li class="stacked__row">
+        <div class="stacked__head">
+          <span class="stacked__category">{{ cat.category }}</span>
+          <span class="stacked__total">{{ formatNumber(totalOf(cat)) }}</span>
+        </div>
+        <div class="stacked__track">
+          @for (seg of cat.series; track seg.name) {
+            <div class="stacked__seg" [style]="segmentStyle(seg)"
+                 [attr.title]="seg.name + ': ' + formatNumber(seg.value)"></div>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+  <ul class="stacked__legend">
+    @for (name of seriesNames(); track name) {
+      <li class="stacked__legend-item">
+        <span class="stacked__legend-dot"
+              [style.background-color]="colorOf(name)"></span>
+        <span class="stacked__legend-name">{{ name }}</span>
+      </li>
+    }
+  </ul>
+</div>

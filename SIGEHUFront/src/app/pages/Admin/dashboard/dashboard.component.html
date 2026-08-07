@@ -29,6 +29,34 @@
         (cardClick)="onCardClick($event)"
         (addCardClick)="onAddCard($event)"
       ></app-kanban-board>
+
+      <!-- Compras pendientes -->
+      <section class="dashboard-panel dashboard-compras" aria-label="Compras pendientes">
+        <div class="dashboard-compras__head">
+          <h2 class="dashboard-compras__title">Compras pendientes de recibir</h2>
+          <span class="dashboard-compras__count">{{ comprasPendientes().length }}</span>
+        </div>
+        @if (comprasCargando()) {
+          <p class="dashboard-compras__empty">Cargando…</p>
+        } @else if (comprasPendientes().length) {
+          <ul class="dashboard-compras__list">
+            @for (c of comprasPendientes().slice(0, 6); track c.idCompra) {
+              <li class="dashboard-compras__item">
+                <div class="dashboard-compras__body">
+                  <span class="dashboard-compras__prov">{{ c.proveedores }}</span>
+                  <span class="dashboard-compras__mat">{{ c.materiales }}</span>
+                </div>
+                <div class="dashboard-compras__meta">
+                  <span>{{ c.fechaCompra }}</span>
+                  <span>{{ c.lineas }} línea(s)</span>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="dashboard-compras__empty">No hay compras pendientes.</p>
+        }
+      </section>
     </section>
   }
   @case ('calendar') {

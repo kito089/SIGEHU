@@ -7,6 +7,7 @@ const router = Router();
 router.use(auth.verifyToken);
 
 router.get("/", auth.requireRole('Propietario'), controller.getAll);
+router.get("/pendientes", auth.requireRole('Propietario'), controller.getPendientes);
 router.get("/:id", auth.requireRole('Propietario'), controller.getById);
 router.post("/", auth.requireRole('Propietario'), controller.create);
 router.put("/:id", auth.requireRole('Propietario'), controller.update);

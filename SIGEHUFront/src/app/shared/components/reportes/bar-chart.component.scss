@@ -1,0 +1,105 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.bars--vertical {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sigehu-space-3, 12px);
+  width: 100%;
+  height: 200px;
+  padding-top: var(--sigehu-space-4, 16px);
+}
+
+.bars__col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: var(--sigehu-space-1, 4px);
+}
+
+.bars__track {
+  width: 100%;
+  max-width: 46px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 4px;
+  background: var(--sigehu-card-border, #1E293B);
+  overflow: hidden;
+}
+
+.bars__fill {
+  width: 100%;
+  height: var(--bar-metric);
+  min-height: 2px;
+  background: var(--bar-color, var(--sigehu-primary-btn-bg, #3B82F6));
+  border-radius: 4px 4px 0 0;
+}
+
+.bars__value {
+  font-size: var(--sigehu-font-size-sm, 11px);
+  color: var(--sigehu-text-secondary, #94A3B8);
+  line-height: 1;
+}
+
+.bars__label {
+  font-size: var(--sigehu-font-size-base, 12px);
+  color: var(--sigehu-text-tertiary, #64748B);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bars--horizontal {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sigehu-space-3, 12px);
+}
+
+.bars__row {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) 1fr auto;
+  align-items: center;
+  gap: var(--sigehu-space-3, 12px);
+}
+
+.bars__row-label {
+  font-size: var(--sigehu-font-size-base, 12px);
+  color: var(--sigehu-text-secondary, #94A3B8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bars__row-track {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--sigehu-card-border, #1E293B);
+  overflow: hidden;
+}
+
+.bars__row-fill {
+  height: 100%;
+  width: var(--bar-metric);
+  min-width: 2px;
+  background: var(--bar-color, var(--sigehu-primary-btn-bg, #3B82F6));
+  border-radius: 4px;
+}
+
+.bars__row-value {
+  font-size: var(--sigehu-font-size-base, 12px);
+  font-weight: var(--sigehu-font-weight-semibold, 600);
+  color: var(--sigehu-text-primary, #F8FAFC);
+  min-width: 72px;
+  text-align: right;
+}

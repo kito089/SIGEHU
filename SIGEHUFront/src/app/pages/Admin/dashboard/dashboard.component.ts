@@ -1,10 +1,25 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { firstValueFrom } from 'rxjs';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
 import { DashboardTabsComponent, DashboardTab } from '../../../shared/components/dashboard/tabs/dashboard-tabs.component';
 import { KanbanBoardComponent, KanbanColumnData, KanbanCardData } from '../../../shared/components/kanban/kanban-board.component';
 import { CalendarComponent } from '../../../shared/components/calendar/calendar.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
+import { DashboardService } from '../../../services/dashboard.service';
+import { ReportesService } from '../../../services/reportes.service';
+import type { CompraPendiente } from '../../../core/models/compra.model';
+
+interface KpiCardConfig {
+  value: string | number;
+  label: string;
+  iconSvg: string;
+  iconBgColor: string;
+  iconColor: string;
+  variant: 'primary' | 'secondary';
+  badgeText: string;
+  badgeColor: 'success' | 'warning' | 'info';
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -21,32 +36,74 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent {
+  private dashboard = inject(DashboardService);
+  private reportes = inject(ReportesService);
+
   // Estado UI
   activeTab = signal<DashboardTab>('kanban');
 
-  // Datos mock - TODO: Conectar a servicio real
-  readonly kpiData = signal([
-    {
-      value: 12,
-      label: 'Total de Obras Activas',
-      iconSvg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
-      iconBgColor: '#1E3A8A',
-      iconColor: '#3B82F6',
-      variant: 'primary' as const,
-      badgeText: '+3 este mes',
-      badgeColor: 'info' as const,
-    },
-    {
-      value: 3,
-      label: 'Finalizadas este Mes',
-      iconSvg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>',
-      iconBgColor: '#064E3B',
-      iconColor: '#10B981',
-      variant: 'secondary' as const,
-      badgeText: '↑ 25% vs jun',
-      badgeColor: 'success' as const,
+  // KPIs reales (GET /Dashboard/kpis)
+  readonly kpiData = signal<KpiCardConfig[]>([]);
+  // Compras pendientes de recibir (GET /Compras/pendientes)
+  readonly comprasPendientes = signal<CompraPendiente[]>([]);
+  readonly comprasCargando = signal(false);
+
+  ngOnInit(): void {
+    this.cargarKpis();
+    this.cargarComprasPendientes();
+  }
+
+  private async cargarKpis(): Promise<void> {
+    try {
+      const r = await firstValueFrom(this.dashboard.kpis());
+      const kpiPrimary: KpiCardConfig = {
+        value: r.obrasActivas,
+        label: 'Total de Obras Activas',
+        iconSvg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+        iconBgColor: '#1E3A8A',
+        iconColor: '#3B82F6',
+        variant: 'primary',
+        badgeText: 'Activas ahora',
+        badgeColor: 'info',
+      };
+      this.kpiData.set([
+        kpiPrimary,
+        {
+          value: r.finalizadasMes,
+          label: 'Finalizadas este Mes',
+          iconSvg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>',
+          iconBgColor: '#064E3B',
+          iconColor: '#10B981',
+          variant: 'secondary',
+          badgeText: 'Mes actual',
+          badgeColor: 'success',
+        },
+        {
+          value: r.garantiasCerradasMes,
+          label: 'Garantías cerradas este Mes',
+          iconSvg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>',
+          iconBgColor: '#14532D',
+          iconColor: '#22C55E',
+          variant: 'secondary',
+          badgeText: 'Mes actual',
+          badgeColor: 'success',
+        },
+      ]);
+    } catch {
+      this.kpiData.set([]);
     }
-  ]);
+  }
+
+  private async cargarComprasPendientes(): Promise<void> {
+    this.comprasCargando.set(true);
+    try {
+      this.comprasPendientes.set(await firstValueFrom(this.reportes.comprasPendientes()));
+    } catch {
+      this.comprasPendientes.set([]);
+    } finally {
+      this.comprasCargando.set(false);
+    }
+  }
 
   readonly kanbanColumns = signal<KanbanColumnData[]>([
     {

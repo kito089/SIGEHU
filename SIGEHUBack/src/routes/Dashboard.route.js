@@ -8,6 +8,7 @@ router.use(auth.verifyToken);
 router.use(auth.requireRole('Propietario'));
 
 router.get("/indicadores", controller.getIndicadores);
+router.get("/kpis", controller.getResumen);
 router.get("/kanban", controller.getKanban);
 router.get("/activity", controller.getActivityFeed);
 router.get("/calendar-events", controller.getCalendarEvents);
