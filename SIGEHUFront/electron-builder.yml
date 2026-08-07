@@ -6,14 +6,22 @@ directories:
   output: release
 
 files:
-  - dist/**
+  - www/**
   - electron/**
 
 extraResources:
   - from: ../SIGEHUBack/build/sigehu-back.exe
     to: backend/sigehu-back.exe
+  - from: ../SIGEHUBack/config.json
+    to: backend/config.json
+  - from: ../SIGEHUBack/firebird
+    to: backend/firebird
   - from: ../SIGEHUBack/database
-    to: database
+    to: backend/database
+  - from: ../SIGEHUBack/uploads
+    to: backend/uploads
+  - from: ../SIGEHUBack/node_modules
+    to: backend/node_modules
 
 win:
   target:
