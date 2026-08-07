@@ -303,13 +303,13 @@ const getGarantiasResumen = async () => {
     []
   );
   const abiertasRows = await db.query(
-    `SELECT COUNT(*) AS N FROM Garantias g WHERE g.Activo = TRUE AND g.EstadoGarantia_idEstadoGarantia <> 3`,
+    `SELECT COUNT(*) AS N FROM Garantias g WHERE g.Activo = TRUE AND g.EstadosGarantia_idEstadoGarantia <> 3`,
     []
   );
   const porEstado = await db.query(
     `SELECT eg.Nombre AS ESTADO, eg.Orden AS ORDEN, COUNT(g.idGarantia) AS TOTAL
      FROM EstadosGarantia eg
-     LEFT JOIN Garantias g ON g.EstadoGarantia_idEstadoGarantia = eg.idEstadoGarantia AND g.Activo = TRUE
+     LEFT JOIN Garantias g ON g.EstadosGarantia_idEstadoGarantia = eg.idEstadoGarantia AND g.Activo = TRUE
      GROUP BY eg.idEstadoGarantia, eg.Nombre, eg.Orden
      ORDER BY eg.Orden`,
     []
@@ -317,7 +317,7 @@ const getGarantiasResumen = async () => {
   const resueltas = await db.query(
     `SELECT g.FechaCreacion AS CREACION, g.FechaUltimaActualizacion AS CIERRE
      FROM Garantias g
-     WHERE g.Activo = TRUE AND g.EstadoGarantia_idEstadoGarantia = 3`,
+     WHERE g.Activo = TRUE AND g.EstadosGarantia_idEstadoGarantia = 3`,
     []
   );
 

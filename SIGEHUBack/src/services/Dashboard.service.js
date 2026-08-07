@@ -21,7 +21,7 @@ const getResumen = async () => {
                AND EXTRACT(YEAR FROM FechaUltimaActualizacion) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
                AND EXTRACT(MONTH FROM FechaUltimaActualizacion) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)) AS FINALIZADAS_MES,
             (SELECT COUNT(*) FROM Garantias
-             WHERE Activo = TRUE AND EstadoGarantia_idEstadoGarantia = 3
+             WHERE Activo = TRUE AND EstadosGarantia_idEstadoGarantia = 3
                AND EXTRACT(YEAR FROM FechaUltimaActualizacion) = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
                AND EXTRACT(MONTH FROM FechaUltimaActualizacion) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)) AS GARANTIAS_CERRADAS_MES
          FROM RDB$DATABASE`,

@@ -31,7 +31,6 @@ export const routes: Routes = [
       { path: 'kits', loadComponent: () => import('./pages/Admin/kits/kits.component').then(m => m.KitsComponent) },
       { path: 'kits/nuevo', loadComponent: () => import('./pages/Admin/kits/kit-form/kit-form.component').then(m => m.KitFormComponent) },
       { path: 'reportes', loadComponent: () => import('./pages/Admin/reportes/reportes.component').then(m => m.ReportesComponent) },
-      { path: 'reportes/historial', loadComponent: () => import('./pages/Admin/reportes/historial/historial.component').then(m => m.HistorialComponent) },
       { path: 'catalogo', loadComponent: () => import('./pages/Admin/materiales/materiales.component').then(m => m.MaterialesComponent) },
       { path: 'fabricacion', loadComponent: () => import('./pages/Admin/fabricacion/control-fabricacion.component').then(m => m.ControlFabricacionComponent) },
       { path: 'ruta', loadComponent: () => import('./pages/Admin/ruta/hoja-ruta.component').then(m => m.HojaRutaComponent) },
