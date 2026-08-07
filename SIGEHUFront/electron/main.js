@@ -16,10 +16,8 @@ function resolveConfigPath() {
 }
 
 const config = require(resolveConfigPath());
-const zrokPath = path.join(process.resourcesPath, 'backend', 'zrok2.exe');
 
 let backend;
-let zrokProcess;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -44,22 +42,11 @@ app.whenReady().then(() => {
       windowsHide: true
     }
   );
-  zrokProcess = spawn(zrokPath, ['share', 'public', `http://localhost:${config.apiPort}`, '-n', `${config.zrokName}`], {
-        stdio: ['ignore', 'pipe', 'pipe'], 
-        windowsHide: true 
-    }
-  );
-  zrokProcess.on('error', (err) => {
-    console.error('zrok2 launch failed:', err.message);
-  });
   createWindow();
 });
 
 app.on('before-quit', () => {
   if (backend) {
       backend.kill();
-  }
-  if (zrokProcess) {
-      zrokProcess.kill();
   }
 });

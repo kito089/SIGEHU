@@ -3,8 +3,8 @@ const fs = require('fs');
 // Leer las variables que build.bat cargo
 const envConfig = {
     apiPort: process.env.API_PORT || 3000,
-    zrokName: process.env.ZROK_DOMAIN,
     apiUrl: process.env.FRONTEND_URL,
+    cloudflareDomain: process.env.CLOUDFLARE_DOMAIN,
     dbUsername: process.env.DB_USERNAME,
     dbPassword: process.env.DB_PASSWORD,
     jwtSecret: process.env.JWT_SECRET
@@ -19,7 +19,8 @@ fs.writeFileSync(
 // Sobreescribir el environment.ts de Angular antes de que ng build se ejecute
 const angularEnv = `export const environment = {
   production: true,
-  apiUrl: '${envConfig.apiUrl}'
+  apiUrl: '${envConfig.apiUrl}',
+  cloudflareDomain: '${envConfig.cloudflareDomain}'
 };`;
 
 fs.writeFileSync('./SIGEHUFront/src/environments/environment.prod.ts', angularEnv);

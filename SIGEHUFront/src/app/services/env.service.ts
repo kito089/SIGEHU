@@ -21,9 +21,11 @@ export class EnvService {
     this.isWeb = detector.isWeb;
     this.apiUrl = this.isElectron
       ? 'http://localhost:3000'
-      : this.isLocalDevBrowser()
-        ? 'http://localhost:3000'
-        : environment.apiUrl;
+      : this.isCapacitor
+        ? environment.cloudflareDomain
+        : this.isLocalDevBrowser()
+          ? 'http://localhost:3000'
+          : environment.cloudflareDomain;
   }
 
   private isLocalDevBrowser(): boolean {

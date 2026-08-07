@@ -1,5 +1,5 @@
 ;Leer variables de entorno
-#define ZROK_TOKEN GetEnv("ZROK_TOKEN")
+#define CLOUDFLARE_TOKEN GetEnv("CLOUDFLARE_TOKEN")
 
 [Setup]
 AppName=SIGEHU
@@ -38,4 +38,5 @@ Name: "{group}\SIGEHU"; Filename: "{app}\SIGEHU.exe"
 Name: "{autodesktop}\SIGEHU"; Filename: "{app}\SIGEHU.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\resources\backend\zrok2.exe"; Parameters: "enable {#ZROK_TOKEN}"; Flags:runhidden
+Filename: "{cmd}"; Parameters: "/C winget install Cloudflare.cloudflared"; Flags: runhidden
+Filename: "{cmd}"; Parameters: "/C cloudflared.exe service install {#CLOUDFLARE_TOKEN}"; Flags: runhidden
