@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { User, AuthResponse, LoginCredentials } from '../core/models/user.model';
+import { LogService } from '../core/services/log.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,17 +12,21 @@ import { User, AuthResponse, LoginCredentials } from '../core/models/user.model'
 export class AuthService {
   private api = inject(ApiService);
   private router = inject(Router);
-
+  private log = inject(LogService);
 
   login(credentials: LoginCredentials, remember = false): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('/Trabajadores/login', credentials).pipe(
       tap(res => {
         this.setSession(res, remember);
+        // Nunca se registran credenciales; solo el evento y el rol.
+        this.log.auth('Login exitoso', { remember });
+        this.log.auth('Rol de sesión', { rol: res.trabajador?.rol });
       })
     );
   }
 
   logout(): void {
+    this.log.auth('Logout');
     this.clearSession();
     this.router.navigate(['/login']);
   }
@@ -67,6 +72,7 @@ export class AuthService {
     if (user) {
       store.setItem('user', JSON.stringify(user));
     }
+    this.log.auth('Token renovado');
   }
 
   private getSessionStore(): Storage {

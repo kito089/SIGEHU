@@ -72,10 +72,20 @@ export class ClienteFormComponent implements OnInit {
   busquedaUsoPersona = signal('');
   busquedaUsoEmpresa = signal('');
 
+  // Tarea: ComboBox abiertos con un solo clic. La lista se despliega al
+  // enfocar/activar el campo completo (y también al escribir), sin requerir
+  // un segundo clic. `comboAbierto` guarda cuál catálogo está desplegado.
+  comboAbierto = signal<string | null>(null);
+
   listadoRegimenPersona = computed(() => this.filtrarCatalogo(this.busquedaRegimenPersona(), this.regimenesFiscales));
   listadoRegimenEmpresa = computed(() => this.filtrarCatalogo(this.busquedaRegimenEmpresa(), this.regimenesFiscales));
   listadoUsoPersona = computed(() => this.filtrarCatalogo(this.busquedaUsoPersona(), this.usosCfdi));
   listadoUsoEmpresa = computed(() => this.filtrarCatalogo(this.busquedaUsoEmpresa(), this.usosCfdi));
+
+  mostrarListaRegimenPersona = computed(() => this.comboAbierto() === 'regPersona' || this.busquedaRegimenPersona().trim() !== '');
+  mostrarListaRegimenEmpresa = computed(() => this.comboAbierto() === 'regEmpresa' || this.busquedaRegimenEmpresa().trim() !== '');
+  mostrarListaUsoPersona = computed(() => this.comboAbierto() === 'usoPersona' || this.busquedaUsoPersona().trim() !== '');
+  mostrarListaUsoEmpresa = computed(() => this.comboAbierto() === 'usoEmpresa' || this.busquedaUsoEmpresa().trim() !== '');
 
   constructor() {
     this.form = this.buildPersonaForm();
@@ -200,21 +210,33 @@ export class ClienteFormComponent implements OnInit {
   seleccionarRegimenPersona(opcion: OpcionCatalogo): void {
     this.form.get(['fiscalPersona', 'regimenFiscal'])?.setValue(opcion.value);
     this.busquedaRegimenPersona.set('');
+    this.comboAbierto.set(null);
   }
 
   seleccionarRegimenEmpresa(opcion: OpcionCatalogo): void {
     this.form.get(['fiscalEmpresa', 'regimenFiscal'])?.setValue(opcion.value);
     this.busquedaRegimenEmpresa.set('');
+    this.comboAbierto.set(null);
   }
 
   seleccionarUsoPersona(opcion: OpcionCatalogo): void {
     this.form.get(['fiscalPersona', 'usoCFDI'])?.setValue(opcion.value);
     this.busquedaUsoPersona.set('');
+    this.comboAbierto.set(null);
   }
 
   seleccionarUsoEmpresa(opcion: OpcionCatalogo): void {
     this.form.get(['fiscalEmpresa', 'usoCFDI'])?.setValue(opcion.value);
     this.busquedaUsoEmpresa.set('');
+    this.comboAbierto.set(null);
+  }
+
+  abrirCombo(clave: string): void {
+    this.comboAbierto.set(clave);
+  }
+
+  cerrarCombo(): void {
+    setTimeout(() => this.comboAbierto.set(null), 150);
   }
 
   labelCatalogo(valor: string, catalogo: OpcionCatalogo[]): string {
@@ -279,6 +301,7 @@ export class ClienteFormComponent implements OnInit {
 
     const payload: Record<string, unknown> = {
       Nombre: raw.nombre,
+      RazonSocial: fiscalesActivos ? (fiscal.razonSocial || null) : null,
       Observaciones: raw.observaciones || null,
       RFC: fiscalesActivos ? (fiscal.rfc || null) : null,
       idRegimenFiscal: fiscalesActivos && fiscal.regimenFiscal ? Number(fiscal.regimenFiscal) : null,
@@ -314,7 +337,7 @@ export class ClienteFormComponent implements OnInit {
 
   private async fetchCliente(id: number): Promise<ClienteForm> {
     const raw: any = await firstValueFrom(this.api.get('/Clientes/' + id));
-    const tipoValor = raw.TIPOCLIENTE ?? raw.tipoCliente ?? '';
+    const tipoValor = raw.TIPOCLIENTE ?? raw.tipoCliente ?? raw.TIPO ?? raw.Tipo ?? '';
     const tipo: ClienteTipo = /persona|fisic/i.test(tipoValor) ? 'persona' : 'empresa';
     return {
       tipo,
@@ -324,13 +347,17 @@ export class ClienteFormComponent implements OnInit {
       correo: raw.CORREO ?? raw.correo ?? '',
       observaciones: raw.OBSERVACIONES ?? raw.observaciones ?? '',
       rfc: raw.RFC ?? raw.rfc ?? '',
+      razonSocial: raw.RAZONSOCIAL ?? raw.RazonSocial ?? raw.razonSocial ?? '',
       idRegimenFiscal: raw.IDREGIMENFISCAL ?? raw.idRegimenFiscal ?? null,
       idUsoCFDI: raw.IDUSOCFDI ?? raw.idUsoCFDI ?? null,
+      regimenFiscal: raw.REGIMENFISCAL ?? raw.RegimenFiscal ?? raw.regimenFiscal ?? '',
+      usoCFDI: raw.USOCFDI ?? raw.UsoCFDI ?? raw.usoCFDI ?? '',
       codigoPostal: raw.CODIGOPOSTAL ?? raw.codigoPostal ?? '',
       contactos: Array.isArray(raw.contactos) ? raw.contactos.map((c: any) => ({
-        nombreCompleto: c.NombreCompleto ?? c.nombreCompleto ?? '',
-        telefono: c.Telefono ?? c.telefono ?? '',
-        correo: c.Correo ?? c.correo ?? '',
+        id: c.IDCONTACTOCLIENTE ?? c.idContactoCliente ?? c.id,
+        nombreCompleto: c.NOMBRECOMPLETO ?? c.NombreCompleto ?? c.nombreCompleto ?? '',
+        telefono: c.TELEFONO ?? c.Telefono ?? c.telefono ?? '',
+        correo: c.CORREO ?? c.Correo ?? c.correo ?? '',
       })) : [],
     };
   }
@@ -340,16 +367,18 @@ export class ClienteFormComponent implements OnInit {
     const tieneFiscales = !!data.rfc;
 
     if (data.tipo === 'persona') {
-      this.form.patchValue({
+this.form.patchValue({
         nombre: data.nombre,
         telefono: data.telefono ?? '',
         correo: data.correo ?? '',
         observaciones: data.observaciones ?? '',
         fiscalPersona: {
           rfc: data.rfc ?? '',
+          razonSocial: data.razonSocial ?? '',
           regimenFiscal: data.idRegimenFiscal != null ? String(data.idRegimenFiscal) : '',
           usoCFDI: data.idUsoCFDI != null ? String(data.idUsoCFDI) : '',
           codigoPostal: data.codigoPostal ?? '',
+          direccion: data.direccion ?? '',
         },
       });
       if (data.rfc) this.showDatosFiscalesPersona.set(true);
@@ -360,6 +389,7 @@ export class ClienteFormComponent implements OnInit {
         observaciones: data.observaciones ?? '',
         fiscalEmpresa: {
           rfc: data.rfc ?? '',
+          razonSocial: data.razonSocial ?? '',
           regimenFiscal: data.idRegimenFiscal != null ? String(data.idRegimenFiscal) : '',
           usoCFDI: data.idUsoCFDI != null ? String(data.idUsoCFDI) : '',
           codigoPostal: data.codigoPostal ?? '',
@@ -383,8 +413,11 @@ interface ClienteForm {
   correo?: string;
   observaciones?: string;
   rfc?: string;
+  razonSocial?: string;
   idRegimenFiscal?: number | null;
   idUsoCFDI?: number | null;
+  regimenFiscal?: string;
+  usoCFDI?: string;
   codigoPostal?: string;
   contactos?: Contacto[];
 }

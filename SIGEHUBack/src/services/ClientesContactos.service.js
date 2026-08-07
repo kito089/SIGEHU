@@ -9,6 +9,11 @@ const createContacto = async ({ idCliente, nombre, telefono, correo, observacion
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             ["1"]
         );
+        // Operación independiente de contactos: fuerza la auditoría separada.
+        await txInsert.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CLIENTE_EDIT', '0') FROM RDB$DATABASE",
+            []
+        );
         await txInsert.execute(
             `INSERT INTO ContactosClientes (Clientes_idCliente, NombreCompleto, Telefono, Correo, Observaciones)
             VALUES (?, ?, ?, ?, ?)`,
@@ -80,6 +85,10 @@ const updateContacto = async (id, { nombre, telefono, correo, observaciones }) =
                 ["1"]
             );
             await txUpdate.execute(
+                "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CLIENTE_EDIT', '0') FROM RDB$DATABASE",
+                []
+            );
+            await txUpdate.execute(
                 `UPDATE ContactosClientes
                  SET nombre = ?, telefono = ?, correo = ?, observaciones = ?
                  WHERE idContactoCliente = ?`,
@@ -146,6 +155,10 @@ const deleteContacto = async (id) => {
         await transaction.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             ["1"]
+        );
+        await transaction.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CLIENTE_EDIT', '0') FROM RDB$DATABASE",
+            []
         );
         await transaction.execute(
             "DELETE FROM ContactosClientes WHERE idContactoCliente = ?",

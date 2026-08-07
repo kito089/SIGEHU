@@ -114,11 +114,18 @@ app.get('/', (req, res) => {
   res.json({ "Servidor": "Activo" });
 });
 
-await getConnection();
-console.log("BD conectada")
-
-app.listen(PORT, () => {
-    console.log(`Servidor escuchando en http://localhost:${PORT}`);
-    backup.verificarYRespaldarAlArrancar();
-    backup.iniciarProgramacion();
-});
+// La conexión a Firebird es asíncrona. Se arranca el servidor únicamente cuando
+// la BD responde. (Evita top-level await para poder empaquetar a CommonJS/SEA.)
+getConnection()
+  .then(() => {
+    console.log("BD conectada")
+    app.listen(PORT, () => {
+      console.log(`Servidor escuchando en http://localhost:${PORT}`);
+      backup.verificarYRespaldarAlArrancar();
+      backup.iniciarProgramacion();
+    });
+  })
+  .catch((err) => {
+    console.error("Error al conectar con la base de datos:", err?.message || err);
+    process.exit(1);
+  });

@@ -121,7 +121,7 @@
                   [attr.aria-selected]="materialYaAgregado(m)"
                   (click)="seleccionarMaterial(m)">
                   <span class="selector-item-nombre">{{ m.nombreMaterial }}</span>
-                  <span class="selector-item-precio" *ngIf="m.precio != null">{{ formatoPrecio(m.precio) }}</span>
+                  <span class="selector-item-precio" *ngIf="m.precio !== null">{{ formatoPrecio(m.precio) }}</span>
                   <span class="selector-item-prov">{{ m.nombreProveedor }}</span>
                   <span class="selector-item-unidad">{{ m.unidadMedida }}</span>
                   <span class="selector-item-estado" *ngIf="materialYaAgregado(m)">

@@ -220,7 +220,8 @@ const getClientesNuevos = async () => {
     `SELECT EXTRACT(YEAR FROM a.Fecha) AS ANIO, EXTRACT(MONTH FROM a.Fecha) AS MES, COUNT(*) AS TOTAL
      FROM Auditorias a
      WHERE a.Tabla = 'Clientes' AND a.Accion = 'INSERT'
-     GROUP BY 1, 2`,
+     GROUP BY 1, 2
+     ORDER BY 1, 2`,
     []
   );
   const listado = await db.query(
