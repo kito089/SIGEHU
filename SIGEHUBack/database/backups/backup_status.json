@@ -1,19 +1,7 @@
 {
   "ok": true,
-<<<<<<< HEAD
-  "fecha": "2026-08-06T21:38:44.968Z",
-  "mensaje": "Respaldo exitoso: SIGEHU_20260806_1538.fdb",
-  "archivo": "SIGEHU_20260806_1538.fdb",
-=======
-<<<<<<< HEAD
-  "fecha": "2026-08-06T17:30:26.693Z",
-  "mensaje": "Respaldo exitoso: SIGEHU_20260806_1130.fdb",
-  "archivo": "SIGEHU_20260806_1130.fdb",
-=======
-  "fecha": "2026-08-06T20:04:30.314Z",
-  "mensaje": "Respaldo exitoso: SIGEHU_20260806_1404.fdb",
-  "archivo": "SIGEHU_20260806_1404.fdb",
->>>>>>> 9d064e312f426d126620effe5baae97cf6ddb84e
->>>>>>> d8ae75382348db2c72f1f14883f0ae5aeebc028a
+  "fecha": "2026-08-06T23:26:29.921Z",
+  "mensaje": "Respaldo exitoso: SIGEHU_20260806_1726.fdb",
+  "archivo": "SIGEHU_20260806_1726.fdb",
   "alertaVista": false
 }

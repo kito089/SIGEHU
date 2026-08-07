@@ -139,10 +139,10 @@
 - [x] 5.7 ✅ VERIFY WAVE 5 BACKEND: Sintaxis SQL + Test conexiones — ✅ Backend inicia (BD conectada, :3000), Build frontend exit 0
 
 ### Phase 2 Wave 6: Backend - SIGEHU.sql + Relaciones + Migraciones
-- [ ] 6.1 📝 EDIT: Consolidar SIGEHU.sql - Sección Clientes completa
-- [ ] 6.2 📝 EDIT: Script de Migración - Datos existentes → Nuevo esquema
-- [ ] 6.3 📝 EDIT: Verificar integridad referencial completa
-- [ ] 6.4 ✅ VERIFY WAVE 6 BACKEND: Ejecutar migración + test integración
+- [x] 6.1 📝 EDIT: Consolidar SIGEHU.sql - Sección Clientes completa — ✅ SIGEHU.sql ya tenía DDL (TIPO, ContactosClientes), SPs (4), Vistas (2) consolidadas
+- [x] 6.2 📝 EDIT: Script de Migración - Datos existentes → Nuevo esquema — ✅ `migrations/phase2-clientes-migration.sql` creado (idempotente, reversible)
+- [x] 6.3 📝 EDIT: Verificar integridad referencial completa — ✅ CHECK constraint CK_CLIENTES_TIPO, índice IDX_Clientes_Tipo, FKs existentes intactas
+- [x] 6.4 ✅ VERIFY WAVE 6 BACKEND: Ejecutar migración + test integración — ✅ Migración ejecutada: TIPO column agregada, 4 SPs creados, VW_CLIENTES_CON_OBRAS actualizado con TIPO, VW_CLIENTES_COMPLETO creado. Backend healthy en :3000, consulta API retorna 200 OK. No requiere restart (queries directas a vistas/columnas ya aplicadas).
 
 ### Phase 2 Wave 7: Validation Wave - Comparación Exhaustiva REQUIREMENTS.md
 - [ ] 7.1 🔍 SEARCH: Checklist RF-03 (CRUD Clientes & Contactos 1:N)
@@ -299,5 +299,6 @@
 | 2026-08-06 | Agent | P2 W5.5 | Triggers de auditoría ya existían para Clientes y ContactosClientes (AI/AU/AD) | Done |
 | 2026-08-06 | Agent | P2 W5.6 | Actualizada VW_CLIENTES_CON_OBRAS (incluye Tipo); creada VW_CLIENTES_COMPLETO | Done |
 | 2026-08-06 | Agent | P2 W5.7 | VERIFICACIÓN: Backend inicia (BD conectada, :3000), Build frontend exit 0. Wave 5 completa | Done |
+| 2026-08-06 | Agent | P2 W6.1-W6.4 | Migración Phase 2 Clientes ejecutada: DDL (ADD TIPO + CHECK + INDEX), 4 SPs (DROP/CREATE), VW_CLIENTES_CON_OBRAS actualizado con TIPO, VW_CLIENTES_COMPLETO creado con DESCRIPCION correcta. Backend healthy, API responde 200. | Done |
 
 > **Formato:** `YYYY-MM-DD` | `Agent-Type` | `Wave X.Y` | `Descripción corta` | `Done/Blocked/Partial`
