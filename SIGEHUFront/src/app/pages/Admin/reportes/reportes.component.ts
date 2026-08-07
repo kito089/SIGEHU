@@ -35,10 +35,12 @@ import type {
   MaterialPorKit,
 } from '../../../core/models/reporte.model';
 import type { CompraPendiente } from '../../../core/models/compra.model';
+import { HistorialComponent } from './historial/historial.component';
 
 type CategoryId =
   | 'obras' | 'clientes' | 'trabajadores' | 'garantias'
-  | 'materiales' | 'compras' | 'proveedores' | 'kits';
+  | 'materiales' | 'compras' | 'proveedores' | 'kits'
+  | 'historial';
 
 interface Categoria {
   id: CategoryId;
@@ -79,6 +81,10 @@ const CATEGORIAS: Categoria[] = [
     id: 'kits', label: 'Kits',
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
   },
+  {
+    id: 'historial', label: 'Historial',
+    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+  },
 ];
 
 /** Colores por orden de estado de obra (paleta cancelable). */
@@ -104,6 +110,7 @@ function colorEstadoObra(orden: number): string {
     BarChartComponent,
     LineChartComponent,
     StackedBarChartComponent,
+    HistorialComponent,
   ],
   templateUrl: './reportes.component.html',
   styleUrl: './reportes.component.scss',
@@ -223,6 +230,11 @@ export class ReportesComponent {
           ]);
           this.kitsUsados.set(usados);
           this.materialesPorKit.set(materiales);
+          break;
+        }
+        case 'historial': {
+          // El historial se renderiza embebido (app-historial); no requiere
+          // precarga de datos aquí.
           break;
         }
       }

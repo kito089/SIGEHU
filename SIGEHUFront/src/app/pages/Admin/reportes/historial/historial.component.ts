@@ -1,6 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { FilterBarComponent, FilterOption } from '../../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../../shared/components/data-table/data-table.component';
@@ -12,9 +11,10 @@ import { AuditoriaService, AuditoriaRegistro, AuditoriaDetalle } from '../../../
 /* =========================================================================
    SIGEHU — Historial completo de auditorías (RF-33).
 
-   Página independiente que muestra TODOS los eventos de Auditorias /
-   AuditoriasDetalles con filtros (búsqueda + día), paginación cliente y
-   modal de detalles de cambios por campo para actualizaciones.
+   Panel embebido dentro de la categoría "Historial" del módulo de Reportes.
+   Muestra TODOS los eventos de Auditorias / AuditoriasDetalles con filtros
+   (búsqueda + día), paginación cliente y modal de detalles de cambios por
+   campo para actualizaciones.
    ========================================================================= */
 
 @Component({
@@ -32,7 +32,6 @@ import { AuditoriaService, AuditoriaRegistro, AuditoriaDetalle } from '../../../
   styleUrl: './historial.component.scss',
 })
 export class HistorialComponent implements OnInit {
-  private router = inject(Router);
   private auditoria = inject(AuditoriaService);
 
   historial: AuditoriaRegistro[] = [];
@@ -145,10 +144,6 @@ export class HistorialComponent implements OnInit {
   cerrarDetalles(): void {
     this.detalleRegistro = null;
     this.detalleCampos = [];
-  }
-
-  volver(): void {
-    this.router.navigate(['/admin/reportes']);
   }
 
   // ── Helpers de presentación ─────────────────────────────────────────────
