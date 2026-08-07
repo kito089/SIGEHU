@@ -59,7 +59,7 @@ const getUsosCFDI = async () => {
 }
 
 // ─── GET todos los Clientes ───────────────────────────────────────────────
-const getClientes = async ({ search = null, activo = null, fiscal = null } = {}) => {
+const getClientes = async ({ search = null, fiscal = null } = {}) => {
     const db = await getConnection();
 
     let sql = `SELECT idCliente, NombreCompleto AS Nombre,
@@ -75,11 +75,9 @@ const getClientes = async ({ search = null, activo = null, fiscal = null } = {})
         params.push(`%${search.trim().toUpperCase()}%`);
     }
 
-    if (activo === 'true' || activo === true) {
-        where.push('Activo = TRUE');
-    } else if (activo === 'false' || activo === false) {
-        where.push('Activo = FALSE');
-    }
+    // El módulo Clientes trabaja exclusivamente con clientes activos: los
+    // clientes eliminados (soft-delete) nunca deben aparecer en los listados.
+    where.push('Activo = TRUE');
 
     if (fiscal === 'with') {
         where.push('TieneDatosFiscales = TRUE');
@@ -101,10 +99,12 @@ const getClienteById = async (id) => {
     const db = await getConnection();
 
     const Clientes = await db.query(
-        `SELECT c.idCliente, c.NombreCompleto AS Nombre, c.Direccion, c.RFC,
-                c.CodigoPostal, c.Observaciones, c.Activo,
+        `SELECT c.idCliente, c.NombreCompleto AS Nombre, c.RazonSocial,
+                c.Direccion, c.RFC, c.CodigoPostal, c.Observaciones, c.Activo,
+                c.Tipo,
                 c.RegimenesFiscales_idRegimenFiscal AS idRegimenFiscal,
                 c.UsosCFDI_idUsoCFDI AS idUsoCFDI,
+                rf.Descripcion AS RegimenFiscal, ucfdi.Descripcion AS UsoCFDI,
                 (SELECT FIRST 1 cc.Telefono FROM ContactosClientes cc
                  WHERE cc.Clientes_idCliente = c.idCliente
                  ORDER BY cc.idContactoCliente) AS Telefono,
@@ -112,6 +112,8 @@ const getClienteById = async (id) => {
                  WHERE cc.Clientes_idCliente = c.idCliente
                  ORDER BY cc.idContactoCliente) AS Correo
          FROM Clientes c
+         LEFT JOIN RegimenesFiscales rf ON rf.idRegimenFiscal = c.RegimenesFiscales_idRegimenFiscal
+         LEFT JOIN UsosCFDI ucfdi ON ucfdi.idUsoCFDI = c.UsosCFDI_idUsoCFDI
          WHERE c.idCliente = ?`,
         [id]
     );
@@ -157,7 +159,7 @@ const getObrasByCliente = async (idCliente) => {
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
 const createCliente = async ({
-    Nombre, Direccion, RFC, idRegimenFiscal, CodigoPostal,
+    Nombre, RazonSocial, Direccion, RFC, idRegimenFiscal, CodigoPostal,
     idUsoCFDI, Observaciones, contactos, Correo, Telefono, tipo = 'persona', idTrabajadorCtx = 1
 }) => {
     if (RFC && !validateRFC(RFC)) {
@@ -200,21 +202,27 @@ const createCliente = async ({
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             [String(idTrabajadorCtx)]
         );
+        // Resetea la bandera de edición de clientes para que los contactos que
+        // se crean junto con el cliente generen su auditoría independiente.
+        await txInsert.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CLIENTE_EDIT', '0') FROM RDB$DATABASE",
+            []
+        );
         const dirBuffer = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
         const obsBuffer = Observaciones != null ? Buffer.from(String(Observaciones), "utf8") : null;
         const rows = await txInsert.executeReturning(
             `INSERT INTO Clientes (
-                NombreCompleto, Direccion, RFC, CodigoPostal,
+                NombreCompleto, RazonSocial, Direccion, RFC, CodigoPostal,
                 RegimenesFiscales_idRegimenFiscal,
-                UsosCFDI_idUsoCFDI, Observaciones
+                UsosCFDI_idUsoCFDI, Observaciones, Tipo
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING IdCliente`,
             [
-                Nombre ?? null, dirBuffer, RFC ?? null,
+                Nombre ?? null, RazonSocial ?? null, dirBuffer, RFC ?? null,
                 CodigoPostal ?? null,
                 idRegimenFiscal ?? null, idUsoCFDI ?? null,
-                obsBuffer
+                obsBuffer, tipoNormalizado
             ]
         );
 
@@ -256,7 +264,7 @@ const createCliente = async ({
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
 const updateCliente = async (id, {
-    Nombre, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
+    Nombre, RazonSocial, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
     idUsoCFDI, Observaciones, contactos, tipo, idTrabajadorCtx = 1
 }) => {
     if (RFC && !validateRFC(RFC)) {
@@ -288,8 +296,8 @@ const updateCliente = async (id, {
 
     try {
         const rows = await txRead.query(
-            `SELECT NombreCompleto, Direccion, RFC, RegimenesFiscales_idRegimenFiscal,
-                    CodigoPostal, UsosCFDI_idUsoCFDI, Observaciones
+            `SELECT NombreCompleto, RazonSocial, Direccion, RFC, RegimenesFiscales_idRegimenFiscal,
+                    CodigoPostal, UsosCFDI_idUsoCFDI, Observaciones, Tipo
              FROM Clientes WHERE IdCliente = ?`,
             [id]
         );
@@ -308,23 +316,30 @@ const updateCliente = async (id, {
     const txUpdate = await db.transaction();
     let idAudit = null;
 
-    try {
+try {
         await txUpdate.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             [String(idTrabajadorCtx)]
+        );
+        // Marca el inicio de la edición de un cliente para que los triggered
+        // de ContactosClientes registren sus cambios dentro de la auditoría
+        // principal (LAST_AUDIT_ID) en lugar de crear auditorías separadas.
+        await txUpdate.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CLIENTE_EDIT', '1') FROM RDB$DATABASE",
+            []
         );
         const dirBuffer = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
         const obsBuffer = Observaciones != null ? Buffer.from(String(Observaciones), "utf8") : null;
         await txUpdate.execute(
             `UPDATE Clientes
-             SET NombreCompleto = ?, Direccion = ?, RFC = ?,
+             SET NombreCompleto = ?, RazonSocial = ?, Direccion = ?, RFC = ?,
                  RegimenesFiscales_idRegimenFiscal = ?, CodigoPostal = ?,
-                 UsosCFDI_idUsoCFDI = ?, Observaciones = ?
+                 UsosCFDI_idUsoCFDI = ?, Observaciones = ?, Tipo = ?
              WHERE IdCliente = ?`,
             [
-                Nombre ?? null, dirBuffer, RFC ?? null,
+                Nombre ?? null, RazonSocial ?? null, dirBuffer, RFC ?? null,
                 idRegimenFiscal ?? null, CodigoPostal ?? null,
-                idUsoCFDI ?? null, obsBuffer, id
+                idUsoCFDI ?? null, obsBuffer, tipoNormalizado, id
             ]
         );
 
@@ -459,6 +474,12 @@ const updateCliente = async (id, {
             }
         }
 
+        // Finaliza el modo edición de cliente: los triggers de ContactosClientes
+        // ya no deben redirigir sus cambios a LAST_AUDIT_ID.
+        await txUpdate.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CLIENTE_EDIT', '0') FROM RDB$DATABASE",
+            []
+        );
         await txUpdate.commit();
 
     } catch (err) {
@@ -470,12 +491,14 @@ const updateCliente = async (id, {
     // después del UPDATE de cabecera y ANTES de tocar los contactos.
     const comparacion = [
         { campo: 'Nombre', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre ?? null },
+        { campo: 'RazonSocial', anterior: anterior.RAZONSOCIAL, nuevo: RazonSocial ?? null },
         { campo: 'Direccion', anterior: anterior.DIRECCION, nuevo: Direccion ?? null },
         { campo: 'RFC', anterior: anterior.RFC, nuevo: RFC ?? null },
         { campo: 'RegimenesFiscales_idRegimenFiscal', anterior: anterior.REGIMENESFISCALES_IDREGIMENFISCAL, nuevo: idRegimenFiscal ?? null },
         { campo: 'CodigoPostal', anterior: anterior.CODIGOPOSTAL, nuevo: CodigoPostal ?? null },
         { campo: 'UsosCFDI_idUsoCFDI', anterior: anterior.USOSCFDI_IDUSOCFDI, nuevo: idUsoCFDI ?? null },
         { campo: 'Observaciones', anterior: anterior.OBSERVACIONES, nuevo: Observaciones ?? null },
+        { campo: 'Tipo', anterior: anterior.TIPO, nuevo: tipoNormalizado },
     ];
 
     const cambios = comparacion.filter(

@@ -59,11 +59,12 @@ const create = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud esta vacio' });
         }
 
-        const { Nombre, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
+        const { Nombre, RazonSocial, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
                 idUsoCFDI, Observaciones, contactos } = req.body;
 
         await service.createCliente({
-            Nombre: Nombre ?? null, Direccion: Direccion ?? null, RFC: RFC ?? null,
+            Nombre: Nombre ?? null, RazonSocial: RazonSocial ?? null,
+            Direccion: Direccion ?? null, RFC: RFC ?? null,
             Telefono: Telefono ?? null, Correo: Correo ?? null,
             idRegimenFiscal: idRegimenFiscal ?? null,
             CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null,
@@ -88,13 +89,13 @@ const update = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud esta vacio' });
         }
 
-        const { Nombre, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
+        const { Nombre, RazonSocial, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
                 idUsoCFDI, Observaciones } = req.body;
 
         const affected = await service.updateCliente(
             req.params.id,
             {
-                Nombre: Nombre ?? null,
+                Nombre: Nombre ?? null, RazonSocial: RazonSocial ?? null,
                 Direccion: Direccion ?? null, RFC: RFC ?? null, Telefono: Telefono ?? null,
                 Correo: Correo ?? null, idRegimenFiscal: idRegimenFiscal ?? null,
                 CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null,
@@ -145,7 +146,7 @@ const cambiarEstado = async (req, res) => {
             return res.status(404).json({ error: 'Cliente no encontrado' });
         }
 
-        res.json({ message: activo ? 'Cliente activado' : 'Cliente desactivado' });
+        res.json({ message: activo ? 'Cliente restablecido' : 'Cliente eliminado' });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -163,7 +164,7 @@ const remove = async (req, res) => {
             });
         }
 
-        res.json({ message: 'Cliente desactivado' });
+        res.json({ message: 'Cliente eliminado correctamente' });
 
     } catch (e) {
         res.status(500).json({ error: e.message });

@@ -371,3 +371,10 @@ select{ cursor: pointer; }
   .field-row{ grid-template-columns: 1fr; }
   .contacto-row{ grid-template-columns: 1fr; }
 }
+
+/* Ancho del formulario Agregar/Editar Cliente ampliado para que ningún
+   placeholder ni etiqueta de catálogo aparezca recortado. Se acota al
+   subtree de este componente (no afecta a otros módulos). */
+:host ::ng-deep .entity-form {
+  max-width: 1140px;
+}

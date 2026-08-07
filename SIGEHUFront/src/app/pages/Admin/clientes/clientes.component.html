@@ -88,44 +88,106 @@
   (editar)="editarCliente(selectedCliente)"
   (cerrar)="cerrarDetalle()"
 >
-  <div class="detail-modal__grid">
-    <div class="detail-modal__field">
-      <span class="detail-modal__label">Teléfono</span>
-      <span class="detail-modal__value">{{ selectedCliente.telefono || 'No registrado' }}</span>
-    </div>
+  <div class="detail-modal__field">
+    <span class="detail-modal__label">Tipo</span>
+    <span class="detail-modal__value">
+      {{ selectedCliente.tipo === 'persona' ? 'Persona' : 'Empresa' }}
+    </span>
+  </div>
 
-    <div class="detail-modal__field">
-      <span class="detail-modal__label">RFC</span>
-      <span class="detail-modal__value">{{ selectedCliente.rfc || 'No registrado' }}</span>
+  <div class="detail-modal__section">
+    <span class="detail-modal__label">Datos generales</span>
+    <div class="detail-modal__grid">
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">Nombre / Razón Social</span>
+        <span class="detail-modal__value">{{ selectedCliente.nombre || 'No registrado' }}</span>
+      </div>
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">Teléfono</span>
+        <span class="detail-modal__value">{{ selectedCliente.telefono || 'No registrado' }}</span>
+      </div>
+      <div class="detail-modal__field detail-modal__field--span-2">
+        <span class="detail-modal__label">Correo Electrónico</span>
+        <span class="detail-modal__value">{{ selectedCliente.correo || 'No registrado' }}</span>
+      </div>
+      @if (selectedCliente.direccion) {
+        <div class="detail-modal__field detail-modal__field--span-2">
+          <span class="detail-modal__label">Dirección</span>
+          <span class="detail-modal__value">{{ selectedCliente.direccion }}</span>
+        </div>
+      }
+      @if (selectedCliente.observaciones) {
+        <div class="detail-modal__field detail-modal__field--span-2">
+          <span class="detail-modal__label">Observaciones</span>
+          <span class="detail-modal__value">{{ selectedCliente.observaciones }}</span>
+        </div>
+      }
     </div>
+  </div>
 
-    <div class="detail-modal__field detail-modal__field--span-2">
-      <span class="detail-modal__label">Correo Electrónico</span>
-      <span class="detail-modal__value">{{ selectedCliente.correo || 'No registrado' }}</span>
+  @if (selectedCliente.contactos && selectedCliente.contactos.length > 0) {
+    <div class="detail-modal__section">
+      <span class="detail-modal__label">Contactos ({{ selectedCliente.contactos.length }})</span>
+      <div class="detail-modal__list">
+        @for (c of selectedCliente.contactos; track $index) {
+          <div class="detail-modal__list-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>{{ c.nombreCompleto }}</span>
+            <span class="detail-modal__list-meta">{{ metaContacto(c) }}</span>
+          </div>
+        }
+      </div>
     </div>
+  }
 
-    <div class="detail-modal__field detail-modal__field--span-2">
-      <span class="detail-modal__label">Dirección</span>
-      <span class="detail-modal__value">{{ selectedCliente.direccion || 'No registrada' }}</span>
+  @if (selectedCliente.rfc) {
+    <div class="detail-modal__section">
+      <span class="detail-modal__label">Datos fiscales</span>
+      <div class="detail-modal__grid">
+        <div class="detail-modal__field">
+          <span class="detail-modal__label">RFC</span>
+          <span class="detail-modal__value">{{ selectedCliente.rfc }}</span>
+        </div>
+        <div class="detail-modal__field">
+          <span class="detail-modal__label">Razón Social</span>
+          <span class="detail-modal__value">{{ selectedCliente.razonSocial || 'No registrada' }}</span>
+        </div>
+        <div class="detail-modal__field">
+          <span class="detail-modal__label">Régimen Fiscal</span>
+          <span class="detail-modal__value">{{ selectedCliente.regimenFiscal || 'No registrado' }}</span>
+        </div>
+        <div class="detail-modal__field">
+          <span class="detail-modal__label">Uso de CFDI</span>
+          <span class="detail-modal__value">{{ selectedCliente.usoCFDI || 'No registrado' }}</span>
+        </div>
+        <div class="detail-modal__field">
+          <span class="detail-modal__label">Código Postal</span>
+          <span class="detail-modal__value">{{ selectedCliente.codigoPostal || 'No registrado' }}</span>
+        </div>
+      </div>
     </div>
+  }
 
-    <div class="detail-modal__field">
-      <span class="detail-modal__label">Obras activas</span>
-      <span class="detail-modal__value">{{ selectedCliente.obrasActivas }}</span>
-    </div>
-
-    <div class="detail-modal__field">
-      <span class="detail-modal__label">Datos SAT</span>
-      <span class="detail-modal__value">{{ selectedCliente.datosSat ? 'Registrados' : 'No Provistos' }}</span>
+  <div class="detail-modal__section">
+    <span class="detail-modal__label">Resumen</span>
+    <div class="detail-modal__grid">
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">Obras activas</span>
+        <span class="detail-modal__value">{{ selectedCliente.obrasActivas }}</span>
+      </div>
+      <div class="detail-modal__field">
+        <span class="detail-modal__label">Datos SAT</span>
+        <span class="detail-modal__value">{{ selectedCliente.datosSat ? 'Registrados' : 'No Provistos' }}</span>
+      </div>
     </div>
   </div>
 </app-detail-modal>
 
 <app-confirm-modal
   *ngIf="confirmarEliminacion"
-  [title]="'Desactivar cliente'"
-  [message]="'¿Estás seguro de desactivar a “' + (clienteAEliminar?.nombre ?? '') + '”? Esta acción no se puede deshacer.'"
-  confirmLabel="Desactivar"
+  [title]="'Eliminar cliente'"
+  [message]="'¿Estás seguro de eliminar a “' + (clienteAEliminar?.nombre ?? '') + '”? Esta acción no se puede deshacer.'"
+  confirmLabel="Eliminar"
   [loading]="eliminando"
   (confirmed)="confirmarEliminar()"
   (cancelled)="cancelarEliminacion()"

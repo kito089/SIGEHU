@@ -16,7 +16,7 @@ import { DetailModalComponent } from '../../../shared/components/detail-modal/de
    con modal de confirmación reutilizable).
    ========================================================================= */
 
-type FiltroClientes = 'todos' | 'persona' | 'empresa' | 'activos' | 'inactivos' | 'con_obras' | 'con_sat' | 'sin_sat';
+type FiltroClientes = 'todos' | 'persona' | 'empresa' | 'con_obras' | 'con_sat' | 'sin_sat';
 
 interface Cliente {
   id: number;
@@ -29,6 +29,18 @@ interface Cliente {
   datosSat: boolean;
   direccion: string;
   activo: boolean;
+  razonSocial?: string;
+  regimenFiscal?: string;
+  usoCFDI?: string;
+  codigoPostal?: string;
+  observaciones?: string;
+  contactos?: ContactoDetalle[];
+}
+
+interface ContactoDetalle {
+  nombreCompleto?: string;
+  telefono?: string;
+  correo?: string;
 }
 
 @Component({
@@ -69,8 +81,6 @@ export class ClientesComponent implements OnInit {
     { value: 'todos', label: 'Todos los clientes' },
     { value: 'persona', label: 'Solo Personas' },
     { value: 'empresa', label: 'Solo Empresas' },
-    { value: 'activos', label: 'Activos' },
-    { value: 'inactivos', label: 'Inactivos' },
     { value: 'con_obras', label: 'Con obras activas' },
     { value: 'con_sat', label: 'Con datos SAT' },
     { value: 'sin_sat', label: 'Sin datos SAT' },
@@ -144,8 +154,6 @@ export class ClientesComponent implements OnInit {
         this.filtro === 'todos' ? true :
         this.filtro === 'persona' ? c.tipo === 'persona' :
         this.filtro === 'empresa' ? c.tipo === 'empresa' :
-        this.filtro === 'activos' ? c.activo :
-        this.filtro === 'inactivos' ? !c.activo :
         this.filtro === 'con_obras' ? c.obrasActivas > 0 :
         this.filtro === 'con_sat' ? c.datosSat :
         !c.datosSat;
@@ -167,6 +175,11 @@ export class ClientesComponent implements OnInit {
     return `${cantidad} ${cantidad === 1 ? 'Activa' : 'Activas'}`;
   }
 
+  metaContacto(c?: ContactoDetalle): string {
+    const partes = [c?.telefono, c?.correo].filter(Boolean);
+    return partes.join(' · ');
+  }
+
   async verCliente(cliente: Cliente): Promise<void> {
     this.selectedCliente = cliente;
     try {
@@ -175,6 +188,16 @@ export class ClientesComponent implements OnInit {
         ...cliente,
         direccion: detalle.DIRECCION ?? detalle.Direccion ?? detalle.direccion ?? '',
         correo: detalle.CORREO ?? detalle.Correo ?? detalle.correo ?? cliente.correo,
+        observaciones: detalle.OBSERVACIONES ?? detalle.observaciones ?? '',
+        razonSocial: detalle.RAZONSOCIAL ?? detalle.RazonSocial ?? detalle.razonSocial ?? '',
+        regimenFiscal: detalle.REGIMENFISCAL ?? detalle.RegimenFiscal ?? detalle.regimenFiscal ?? '',
+        usoCFDI: detalle.USOCFDI ?? detalle.UsoCFDI ?? detalle.usoCFDI ?? '',
+        codigoPostal: detalle.CODIGOPOSTAL ?? detalle.codigoPostal ?? '',
+        contactos: Array.isArray(detalle.contactos) ? detalle.contactos.map((c: any) => ({
+          nombreCompleto: c.NOMBRECOMPLETO ?? c.NombreCompleto ?? c.nombreCompleto ?? '',
+          telefono: c.TELEFONO ?? c.Telefono ?? c.telefono ?? '',
+          correo: c.CORREO ?? c.Correo ?? c.correo ?? '',
+        })) : [],
       };
     } catch {
       // El modal conserva los datos del listado; el interceptor ya notifica fallos.
@@ -210,7 +233,7 @@ export class ClientesComponent implements OnInit {
       if (this.selectedCliente?.id === this.clienteAEliminar.id) {
         this.selectedCliente = null;
       }
-      this.toast.success('Cliente desactivado correctamente');
+      this.toast.success('Cliente eliminado correctamente');
       this.confirmarEliminacion = false;
       this.clienteAEliminar = null;
     } catch {

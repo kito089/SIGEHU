@@ -125,10 +125,14 @@
                   <input
                     id="regimenPersona"
                     type="text"
+                    autocomplete="off"
                     [value]="labelCatalogo(form.get('fiscalPersona')?.get('regimenFiscal')?.value ?? '', regimenesFiscales)"
+                    (focus)="abrirCombo('regPersona')"
+                    (click)="abrirCombo('regPersona')"
+                    (blur)="cerrarCombo()"
                     (input)="busquedaRegimenPersona.set($any($event.target).value)"
                     placeholder="Busca un régimen…">
-                  <div class="combo-list" *ngIf="busquedaRegimenPersona()">
+                  <div class="combo-list" *ngIf="mostrarListaRegimenPersona()">
                     <button type="button" class="combo-item" *ngFor="let r of listadoRegimenPersona()" (click)="seleccionarRegimenPersona(r)">
                       {{ r.label }}
                     </button>
@@ -140,10 +144,14 @@
                   <input
                     id="usoPersona"
                     type="text"
+                    autocomplete="off"
                     [value]="labelCatalogo(form.get('fiscalPersona')?.get('usoCFDI')?.value ?? '', usosCfdi)"
+                    (focus)="abrirCombo('usoPersona')"
+                    (click)="abrirCombo('usoPersona')"
+                    (blur)="cerrarCombo()"
                     (input)="busquedaUsoPersona.set($any($event.target).value)"
                     placeholder="Selecciona un uso…">
-                  <div class="combo-list" *ngIf="busquedaUsoPersona()">
+                  <div class="combo-list" *ngIf="mostrarListaUsoPersona()">
                     <button type="button" class="combo-item" *ngFor="let u of listadoUsoPersona()" (click)="seleccionarUsoPersona(u)">
                       {{ u.label }}
                     </button>
@@ -248,10 +256,14 @@
                   <input
                     id="regimenEmpresa"
                     type="text"
+                    autocomplete="off"
                     [value]="labelCatalogo(form.get('fiscalEmpresa')?.get('regimenFiscal')?.value ?? '', regimenesFiscales)"
+                    (focus)="abrirCombo('regEmpresa')"
+                    (click)="abrirCombo('regEmpresa')"
+                    (blur)="cerrarCombo()"
                     (input)="busquedaRegimenEmpresa.set($any($event.target).value)"
                     placeholder="Busca un régimen…">
-                  <div class="combo-list" *ngIf="busquedaRegimenEmpresa()">
+                  <div class="combo-list" *ngIf="mostrarListaRegimenEmpresa()">
                     <button type="button" class="combo-item" *ngFor="let r of listadoRegimenEmpresa()" (click)="seleccionarRegimenEmpresa(r)">
                       {{ r.label }}
                     </button>
@@ -263,10 +275,14 @@
                   <input
                     id="usoEmpresa"
                     type="text"
+                    autocomplete="off"
                     [value]="labelCatalogo(form.get('fiscalEmpresa')?.get('usoCFDI')?.value ?? '', usosCfdi)"
+                    (focus)="abrirCombo('usoEmpresa')"
+                    (click)="abrirCombo('usoEmpresa')"
+                    (blur)="cerrarCombo()"
                     (input)="busquedaUsoEmpresa.set($any($event.target).value)"
                     placeholder="Selecciona un uso…">
-                  <div class="combo-list" *ngIf="busquedaUsoEmpresa()">
+                  <div class="combo-list" *ngIf="mostrarListaUsoEmpresa()">
                     <button type="button" class="combo-item" *ngFor="let u of listadoUsoEmpresa()" (click)="seleccionarUsoEmpresa(u)">
                       {{ u.label }}
                     </button>
