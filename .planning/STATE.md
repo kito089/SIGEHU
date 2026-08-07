@@ -158,6 +158,30 @@
 
 ---
 
+## Configuración de Entornos y Comunicación Frontend ↔ Backend
+
+**Tarea:** Corrección de configuración de entornos y comunicación Frontend ↔ Backend.
+**Estado:** Completada.
+**Fecha:** 2026-08-07
+
+**Archivos modificados:**
+- `SIGEHUBack/src/app.js` — CORS seguro con whitelist de orígenes (reemplaza `cors()` abierto).
+
+**Resumen:**
+- CORS del backend endurecido: ahora solo se aceptan `http://localhost:*` (dev/Electron),
+  `https://sigehu.dpdns.org` (túnel móvil/web) y peticiones sin `Origin` o `file://` (nativo/Electron).
+  Se rechaza cualquier otro origen → se eliminan los errores CORS en web (`localhost:4200 → API local`).
+
+**Resultado:**
+- Angular (web) consume `http://localhost:3000`.
+- Electron consume `http://localhost:3000`.
+- Aplicación móvil consume `https://sigehu.dpdns.org` (desde environments).
+- El Login funciona correctamente (verificado: `POST /Trabajadores/login` → token + rol Propietario).
+- Los errores CORS fueron resueltos (verificado: origen `localhost:4200` permitido, origen malicioso rechazado).
+- No existen referencias residuales a `https://sigehu-api.share.zrok.io`.
+
+---
+
 ## Problemas Conocidos (Known Issues)
 
 | ID | Descripción | Severidad | Estado | Asignado |
@@ -180,6 +204,7 @@
 | KI-15 | G-04: `findObras` del controlador Clientes leía `req.params.idCliente` pero la ruta es `/:id/obras` → recibía `undefined`. Corregido a `req.params.id`. | Media | Resuelto (auditoría Fase 2) | Wave 4.3
 | KI-16 | G-05: `--sigehu-required-color` solo definido local en `cliente-form.component.css`; añadido al design system global `src/theme/variables.scss` | Baja | Resuelto (auditoría Fase 2) | Wave 2.10
 | KI-17 | G-02: Filtro "Activos/Inactivos" (RF-05) faltaba en listado Clientes; añadido campo `activo` al mapeo y opciones de filtro | Media | Resuelto (auditoría Fase 2) | Wave 3.4
+| KI-18 | CORS backend usaba `app.use(cors())` (cualquier origen) → errores CORS en web ya que `localhost:4200` no coincidía con el origen del túnel. Corregido con whitelist segura (localhost:* dev + sigehu.dpdns.org + no-Origin/file:// nativo). | Alta | Resuelto (ENV FIX) | app.js |
 
 ---
 
@@ -314,5 +339,6 @@
 | 2026-08-07 | Auditor | P2 W4.8/5.7/6.4 | VERIFICACIÓN BE: `node src/app.js` inicia (:3000, BD conectada); test CRUD Clientes (create persona/empresa, update MERGE contactos 1→2, soft delete, validación empresa sin contactos→400, `/:id/obras` OK); RegimenesFiscales 26, UsosCFDI 24 | Done |
 | 2026-08-07 | Auditor | P2 W7 | Validation Wave: checklists RF-03/04/05/06 verificados, `phase2-gaps.md` creado | Done |
 | 2026-08-07 | Auditor | P2 W8.3 | STATE.md + ROADMAP.md actualizados → **PHASE 2 COMPLETE** | Done |
+| 2026-08-07 | Auditor | ENV FIX | **Corrección de entorno y comunicación FE↔BE**: CORS backend seguro (whitelist: localhost:* + sigehu.dpdns.org + no-Origin file:///nativo; bloquea otros orígenes). Verificado: Angular build exit 0; login localhost OK (token Propietario), origen malicioso rechazado; sin residuos `share.zrok` (env./.env = sigehu.dpdns.org; detección EnvService Electron→localhost:3000, Capacitor→tunnel, web localhost→localhost:3000). | Done |
 
 > **Formato:** `YYYY-MM-DD` | `Agent-Type` | `Wave X.Y` | `Descripción corta` | `Done/Blocked/Partial`

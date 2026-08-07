@@ -32,7 +32,32 @@ import auth from './middlewares/auth.middleware.js';
 const PORT = config.apiPort || 3000;
 const app = express();
 
-app.use(cors());
+// CORS seguro: solo se aceptan los orígenes explícitos de la aplicación.
+// - `http://localhost:*`  → Angular dev (ng serve) y Electron (Desktop).
+// - `https://sigehu.dpdns.org` → App móvil/Web vía túnel zrok/Cloudflare.
+// - Sin cabecera `Origin` (peticiones nativas móviles, curl, backend-local) → permitida.
+// Se niega el resto de orígenes (no se abre CORS a cualquier origen).
+const ALLOWED_ORIGINS = [
+    'https://sigehu.dpdns.org'
+];
+
+app.use(cors({
+    origin(origin, callback) {
+        if (!origin || origin === 'null' || origin.startsWith('file://')) {
+            return callback(null, true);
+        }
+        if (origin.startsWith('http://localhost')) {
+            return callback(null, true);
+        }
+        if (ALLOWED_ORIGINS.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('No permitido por política CORS'));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false
+}));
 app.use(express.json());
 
 // Archivos estáticos: rutas relativas guardadas en BD como uploads/...
