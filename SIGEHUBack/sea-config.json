@@ -1,4 +1,5 @@
 {
-  "main": "./src/app.js",
-  "output": "./build/sigehu-back.blob"
+  "main": "./build/sea-bundle.cjs",
+  "output": "./build/sigehu-back.blob",
+  "disableExperimentalSEAWarning": true
 }

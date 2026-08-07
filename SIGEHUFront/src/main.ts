@@ -31,6 +31,21 @@ import {
   listOutline,
   copyOutline,
   personCircleOutline,
+  albumsOutline,
+  callOutline,
+  cartOutline,
+  checkmarkDoneCircleOutline,
+  checkmarkDoneOutline,
+  cloudOfflineOutline,
+  imageOutline,
+  layersOutline,
+  locationOutline,
+  navigateOutline,
+  resizeOutline,
+  sendOutline,
+  shieldCheckmarkOutline,
+  warningOutline,
+  wifiOutline,
 } from 'ionicons/icons';
 
 addIcons({
@@ -61,6 +76,21 @@ addIcons({
   'list-outline': listOutline,
   'copy-outline': copyOutline,
   'person-circle-outline': personCircleOutline,
+  'albums-outline': albumsOutline,
+  'call-outline': callOutline,
+  'cart-outline': cartOutline,
+  'checkmark-done-circle-outline': checkmarkDoneCircleOutline,
+  'checkmark-done-outline': checkmarkDoneOutline,
+  'cloud-offline-outline': cloudOfflineOutline,
+  'image-outline': imageOutline,
+  'layers-outline': layersOutline,
+  'location-outline': locationOutline,
+  'navigate-outline': navigateOutline,
+  'resize-outline': resizeOutline,
+  'send-outline': sendOutline,
+  'shield-checkmark-outline': shieldCheckmarkOutline,
+  'warning-outline': warningOutline,
+  'wifi-outline': wifiOutline,
 });
 
 const providers = [...appConfig.providers, provideIonicAngular()];

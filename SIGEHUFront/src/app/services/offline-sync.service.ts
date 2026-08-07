@@ -2,6 +2,7 @@ import { Injectable, NgZone, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { EnvService } from './env.service';
+import { LogService } from '../core/services/log.service';
 
 interface QueuedRequest {
   id: string;
@@ -19,6 +20,7 @@ export class OfflineSyncService {
   private api = inject(ApiService);
   private env = inject(EnvService);
   private ngZone = inject(NgZone);
+  private log = inject(LogService);
 
   private queue: QueuedRequest[] = [];
   private isOnline = navigator.onLine;
@@ -66,6 +68,7 @@ export class OfflineSyncService {
 
   private async onlineHandler(): Promise<void> {
     this.isOnline = true;
+    this.log.backend('Reconexión detectada', { pendientes: this.queue.length });
     if (this.queue.length > 0) {
       await this.syncQueue();
     }
@@ -73,11 +76,13 @@ export class OfflineSyncService {
 
   private offlineHandler(): void {
     this.isOnline = false;
+    this.log.backend('Conexión perdida', undefined, 'WARN');
   }
 
   private async syncQueue(): Promise<void> {
     if (this.syncing || this.queue.length === 0) return;
     this.syncing = true;
+    this.log.backend('Iniciando sincronización de la cola offline', { pendientes: this.queue.length });
 
     const items = [...this.queue];
     const failed: QueuedRequest[] = [];
@@ -108,6 +113,7 @@ export class OfflineSyncService {
     this.queue = failed;
     await this.saveQueue();
     this.syncing = false;
+    this.log.backend('Sincronización finalizada', { sincronizados: items.length - failed.length, fallidos: failed.length });
   }
 
   private fileToBase64(file: File): Promise<string> {

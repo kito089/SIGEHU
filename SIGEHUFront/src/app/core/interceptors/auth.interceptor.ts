@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { Observable, catchError, finalize, map, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
+import { LogService } from '../services/log.service';
 
 // Refresco único (single-flight): todas las peticiones que detecten un token
 // próximo a expirar esperan el mismo resultado en lugar de lanzar refrescos en
@@ -11,6 +12,7 @@ let refreshing$: Observable<string> | null = null;
 
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
   const auth = inject(AuthService);
+  const log = inject(LogService);
 
   // Nunca refrescar la propia petición de refresh (evita recursión infinita).
   if (req.url.includes('/Auth/refresh')) {
@@ -22,6 +24,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 
   if (token && isExpiring(token)) {
     if (!refreshing$) {
+      log.auth('Token próximo a expirar, solicitando renovación');
       refreshing$ = requestRefresh(auth).pipe(
         shareReplay({ bufferSize: 1, refCount: false }),
         finalize(() => {
@@ -33,6 +36,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
     return refreshing$.pipe(
       switchMap(newToken => next(addToken(req, newToken))),
       catchError(() => {
+        log.auth('Fallo al renovar token', undefined, 'ERROR');
         auth.logout();
         return throwError(() => new HttpErrorResponse({ status: 401 }));
       })
