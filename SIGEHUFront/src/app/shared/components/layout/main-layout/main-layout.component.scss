@@ -21,6 +21,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--sigehu-space-6) var(--sigehu-space-8);
 
   // Container max-width para contenido centrado

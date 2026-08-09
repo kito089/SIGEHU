@@ -28,8 +28,14 @@
 
   > * {
     flex: 1;
+    min-width: 0;
     min-height: 0;
   }
+}
+
+.dashboard-panel--calendar {
+  height: min(calc(100vh - 300px), 720px);
+  min-height: 520px;
 }
 
 .assigned-placeholder {
@@ -141,5 +147,10 @@
 
   .dashboard-panel {
     min-height: 0;
+  }
+
+  .dashboard-panel--calendar {
+    height: auto;
+    min-height: 480px;
   }
 }
