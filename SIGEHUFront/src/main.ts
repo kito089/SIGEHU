@@ -3,6 +3,7 @@ import { AppComponent } from './app/app.component';
 import { appConfig } from './app/app.config';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
+import { registerIonicWebComponents } from './app/register-ionic-web-components';
 import {
   searchOutline,
   personOutline,
@@ -92,6 +93,8 @@ addIcons({
   'warning-outline': warningOutline,
   'wifi-outline': wifiOutline,
 });
+
+registerIonicWebComponents();
 
 const providers = [...appConfig.providers, provideIonicAngular()];
 
