@@ -15,12 +15,69 @@
     <div class="nav-section">
       <h2 class="nav-section-title">MÓDULOS</h2>
       <ul class="nav-list" role="list">
-        @for (item of navItems; track item.route) {
+        <!-- Items principales superiores: Dashboard, Clientes -->
+        @for (item of primaryItems; track item.route) {
           <li class="nav-item">
             <a
               [routerLink]="item.route"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: item.route === '/admin/dashboard' }"
+              class="nav-link"
+              [class.active]="isActive(item.route)"
+              (click)="onNavClick()"
+            >
+              <span class="nav-icon" [innerHTML]="getSafeIconSvg(getIconName(item.icon))" aria-hidden="true"></span>
+              <span class="nav-label">{{ item.label }}</span>
+              @if (item.badge) {
+                <span class="nav-badge">{{ item.badge }}</span>
+              }
+            </a>
+          </li>
+        }
+
+        <!-- Catálogos: fila expansible tipo acordeón -->
+        <li class="nav-item nav-group-item">
+          <button
+            type="button"
+            class="nav-link nav-group-toggle"
+            [class.active]="isCatalogActive()"
+            [attr.aria-expanded]="catalogOpen()"
+            aria-controls="catalog-submenu"
+            (click)="toggleCatalog()"
+          >
+            <span class="nav-icon" [innerHTML]="getSafeIconSvg(getIconName(catalogGroup.icon))" aria-hidden="true"></span>
+            <span class="nav-label">{{ catalogGroup.label }}</span>
+            <span class="nav-chevron" [class.expanded]="catalogOpen()" aria-hidden="true" [innerHTML]="getSafeIconSvg('chevron')"></span>
+          </button>
+          <ul
+            id="catalog-submenu"
+            class="nav-sublist"
+            role="list"
+            [class.open]="catalogOpen() || isCatalogActive()"
+          >
+            @for (child of catalogGroup.children; track child.route) {
+              <li class="nav-subitem">
+                <a
+                  [routerLink]="child.route"
+                  routerLinkActive="active"
+                  class="nav-link nav-sublink"
+                  [class.active]="isActive(child.route)"
+                  (click)="onNavClick()"
+                >
+                  <span class="nav-icon" [innerHTML]="getSafeIconSvg(getIconName(child.icon))" aria-hidden="true"></span>
+                  <span class="nav-label">{{ child.label }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </li>
+
+        <!-- Items principales inferiores: Ordenes de Compra, Reportes -->
+        @for (item of secondaryItems; track item.route) {
+          <li class="nav-item">
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="active"
               class="nav-link"
               [class.active]="isActive(item.route)"
               (click)="onNavClick()"

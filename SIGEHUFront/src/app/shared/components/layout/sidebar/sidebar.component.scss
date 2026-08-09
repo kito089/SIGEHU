@@ -104,6 +104,12 @@
   font-weight: var(--sigehu-font-weight-regular);
   transition: background-color 0.15s ease, color 0.15s ease;
   min-height: 44px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
 }
 
 .nav-link:hover {
@@ -115,6 +121,55 @@
   background: var(--sigehu-active-bg);
   color: var(--sigehu-active-text);
   font-weight: var(--sigehu-font-weight-medium);
+}
+
+.nav-link:focus-visible {
+  outline: 2px solid var(--sigehu-active-text);
+  outline-offset: 2px;
+}
+
+/* Acordeón Catálogos */
+.nav-group-toggle {
+  margin-bottom: 0;
+}
+
+.nav-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.nav-chevron svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.nav-sublist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--sigehu-space-4);
+}
+
+.nav-sublist.open {
+  display: flex;
+}
+
+.nav-sublink {
+  min-height: 40px;
+  font-size: var(--sigehu-font-size-sm);
 }
 
 .nav-icon {
