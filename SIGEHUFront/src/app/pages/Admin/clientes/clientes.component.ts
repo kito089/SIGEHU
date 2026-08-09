@@ -8,18 +8,21 @@ import { FilterBarComponent } from '../../../shared/components/filter-bar/filter
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
+import type { ClienteTipo } from '../../../core/models/cliente.model';
 
 /* =========================================================================
    SIGEHU — Gestión de Clientes (listado)
    Datos reales vía GET /Clientes. Acciones: Ver detalle (GET /Clientes/:id),
    Editar (navega al formulario con queryParam id) y Eliminar (soft-delete
-   con modal de confirmación reutilizable).
+   con modal de confirmación reutilizable). El listado muestra el Tipo de
+   cliente (Persona | Empresa) y permite filtrar por él (RF-03, RF-05).
    ========================================================================= */
 
-type FiltroClientes = 'todos' | 'con_obras' | 'con_sat' | 'sin_sat';
+type FiltroClientes = 'todos' | 'persona' | 'empresa' | 'con_obras' | 'con_sat' | 'sin_sat';
 
 interface Cliente {
   id: number;
+  tipo: ClienteTipo;
   nombre: string;
   telefono: string;
   correo: string;
@@ -67,6 +70,7 @@ export class ClientesComponent implements OnInit {
   eliminando = false;
 
   columns: DataTableColumn[] = [
+    { key: 'tipo', label: 'Tipo' },
     { key: 'nombre', label: 'Nombre / Razón social' },
     { key: 'telefono', label: 'Teléfono' },
     { key: 'correo', label: 'Correo' },
@@ -77,6 +81,8 @@ export class ClientesComponent implements OnInit {
 
   filterOptions = [
     { value: 'todos', label: 'Todos los clientes' },
+    { value: 'persona', label: 'Personas' },
+    { value: 'empresa', label: 'Empresas' },
     { value: 'con_obras', label: 'Con obras activas' },
     { value: 'con_sat', label: 'Con datos SAT' },
     { value: 'sin_sat', label: 'Sin datos SAT' },
@@ -117,6 +123,7 @@ export class ClientesComponent implements OnInit {
   private mapCliente(raw: any): Cliente {
     return {
       id: raw.IDCLIENTE ?? raw.idCliente,
+      tipo: (String(raw.TIPO ?? raw.Tipo ?? raw.tipo ?? 'empresa').toLowerCase() === 'persona') ? 'persona' : 'empresa',
       nombre: raw.NOMBRE ?? raw.Nombre ?? raw.nombre ?? '',
       telefono: raw.TELEFONO ?? raw.Telefono ?? raw.telefono ?? '',
       correo: raw.CORREO ?? raw.Correo ?? raw.correo ?? '',
@@ -147,12 +154,18 @@ export class ClientesComponent implements OnInit {
 
       const matchesFiltro =
         this.filtro === 'todos' ? true :
+        this.filtro === 'persona' ? c.tipo === 'persona' :
+        this.filtro === 'empresa' ? c.tipo === 'empresa' :
         this.filtro === 'con_obras' ? c.obrasActivas > 0 :
         this.filtro === 'con_sat' ? c.datosSat :
         !c.datosSat;
 
       return matchesSearch && matchesFiltro;
     });
+  }
+
+  tipoLabel(tipo: ClienteTipo): string {
+    return tipo === 'persona' ? 'Persona' : 'Empresa';
   }
 
   onSearchChange(term: string): void {
