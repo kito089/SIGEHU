@@ -12,43 +12,123 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
       <div class="tipo-block">
-        <div class="field">
-          <label for="nombre" class="required-label">Nombre de la Empresa</label>
-          <input
-            id="nombre"
-            type="text"
-            formControlName="nombre"
-            placeholder="Razón social o nombre comercial">
-          <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
-            Ingresa el nombre de la empresa
-          </span>
+
+        <!-- Selector del tipo de cliente (Persona | Empresa) -->
+        <div class="tipo-selector" role="group" aria-label="Tipo de cliente">
+          <button
+            type="button"
+            class="tipo-btn"
+            [class.active]="tipo() === 'persona'"
+            (click)="setTipo('persona')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>
+            </svg>
+            Persona
+          </button>
+          <button
+            type="button"
+            class="tipo-btn"
+            [class.active]="tipo() === 'empresa'"
+            (click)="setTipo('empresa')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M15 9h4a2 2 0 0 1 2 2v10"/><path d="M9 7h2M9 11h2M9 15h2"/>
+            </svg>
+            Empresa
+          </button>
         </div>
 
-        <div class="field">
-          <label for="direccion">Dirección</label>
-          <input
-            id="direccion"
-            type="text"
-            formControlName="direccion"
-            placeholder="Calle, número, colonia, ciudad">
-        </div>
+        <!-- Campos Persona -->
+        @if (tipo() === 'persona') {
+          <div class="field">
+            <label for="nombre" class="required-label">Nombre</label>
+            <input
+              id="nombre"
+              type="text"
+              formControlName="nombre"
+              placeholder="Nombre de la persona">
+            <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+              Ingresa el nombre de la persona
+            </span>
+          </div>
 
-        <div class="field">
-          <label for="observaciones">Observaciones / Notas internas</label>
-          <textarea
-            id="observaciones"
-            rows="2"
-            formControlName="observaciones"
-            placeholder="Notas sobre el trato, acceso, referencias, etc."></textarea>
-        </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="personaTelefono">Teléfono</label>
+              <input
+                id="personaTelefono"
+                type="tel"
+                formControlName="telefono"
+                placeholder="10-15 dígitos">
+              <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
+                Teléfono inválido (10-15 dígitos)
+              </span>
+              <span class="hint" *ngIf="!form.get('telefono')?.value && !form.get('correo')?.value">
+                Se requiere al menos un teléfono o un correo
+              </span>
+            </div>
+            <div class="field">
+              <label for="personaCorreo">Correo</label>
+              <input
+                id="personaCorreo"
+                type="email"
+                formControlName="correo"
+                placeholder="correo@ejemplo.com">
+              <span class="field-error" *ngIf="form.get('correo')?.touched && form.get('correo')?.invalid">
+                Correo electrónico inválido
+              </span>
+            </div>
+          </div>
 
-        <!-- Contactos (min 1) -->
-        <div class="contactos-wrap">
-          <app-contact-list
-            [contactos]="contactos()"
-            (contactosChange)="onContactosChange($event)">
-          </app-contact-list>
-        </div>
+          <div class="field">
+            <label for="observacionesPersona">Observaciones / Notas internas</label>
+            <textarea
+              id="observacionesPersona"
+              rows="2"
+              formControlName="observaciones"
+              placeholder="Notas sobre el trato, acceso, referencias, etc."></textarea>
+          </div>
+        }
+
+        <!-- Campos Empresa -->
+        @if (tipo() === 'empresa') {
+          <div class="field">
+            <label for="nombreEmpresa" class="required-label">Nombre de la Empresa</label>
+            <input
+              id="nombreEmpresa"
+              type="text"
+              formControlName="nombre"
+              placeholder="Razón social o nombre comercial">
+            <span class="field-error" *ngIf="form.get('nombre')?.touched && form.get('nombre')?.invalid">
+              Ingresa el nombre de la empresa
+            </span>
+          </div>
+
+          <div class="field">
+            <label for="direccion">Dirección</label>
+            <input
+              id="direccion"
+              type="text"
+              formControlName="direccion"
+              placeholder="Calle, número, colonia, ciudad">
+          </div>
+
+          <div class="field">
+            <label for="observaciones">Observaciones / Notas internas</label>
+            <textarea
+              id="observaciones"
+              rows="2"
+              formControlName="observaciones"
+              placeholder="Notas sobre el trato, acceso, referencias, etc."></textarea>
+          </div>
+
+          <!-- Contactos (min 1) -->
+          <div class="contactos-wrap">
+            <app-contact-list
+              [contactos]="contactos()"
+              (contactosChange)="onContactosChange($event)">
+            </app-contact-list>
+          </div>
+        }
 
         <!-- Datos fiscales: siempre visibles, sin switch -->
         <div class="fiscal-block" [formGroup]="fiscalGroup">

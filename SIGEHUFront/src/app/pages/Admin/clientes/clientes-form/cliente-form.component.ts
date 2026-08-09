@@ -7,22 +7,31 @@ import { ApiService } from '../../../../services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
 import { ContactListComponent } from '../../../../shared/components/contact-list/contact-list.component';
-import type { Contacto } from '../../../../core/models/cliente.model';
+import type { ClienteTipo, Contacto } from '../../../../core/models/cliente.model';
 import {
   RFC_PATTERN,
   CODIGO_POSTAL_PATTERN,
+  TELEFONO_PATTERN,
+  EMAIL_MAX,
   NOMBRE_MAX,
   DIRECCION_MAX,
   OBSERVACIONES_MAX,
   RAZON_SOCIAL_MAX,
+  telefonoOcorreoRequired,
 } from '../../../../shared/validators/custom-validators';
 
 /* =========================================================================
    SIGEHU — Agregar / Editar Cliente (componente Angular standalone)
 
-   Todos los clientes se registran como Empresa: la pantalla asume ese tipo
-   directamente y no muestra el selector Persona/Empresa. Los datos fiscales
-   se muestran siempre (sin switch) y se persisten tal cual.
+   Soporta los dos tipos definidos por el modelo Clientes (RF-03):
+     - persona: Nombre (obligatorio) + Teléfono/Correo (al menos uno) y
+                datos fiscales opcionales. El backend crea/actualiza el
+                contacto principal a partir de Telefono/Correo.
+     - empresa: Nombre (obligatorio), Dirección, Observaciones, al menos un
+                contacto y datos fiscales opcionales (siempre visibles).
+
+   Datos fiscales siempre visibles (decisión Wave 10) para ambos tipos con
+   combos searchable de régimen/uso con focus+clic de una sola vez.
 
    Conexión al backend (pertenencia: módulo Clientes):
      - GET    /Clientes/RegimenesFiscales  → catálogo de regímenes
@@ -52,6 +61,10 @@ export class ClienteFormComponent implements OnInit {
   private toast = inject(ToastService);
 
   @Input() clienteId: number | null = null;
+
+  // Tipo de cliente seleccionado (Persona | Empresa). La edición detecta el
+  // tipo guardado y reconstruye el formulario correspondiente.
+  tipo = signal<ClienteTipo>('persona');
 
   contactos = signal<Contacto[]>([]);
 
@@ -108,11 +121,13 @@ export class ClienteFormComponent implements OnInit {
     return this.form.get('fiscal') as FormGroup;
   }
 
-  // --- Construcción del formulario (siempre Empresa) ----------------------
+  // --- Construcción del formulario (Persona | Empresa) ------------------
 
   private buildForm(): FormGroup {
-    return this.fb.group({
+    const group = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(NOMBRE_MAX)]],
+      telefono: ['', [Validators.pattern(TELEFONO_PATTERN), Validators.maxLength(15)]],
+      correo: ['', [Validators.email, Validators.maxLength(EMAIL_MAX)]],
       direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
       observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
       fiscal: this.fb.group({
@@ -123,6 +138,31 @@ export class ClienteFormComponent implements OnInit {
         codigoPostal: ['', [Validators.pattern(CODIGO_POSTAL_PATTERN)]],
       }),
     });
+
+    this.aplicarValidacionTipo(group, this.tipo());
+    return group;
+  }
+
+  // Validación condicional según el tipo: para Persona se exige al menos
+  // teléfono o correo (validator cruzado a nivel FormGroup).
+  private aplicarValidacionTipo(group: FormGroup, tipo: ClienteTipo): void {
+    if (tipo === 'persona') {
+      group.setValidators([telefonoOcorreoRequired]);
+    } else {
+      group.setValidators([]);
+    }
+    group.updateValueAndValidity();
+  }
+
+  setTipo(tipo: ClienteTipo): void {
+    this.tipo.set(tipo);
+    this.aplicarValidacionTipo(this.form, tipo);
+  }
+
+  // Las personas solo requieren un teléfono o un correo; las empresas
+  // requieren al menos un contacto registrado.
+  get requiereContacto(): boolean {
+    return this.tipo() === 'empresa';
   }
 
   // Catálogos del módulo Clientes ------------------------------------------
@@ -187,9 +227,9 @@ export class ClienteFormComponent implements OnInit {
   // ----------------------------------------------------------------------
 
   async onSubmit(): Promise<void> {
-    if (this.form.invalid || this.contactos().length === 0) {
+    if (this.form.invalid || (this.tipo() === 'empresa' && this.contactos().length === 0)) {
       this.form.markAllAsTouched();
-      this.toast.warning(this.contactos().length === 0
+      this.toast.warning(this.tipo() === 'empresa' && this.contactos().length === 0
         ? 'Registra al menos un contacto para la empresa.'
         : 'Corrige los campos marcados antes de guardar.');
       return;
@@ -219,6 +259,32 @@ export class ClienteFormComponent implements OnInit {
   private async guardar(): Promise<void> {
     const raw = this.form.getRawValue();
     const fiscal = raw.fiscal;
+
+    if (this.tipo() === 'persona') {
+      // Persona: el backend crea/actualiza el contacto principal a partir de
+      // Telefono/Correo. Por eso NO se envía `contactos` (enviar un array
+      // vacío en edición eliminaría el contacto principal existente).
+      const payload: Record<string, unknown> = {
+        Nombre: raw.nombre,
+        RazonSocial: fiscal.razonSocial || null,
+        Observaciones: raw.observaciones || null,
+        RFC: fiscal.rfc || null,
+        idRegimenFiscal: fiscal.regimenFiscal ? Number(fiscal.regimenFiscal) : null,
+        idUsoCFDI: fiscal.usoCFDI ? Number(fiscal.usoCFDI) : null,
+        CodigoPostal: fiscal.codigoPostal || null,
+        Direccion: null,
+        Telefono: raw.telefono ? String(raw.telefono).replace(/\D/g, '') : null,
+        Correo: raw.correo || null,
+        tipo: 'persona',
+      };
+
+      if (this.clienteId) {
+        await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, payload));
+      } else {
+        await firstValueFrom(this.api.post('/Clientes', payload));
+      }
+      return;
+    }
 
     const payload: Record<string, unknown> = {
       Nombre: raw.nombre,
@@ -254,9 +320,13 @@ export class ClienteFormComponent implements OnInit {
 
   private async fetchCliente(id: number): Promise<ClienteForm> {
     const raw: any = await firstValueFrom(this.api.get('/Clientes/' + id));
+    const tipoRaw = String(raw.TIPO ?? raw.Tipo ?? raw.tipo ?? 'empresa').toLowerCase();
     return {
+      tipo: tipoRaw === 'persona' ? 'persona' : 'empresa',
       nombre: raw.NOMBRE ?? raw.Nombre ?? raw.nombre ?? '',
       direccion: raw.DIRECCION ?? raw.Direccion ?? raw.direccion ?? '',
+      telefono: raw.TELEFONO ?? raw.Telefono ?? raw.telefono ?? '',
+      correo: raw.CORREO ?? raw.Correo ?? raw.correo ?? '',
       observaciones: raw.OBSERVACIONES ?? raw.observaciones ?? '',
       rfc: raw.RFC ?? raw.rfc ?? '',
       razonSocial: raw.RAZONSOCIAL ?? raw.RazonSocial ?? raw.razonSocial ?? '',
@@ -276,8 +346,13 @@ export class ClienteFormComponent implements OnInit {
   }
 
   private aplicarEdicion(data: ClienteForm): void {
+    this.tipo.set(data.tipo);
+    this.aplicarValidacionTipo(this.form, data.tipo);
+
     this.form.patchValue({
       nombre: data.nombre,
+      telefono: data.telefono ?? '',
+      correo: data.correo ?? '',
       direccion: data.direccion ?? '',
       observaciones: data.observaciones ?? '',
       fiscal: {
@@ -296,8 +371,11 @@ export class ClienteFormComponent implements OnInit {
 }
 
 interface ClienteForm {
+  tipo: ClienteTipo;
   nombre: string;
   direccion?: string;
+  telefono?: string;
+  correo?: string;
   observaciones?: string;
   rfc?: string;
   razonSocial?: string;

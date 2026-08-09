@@ -29,7 +29,8 @@ const findClientes = async (req, res) => {
         const Clientes = await service.getClientes({
             search: req.query.search,
             activo: req.query.activo,
-            fiscal: req.query.fiscal
+            fiscal: req.query.fiscal,
+            tipo: req.query.tipo
         });
         res.json(Clientes);
     } catch (e) {

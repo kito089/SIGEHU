@@ -59,10 +59,11 @@ const getUsosCFDI = async () => {
 }
 
 // ─── GET todos los Clientes ───────────────────────────────────────────────
-const getClientes = async ({ search = null, fiscal = null } = {}) => {
+const getClientes = async ({ search = null, fiscal = null, tipo = null } = {}) => {
     const db = await getConnection();
 
     let sql = `SELECT idCliente, NombreCompleto AS Nombre,
+                      Tipo,
                       TelefonoPrincipal AS Telefono,
                       CorreoPrincipal AS Correo,
                       RFC, Activo, TieneDatosFiscales, TotalObrasActivas
@@ -78,6 +79,11 @@ const getClientes = async ({ search = null, fiscal = null } = {}) => {
     // El módulo Clientes trabaja exclusivamente con clientes activos: los
     // clientes eliminados (soft-delete) nunca deben aparecer en los listados.
     where.push('Activo = TRUE');
+
+    if (tipo === 'persona' || tipo === 'empresa') {
+        where.push('Tipo = ?');
+        params.push(tipo);
+    }
 
     if (fiscal === 'with') {
         where.push('TieneDatosFiscales = TRUE');
