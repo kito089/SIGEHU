@@ -13,13 +13,8 @@ import { KanbanColumnData, KanbanCardData } from './kanban-board.component';
 export class KanbanColumnComponent {
   column = input.required<KanbanColumnData>();
   cardClick = output<KanbanCardData>();
-  addCardClick = output<string>();
 
   onCardClick(card: KanbanCardData): void {
     this.cardClick.emit(card);
-  }
-
-  onAddCard(): void {
-    this.addCardClick.emit(this.column().id);
   }
 }

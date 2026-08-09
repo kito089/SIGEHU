@@ -1,5 +1,15 @@
 import { getConnection } from "../config/db.js";
 
+const pad = (n) => String(n).padStart(2, '0');
+
+function aFechaISO(v) {
+    if (v == null) return null;
+    const d = typeof v === 'object' && 'date' in v ? new Date(v.date) : new Date(String(v).replace('T', ' '));
+    if (Number.isNaN(d.getTime())) return null;
+    const isoTz = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString();
+    return isoTz.slice(0, 10);
+}
+
 const getIndicadores = async () => {
     const db = await getConnection();
     return await db.query(

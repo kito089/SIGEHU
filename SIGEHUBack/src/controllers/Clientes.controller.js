@@ -129,6 +129,18 @@ const findObras = async (req, res) => {
     }
 };
 
+// GET /Clientes/:id/trabajos
+// Obtiene el árbol Trabajos/Obras del Cliente: trabajos con sus obras y las
+// obras independientes (sin trabajo asociado).
+const findTrabajos = async (req, res) => {
+    try {
+        const data = await service.getTrabajosByCliente(req.params.id);
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 // PATCH /Clientes/:id/estado
 // Activa o desactiva (soft delete) un Cliente.
 const cambiarEstado = async (req, res) => {
@@ -178,6 +190,7 @@ export default {
     findClientes,
     findById,
     findObras,
+    findTrabajos,
     create,
     update,
     remove,

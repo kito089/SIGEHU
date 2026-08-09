@@ -163,6 +163,46 @@ const getObrasByCliente = async (idCliente) => {
     );
 };
 
+// ─── GET Trabajos y Obras de un Cliente ─────────────────────────────────────
+// Devuelve el árbol "Trabajos/Obras" de la página de detalle de Cliente:
+//   - trabajos: TRABAJO del cliente, cada uno con su lista de obras activas.
+//   - obrasIndependientes: obras activas del cliente sin trabajo asociado
+//     (TRABAJOS_IDTRABAJO IS NULL).
+const getTrabajosByCliente = async (idCliente) => {
+    const db = await getConnection();
+
+    const trabajos = await db.query(
+        `SELECT t.idTrabajo, t.Nombre, t.Descripcion, t.Direccion, t.FechaCreacion
+         FROM TRABAJO t
+         WHERE t.Clientes_idCliente = ?
+         ORDER BY t.Nombre`,
+        [idCliente]
+    );
+
+    const CON_OBRAS = `SELECT o.idObra, o.Nombre, o.Direccion, o.Ancho, o.Alto,
+            o.Profundidad, o.TRABAJOS_IDTRABAJO, e.Nombre AS EstadoObra,
+            o.FechaCreacion, o.FechaUltimaActualizacion
+     FROM Obras o
+     JOIN EstadosObra e ON e.idEstadoObra = o.EstadosObra_idEstadoObra
+     WHERE o.Clientes_idCliente = ? AND o.Activo = TRUE`;
+
+    const trabajosConObras = [];
+    for (const t of trabajos ?? []) {
+        const obras = await db.query(
+            CON_OBRAS + ' AND o.TRABAJOS_IDTRABAJO = ? ORDER BY o.Nombre',
+            [idCliente, t.idTrabajo]
+        );
+        trabajosConObras.push({ ...t, obras });
+    }
+
+    const obrasIndependientes = await db.query(
+        CON_OBRAS + ' AND o.TRABAJOS_IDTRABAJO IS NULL ORDER BY o.FechaUltimaActualizacion DESC',
+        [idCliente]
+    );
+
+    return { trabajos: trabajosConObras, obrasIndependientes };
+};
+
 // ─── INSERT ───────────────────────────────────────────────────────────────────
 const createCliente = async ({
     Nombre, RazonSocial, Direccion, RFC, idRegimenFiscal, CodigoPostal,
@@ -603,6 +643,7 @@ export default {
     getClientes,
     getClienteById,
     getObrasByCliente,
+    getTrabajosByCliente,
     createCliente,
     updateCliente,
     deleteCliente,

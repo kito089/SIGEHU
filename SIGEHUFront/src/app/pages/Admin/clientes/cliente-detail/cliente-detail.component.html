@@ -1,0 +1,394 @@
+<div class="detail-page">
+
+  <!-- Encabezado -->
+  <div class="page-header">
+    <button type="button" class="btn-icon" (click)="regresar()" aria-label="Regresar">
+      <span class="icon">←</span>
+    </button>
+    <div class="header-text">
+      <h1>{{ titulo }}</h1>
+      <span class="badge" [class.badge-empresa]="!esPersona">{{ tipoLabel }}</span>
+    </div>
+  </div>
+
+  <!-- Pestañas -->
+  <div class="tabs" role="tablist">
+    <button type="button"
+            class="tab"
+            [class.active]="tab() === 'general'"
+            role="tab"
+            [attr.aria-selected]="tab() === 'general'"
+            (click)="tab.set('general')">
+      Información general
+    </button>
+    <button type="button"
+            class="tab"
+            [class.active]="tab() === 'obras'"
+            role="tab"
+            [attr.aria-selected]="tab() === 'obras'"
+            (click)="tab.set('obras')">
+      Trabajos y obras
+    </button>
+  </div>
+
+  <!-- Skeleton de carga -->
+  @if (cargando()) {
+    <app-skeleton class="skeleton-block"></app-skeleton>
+  } @else {
+
+    <!-- ═════════════ PESTAÑA 1: INFORMACIÓN GENERAL ═════════════ -->
+    @if (tab() === 'general') {
+      <div class="detail-body">
+
+        <section class="card">
+          <h2>Datos del {{ esPersona ? 'cliente' : 'negocio' }}</h2>
+
+          <div class="field-row">
+            <div class="field">
+              <label>{{ esPersona ? 'Nombre' : 'Razón social / Negocio' }}</label>
+              <div class="field-control">
+                @if (estaEditando('nombre')) {
+                  <input type="text" [formControl]="control('nombre')" maxlength="150" />
+                } @else {
+                  <p class="field-value">{{ valor('nombre') || '—' }}</p>
+                }
+                <button type="button"
+                        class="btn-edit"
+                        [class.btn-saving]="guardando()"
+                        (click)="estaEditando('nombre') ? guardarCampo('nombre') : editarCampo('nombre')"
+                        [disabled]="guardando()">
+                  {{ estaEditando('nombre') ? 'Guardar' : 'Editar' }}
+                </button>
+              </div>
+              @if (invalidarCampo('nombre')) {
+                <span class="field-error">{{ mensajeError('nombre') }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="field-grid">
+            @if (esPersona) {
+              <div class="field">
+                <label>Teléfono</label>
+                <div class="field-control">
+                  @if (estaEditando('telefono')) {
+                    <input type="tel" [formControl]="control('telefono')" maxlength="15" />
+                  } @else {
+                    <p class="field-value">{{ valor('telefono') || '—' }}</p>
+                  }
+                  <button type="button"
+                          class="btn-edit"
+                          [class.btn-saving]="guardando()"
+                          (click)="estaEditando('telefono') ? guardarCampo('telefono') : editarCampo('telefono')"
+                          [disabled]="guardando()">
+                    {{ estaEditando('telefono') ? 'Guardar' : 'Editar' }}
+                  </button>
+                </div>
+                @if (invalidarCampo('telefono')) {
+                  <span class="field-error">{{ mensajeError('telefono') }}</span>
+                }
+              </div>
+
+              <div class="field">
+                <label>Correo electrónico</label>
+                <div class="field-control">
+                  @if (estaEditando('correo')) {
+                    <input type="email" [formControl]="control('correo')" maxlength="254" />
+                  } @else {
+                    <p class="field-value">{{ valor('correo') || '—' }}</p>
+                  }
+                  <button type="button"
+                          class="btn-edit"
+                          [class.btn-saving]="guardando()"
+                          (click)="estaEditando('correo') ? guardarCampo('correo') : editarCampo('correo')"
+                          [disabled]="guardando()">
+                    {{ estaEditando('correo') ? 'Guardar' : 'Editar' }}
+                  </button>
+                </div>
+                @if (invalidarCampo('correo')) {
+                  <span class="field-error">{{ mensajeError('correo') }}</span>
+                }
+              </div>
+            }
+
+            <div class="field">
+              <label>Dirección</label>
+              <div class="field-control">
+                @if (estaEditando('direccion')) {
+                  <input type="text" [formControl]="control('direccion')" maxlength="255" />
+                } @else {
+                  <p class="field-value">{{ valor('direccion') || '—' }}</p>
+                }
+                <button type="button"
+                        class="btn-edit"
+                        [class.btn-saving]="guardando()"
+                        (click)="estaEditando('direccion') ? guardarCampo('direccion') : editarCampo('direccion')"
+                        [disabled]="guardando()">
+                  {{ estaEditando('direccion') ? 'Guardar' : 'Editar' }}
+                </button>
+              </div>
+              @if (invalidarCampo('direccion')) {
+                <span class="field-error">{{ mensajeError('direccion') }}</span>
+              }
+            </div>
+
+            <div class="field field-full">
+              <label>Observaciones</label>
+              <div class="field-control">
+                @if (estaEditando('observaciones')) {
+                  <textarea [formControl]="control('observaciones')" maxlength="500" rows="3"></textarea>
+                } @else {
+                  <p class="field-value field-value-multiline">{{ valor('observaciones') || '—' }}</p>
+                }
+                <button type="button"
+                        class="btn-edit"
+                        [class.btn-saving]="guardando()"
+                        (click)="estaEditando('observaciones') ? guardarCampo('observaciones') : editarCampo('observaciones')"
+                        [disabled]="guardando()">
+                  {{ estaEditando('observaciones') ? 'Guardar' : 'Editar' }}
+                </button>
+              </div>
+              @if (invalidarCampo('observaciones')) {
+                <span class="field-error">{{ mensajeError('observaciones') }}</span>
+              }
+            </div>
+          </div>
+        </section>
+
+        @if (contactos().length > 0) {
+          <section class="card">
+            <h2>Contactos</h2>
+            <div class="contact-list">
+              @for (c of contactos(); track $index) {
+                <div class="contact-item">
+                  <strong>{{ c.nombreCompleto || '[Sin nombre]' }}</strong>
+                  @if (metaContacto(c)) {
+                    <span class="muted">{{ metaContacto(c) }}</span>
+                  }
+                  @if (c.observaciones) {
+                    <span class="muted">{{ c.observaciones }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        @if (!esPersona) {
+          <section class="card">
+            <h2>Información fiscal</h2>
+
+            <div class="field-grid">
+              <div class="field">
+                <label>Razón social</label>
+                <div class="field-control">
+                  @if (estaEditando('razonSocial')) {
+                    <input type="text" [formControl]="control('razonSocial')" maxlength="150" />
+                  } @else {
+                    <p class="field-value">{{ valor('razonSocial') || '—' }}</p>
+                  }
+                  <button type="button"
+                          class="btn-edit"
+                          [class.btn-saving]="guardando()"
+                          (click)="estaEditando('razonSocial') ? guardarCampo('razonSocial') : editarCampo('razonSocial')"
+                          [disabled]="guardando()">
+                    {{ estaEditando('razonSocial') ? 'Guardar' : 'Editar' }}
+                  </button>
+                </div>
+                @if (invalidarCampo('razonSocial')) {
+                  <span class="field-error">{{ mensajeError('razonSocial') }}</span>
+                }
+              </div>
+
+              <div class="field">
+                <label>RFC</label>
+                <div class="field-control">
+                  @if (estaEditando('rfc')) {
+                    <input type="text" [formControl]="control('rfc')" maxlength="13" (input)="$event" />
+                  } @else {
+                    <p class="field-value">{{ valor('rfc') || '—' }}</p>
+                  }
+                  <button type="button"
+                          class="btn-edit"
+                          [class.btn-saving]="guardando()"
+                          (click)="estaEditando('rfc') ? guardarCampo('rfc') : editarCampo('rfc')"
+                          [disabled]="guardando()">
+                    {{ estaEditando('rfc') ? 'Guardar' : 'Editar' }}
+                  </button>
+                </div>
+                @if (invalidarCampo('rfc')) {
+                  <span class="field-error">{{ mensajeError('rfc') }}</span>
+                }
+              </div>
+
+              <div class="field">
+                <label>Régimen fiscal</label>
+                <div class="field-control">
+                  @if (estaEditando('regimenFiscal')) {
+                    <div class="combo-wrap">
+                      <input type="text"
+                             autocomplete="off"
+                             [value]="labelCatalogo('regimenFiscal')"
+                             (focus)="abrirCombo('regimenFiscal')"
+                             (click)="abrirCombo('regimenFiscal')"
+                             (blur)="cerrarCombo()"
+                             (input)="busquedaRegimen.set($any($event.target).value)"
+                             placeholder="Busca un régimen…" />
+                      @if (mostrarListaRegimen()) {
+                        <div class="combo-list">
+                          @for (o of listadoRegimen(); track o.value) {
+                            <button type="button" class="combo-item" (mousedown)="seleccionarRegimen(o)">
+                              {{ o.label }}
+                            </button>
+                          }
+                          @if (listadoRegimen().length === 0) {
+                            <div class="combo-empty">Sin resultados</div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="field-value">{{ labelCatalogo('regimenFiscal') || '—' }}</p>
+                  }
+                  <button type="button"
+                          class="btn-edit"
+                          [class.btn-saving]="guardando()"
+                          (click)="estaEditando('regimenFiscal') ? guardarCampo('regimenFiscal') : editarCampo('regimenFiscal')"
+                          [disabled]="guardando()">
+                    {{ estaEditando('regimenFiscal') ? 'Guardar' : 'Editar' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Uso CFDI</label>
+                <div class="field-control">
+                  @if (estaEditando('usoCFDI')) {
+                    <div class="combo-wrap">
+                      <input type="text"
+                             autocomplete="off"
+                             [value]="labelCatalogo('usoCFDI')"
+                             (focus)="abrirCombo('usoCFDI')"
+                             (click)="abrirCombo('usoCFDI')"
+                             (blur)="cerrarCombo()"
+                             (input)="busquedaUso.set($any($event.target).value)"
+                             placeholder="Selecciona un uso…" />
+                      @if (mostrarListaUso()) {
+                        <div class="combo-list">
+                          @for (o of listadoUso(); track o.value) {
+                            <button type="button" class="combo-item" (mousedown)="seleccionarUso(o)">
+                              {{ o.label }}
+                            </button>
+                          }
+                          @if (listadoUso().length === 0) {
+                            <div class="combo-empty">Sin resultados</div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="field-value">{{ labelCatalogo('usoCFDI') || '—' }}</p>
+                  }
+                  <button type="button"
+                          class="btn-edit"
+                          [class.btn-saving]="guardando()"
+                          (click)="estaEditando('usoCFDI') ? guardarCampo('usoCFDI') : editarCampo('usoCFDI')"
+                          [disabled]="guardando()">
+                    {{ estaEditando('usoCFDI') ? 'Guardar' : 'Editar' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Código postal</label>
+                <div class="field-control">
+                  @if (estaEditando('codigoPostal')) {
+                    <input type="text" [formControl]="control('codigoPostal')" maxlength="5" />
+                  } @else {
+                    <p class="field-value">{{ valor('codigoPostal') || '—' }}</p>
+                  }
+                  <button type="button"
+                          class="btn-edit"
+                          [class.btn-saving]="guardando()"
+                          (click)="estaEditando('codigoPostal') ? guardarCampo('codigoPostal') : editarCampo('codigoPostal')"
+                          [disabled]="guardando()">
+                    {{ estaEditando('codigoPostal') ? 'Guardar' : 'Editar' }}
+                  </button>
+                </div>
+                @if (invalidarCampo('codigoPostal')) {
+                  <span class="field-error">{{ mensajeError('codigoPostal') }}</span>
+                }
+              </div>
+            </div>
+
+            <p class="field-note">
+              Para editar varios campos a la vez o la lista de contactos, usa el formulario de edición.
+            </p>
+          </section>
+        }
+      </div>
+    }
+
+    <!-- ═════════════ PESTAÑA 2: TRABAJOS / OBRAS ═════════════ -->
+    @if (tab() === 'obras') {
+      <div class="detail-body">
+        <section class="card">
+          <h2>Obras y trabajos de {{ esPersona ? 'este cliente' : 'esta empresa' }}</h2>
+
+          @if (!tieneObras()) {
+            <div class="empty">
+              <p>No hay obras o trabajos registrados para este cliente.</p>
+            </div>
+          } @else {
+            <div class="work-tree">
+
+              @if (obrasIndependientes().length > 0) {
+                <div class="work-group">
+                  <h3 class="group-title">Obras independientes</h3>
+                  @for (o of obrasIndependientes(); track o.idObra) {
+                    <button type="button" class="work-item" (click)="abrirObra(o)">
+                      <span class="work-name">{{ o.nombre }}</span>
+                      @if (o.estadoObra) {
+                        <span class="badge badge-estado">{{ o.estadoObra }}</span>
+                      }
+                      @if (o.direccion) {
+                        <span class="muted work-meta">{{ o.direccion }}</span>
+                      }
+                    </button>
+                  }
+                </div>
+              }
+
+              @for (t of trabajos(); track t.idTrabajo) {
+                <div class="work-group">
+                  <h3 class="group-title">{{ t.nombre }}</h3>
+                  @if (t.descripcion) {
+                    <p class="muted group-desc">{{ t.descripcion }}</p>
+                  }
+                  @if (t.obras.length > 0) {
+                    <div class="work-children">
+                      @for (o of t.obras; track o.idObra) {
+                        <button type="button" class="work-item" (click)="abrirObra(o)">
+                          <span class="work-name">{{ o.nombre }}</span>
+                          @if (o.estadoObra) {
+                            <span class="badge badge-estado">{{ o.estadoObra }}</span>
+                          }
+                          @if (o.direccion) {
+                            <span class="muted work-meta">{{ o.direccion }}</span>
+                          }
+                        </button>
+                      }
+                    </div>
+                  } @else {
+                    <p class="muted group-desc">Sin obras asociadas.</p>
+                  }
+                </div>
+              }
+
+            </div>
+          }
+        </section>
+      </div>
+    }
+  }
+</div>

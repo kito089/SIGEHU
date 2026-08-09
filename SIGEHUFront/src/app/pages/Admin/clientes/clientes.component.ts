@@ -7,15 +7,15 @@ import { ToastService } from '../../../core/services/toast.service';
 import { FilterBarComponent } from '../../../shared/components/filter-bar/filter-bar.component';
 import { DataTableComponent, DataTableColumn } from '../../../shared/components/data-table/data-table.component';
 import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
-import { DetailModalComponent } from '../../../shared/components/detail-modal/detail-modal.component';
 import type { ClienteTipo } from '../../../core/models/cliente.model';
 
 /* =========================================================================
    SIGEHU — Gestión de Clientes (listado)
-   Datos reales vía GET /Clientes. Acciones: Ver detalle (GET /Clientes/:id),
-   Editar (navega al formulario con queryParam id) y Eliminar (soft-delete
-   con modal de confirmación reutilizable). El listado muestra el Tipo de
-   cliente (Persona | Empresa) y permite filtrar por él (RF-03, RF-05).
+   Datos reales vía GET /Clientes. Acciones: Ver Detalle (navega a la página
+   /admin/clientes/:id), Editar (formulario con queryParam id) y Eliminar
+   (soft-delete con modal de confirmación reutilizable). El listado muestra
+   el Tipo de cliente (Persona | Empresa) y permite filtrar por él (RF-03,
+   RF-05). El detalle es una página completa, no un modal.
    ========================================================================= */
 
 type FiltroClientes = 'todos' | 'persona' | 'empresa' | 'con_obras' | 'con_sat' | 'sin_sat';
@@ -48,7 +48,7 @@ interface ContactoDetalle {
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent, DetailModalComponent],
+  imports: [CommonModule, FilterBarComponent, DataTableComponent, ConfirmModalComponent],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
 })
@@ -61,7 +61,6 @@ export class ClientesComponent implements OnInit {
   clientes: Cliente[] = [];
   searchTerm = '';
   filtro: FiltroClientes = 'todos';
-  selectedCliente: Cliente | null = null;
   cargando = false;
   private detallePendienteId: number | null = null;
 
@@ -186,32 +185,8 @@ export class ClientesComponent implements OnInit {
     return partes.join(' · ');
   }
 
-  async verCliente(cliente: Cliente): Promise<void> {
-    this.selectedCliente = cliente;
-    try {
-      const detalle: any = await firstValueFrom(this.api.get('/Clientes/' + cliente.id));
-      this.selectedCliente = {
-        ...cliente,
-        direccion: detalle.DIRECCION ?? detalle.Direccion ?? detalle.direccion ?? '',
-        correo: detalle.CORREO ?? detalle.Correo ?? detalle.correo ?? cliente.correo,
-        observaciones: detalle.OBSERVACIONES ?? detalle.observaciones ?? '',
-        razonSocial: detalle.RAZONSOCIAL ?? detalle.RazonSocial ?? detalle.razonSocial ?? '',
-        regimenFiscal: detalle.REGIMENFISCAL ?? detalle.RegimenFiscal ?? detalle.regimenFiscal ?? '',
-        usoCFDI: detalle.USOCFDI ?? detalle.UsoCFDI ?? detalle.usoCFDI ?? '',
-        codigoPostal: detalle.CODIGOPOSTAL ?? detalle.codigoPostal ?? '',
-        contactos: Array.isArray(detalle.contactos) ? detalle.contactos.map((c: any) => ({
-          nombreCompleto: c.NOMBRECOMPLETO ?? c.NombreCompleto ?? c.nombreCompleto ?? '',
-          telefono: c.TELEFONO ?? c.Telefono ?? c.telefono ?? '',
-          correo: c.CORREO ?? c.Correo ?? c.correo ?? '',
-        })) : [],
-      };
-    } catch {
-      // El modal conserva los datos del listado; el interceptor ya notifica fallos.
-    }
-  }
-
-  cerrarDetalle(): void {
-    this.selectedCliente = null;
+  verCliente(cliente: Cliente): void {
+    this.router.navigate(['/admin/clientes', cliente.id]);
   }
 
   editarCliente(cliente: Cliente): void {
@@ -236,9 +211,6 @@ export class ClientesComponent implements OnInit {
     try {
       await firstValueFrom(this.api.delete('/Clientes/' + this.clienteAEliminar.id));
       this.clientes = this.clientes.filter(c => c.id !== this.clienteAEliminar!.id);
-      if (this.selectedCliente?.id === this.clienteAEliminar.id) {
-        this.selectedCliente = null;
-      }
       this.toast.success('Cliente eliminado correctamente');
       this.confirmarEliminacion = false;
       this.clienteAEliminar = null;

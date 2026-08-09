@@ -36,13 +36,8 @@ export interface KanbanBadge {
 export class KanbanBoardComponent {
   columns = input.required<KanbanColumnData[]>();
   cardClick = output<KanbanCardData>();
-  addCardClick = output<string>(); // columnId
 
   onCardClick(card: KanbanCardData): void {
     this.cardClick.emit(card);
-  }
-
-  onAddCard(columnId: string): void {
-    this.addCardClick.emit(columnId);
   }
 }

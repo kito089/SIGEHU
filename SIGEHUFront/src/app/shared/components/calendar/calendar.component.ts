@@ -1,6 +1,6 @@
-import { Component, Input, ChangeDetectionStrategy, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Calendar as FullCalendar } from '@fullcalendar/core';
+import { Calendar as FullCalendar, EventClickArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import esLocale from '@fullcalendar/core/locales/es';
@@ -16,8 +16,20 @@ import { SkeletonComponent } from '../skeleton/skeleton.component';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CalendarComponent implements OnDestroy {
-  @Input() events: CalendarEvent[] = [];
+  @Input() set events(value: CalendarEvent[]) {
+    this._events = value ?? [];
+    if (this.calendar) {
+      this.updateEvents(this._events);
+    }
+  }
+  get events(): CalendarEvent[] {
+    return this._events;
+  }
+  private _events: CalendarEvent[] = [];
+
   @Input() loading = false;
+
+  @Output() eventClick = new EventEmitter<CalendarEvent>();
 
   private calendar?: FullCalendar;
 
@@ -41,13 +53,19 @@ export class CalendarComponent implements OnDestroy {
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
-        right: 'dayGridMonth'
+        right: 'dayGridMonth,dayGridWeek'
+      },
+      buttonText: {
+        today: 'Hoy',
+        month: 'Mes',
+        week: 'Semana'
       },
       locale: esLocale,
       height: 'auto',
       events: this.events as any,
       eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
-      eventDisplay: 'block'
+      eventDisplay: 'block',
+      eventClick: (info: EventClickArg) => this.handleEventClick(info)
     });
   }
 
@@ -56,6 +74,19 @@ export class CalendarComponent implements OnDestroy {
       this.calendar.removeAllEvents();
       this.calendar.addEvent(events as any);
     }
-    this.events = events;
+    this._events = events;
+  }
+
+  private handleEventClick(info: EventClickArg): void {
+    const ext = info.event.extendedProps as CalendarEvent['extendedProps'];
+    const evento: CalendarEvent = {
+      id: Number(info.event.id) || ext.obraId,
+      title: info.event.title,
+      start: info.event.startStr,
+      end: info.event.endStr || undefined,
+      color: info.event.backgroundColor as string,
+      extendedProps: ext,
+    };
+    this.eventClick.emit(evento);
   }
 }

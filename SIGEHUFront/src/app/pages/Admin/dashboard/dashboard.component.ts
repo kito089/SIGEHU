@@ -1,5 +1,6 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
 import { DashboardTabsComponent, DashboardTab } from '../../../shared/components/dashboard/tabs/dashboard-tabs.component';
@@ -7,8 +8,10 @@ import { KanbanBoardComponent, KanbanColumnData, KanbanCardData } from '../../..
 import { CalendarComponent } from '../../../shared/components/calendar/calendar.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { DashboardService } from '../../../services/dashboard.service';
+import type { EventoCalendarioBackend } from '../../../services/dashboard.service';
 import { ReportesService } from '../../../services/reportes.service';
 import type { CompraPendiente } from '../../../core/models/compra.model';
+import type { CalendarEvent } from '../../../core/models/dashboard.model';
 
 interface KpiCardConfig {
   value: string | number;
@@ -36,6 +39,7 @@ interface KpiCardConfig {
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent {
+  private router = inject(Router);
   private dashboard = inject(DashboardService);
   private reportes = inject(ReportesService);
 
@@ -48,9 +52,14 @@ export class DashboardComponent {
   readonly comprasPendientes = signal<CompraPendiente[]>([]);
   readonly comprasCargando = signal(false);
 
+  // Eventos reales del calendario (GET /Dashboard/calendar-events)
+  readonly calendarioEventos = signal<CalendarEvent[]>([]);
+  readonly calendarioCargando = signal(false);
+
   ngOnInit(): void {
     this.cargarKpis();
     this.cargarComprasPendientes();
+    this.cargarEventosCalendario();
   }
 
   private async cargarKpis(): Promise<void> {
@@ -103,6 +112,69 @@ export class DashboardComponent {
     } finally {
       this.comprasCargando.set(false);
     }
+  }
+
+  private async cargarEventosCalendario(): Promise<void> {
+    this.calendarioCargando.set(true);
+    try {
+      const eventos = await firstValueFrom(this.dashboard.eventosCalendario());
+      this.calendarioEventos.set(eventos.map(e => this.mapearEvento(e)));
+    } catch {
+      this.calendarioEventos.set([]);
+    } finally {
+      this.calendarioCargando.set(false);
+    }
+  }
+
+  private mapearEvento(e: EventoCalendarioBackend): CalendarEvent {
+    const color = this.colorPorEstado(e.estadoObra);
+    return {
+      id: e.idObra,
+      title: e.nombreObra,
+      start: this.aISODate(e.fechaEvento),
+      color,
+      extendedProps: {
+        type: this.tipoPorEstado(e.estadoObra),
+        obraId: e.idObra,
+        obraNombre: e.nombreObra,
+        clienteNombre: e.nombreCliente,
+      },
+    };
+  }
+
+  private colorPorEstado(estado: string): string {
+    switch (estado?.trim().toLowerCase()) {
+      case 'levantamiento pendiente': return '#F59E0B';
+      case 'en fabricacion': return '#3B82F6';
+      case 'instalacion programada': return '#A855F7';
+      case 'instalado': return '#10B981';
+      case 'garantia': return '#EF4444';
+      case 'finalizado': return '#64748B';
+      default: return '#94A3B8';
+    }
+  }
+
+  private tipoPorEstado(estado: string): 'Levantamiento' | 'Fabricacion' | 'Instalacion' | 'Garantia' {
+    switch (estado?.trim().toLowerCase()) {
+      case 'levantamiento pendiente': return 'Levantamiento';
+      case 'en fabricacion': return 'Fabricacion';
+      case 'instalado':
+      case 'instalacion programada': return 'Instalacion';
+      case 'garantia': return 'Garantia';
+      default: return 'Levantamiento';
+    }
+  }
+
+  private aISODate(valor: string): string {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(valor ?? '');
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    const d = new Date(valor);
+    if (!Number.isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return valor ?? '';
+  }
+
+  onEventoClick(evento: CalendarEvent): void {
+    this.router.navigate(['/admin/obras'], { queryParams: { ver: evento.extendedProps.obraId } });
   }
 
   readonly kanbanColumns = signal<KanbanColumnData[]>([
@@ -172,10 +244,5 @@ export class DashboardComponent {
   onCardClick(card: KanbanCardData): void {
     // TODO: Abrir modal detalle
     console.log('Card clicked:', card);
-  }
-
-  onAddCard(columnId: string): void {
-    // TODO: Abrir modal crear tarea
-    console.log('Add card to:', columnId);
   }
 }

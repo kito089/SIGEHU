@@ -8,6 +8,7 @@ router.get('/RegimenesFiscales', ctrl.findRegimenesFiscales)
 router.get('/UsosCFDI', ctrl.findUsosCFDI)
 router.get('/:id', ctrl.findById);
 router.get('/:id/obras', ctrl.findObras);
+router.get('/:id/trabajos', ctrl.findTrabajos);
 
 router.post('/', ctrl.create);
 router.put('/:id', ctrl.update);

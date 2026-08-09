@@ -27,7 +27,6 @@
       <app-kanban-board
         [columns]="kanbanColumns()"
         (cardClick)="onCardClick($event)"
-        (addCardClick)="onAddCard($event)"
       ></app-kanban-board>
 
       <!-- Compras pendientes -->
@@ -61,7 +60,11 @@
   }
   @case ('calendar') {
     <section class="dashboard-panel" aria-labelledby="calendar-heading">
-      <app-calendar></app-calendar>
+      <app-calendar
+        [events]="calendarioEventos()"
+        [loading]="calendarioCargando()"
+        (eventClick)="onEventoClick($event)"
+      ></app-calendar>
     </section>
   }
   @case ('assigned') {

@@ -1,7 +1,7 @@
 ﻿<div class="page">
 
   <div class="page-header">
-    <h1>Gestión de Clientes</h1>
+    <h1>Clientes</h1>
     <p>Directorio maestro, historial de obras y configuraciones de facturación SAT</p>
   </div>
 
@@ -79,96 +79,6 @@
   </section>
 
 </div>
-
-<app-detail-modal
-  *ngIf="selectedCliente"
-  tag="Cliente"
-  [title]="selectedCliente.nombre"
-  [editable]="true"
-  (editar)="editarCliente(selectedCliente)"
-  (cerrar)="cerrarDetalle()"
->
-  <div class="detail-modal__section">
-    <span class="detail-modal__label">Datos generales</span>
-    <div class="detail-modal__grid">
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">Tipo de cliente</span>
-        <span class="detail-modal__value">{{ tipoLabel(selectedCliente.tipo) }}</span>
-      </div>
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">{{ selectedCliente.tipo === 'persona' ? 'Nombre' : 'Nombre de la Empresa' }}</span>
-        <span class="detail-modal__value">{{ selectedCliente.nombre || 'No registrado' }}</span>
-      </div>
-      <div class="detail-modal__field detail-modal__field--span-2">
-        <span class="detail-modal__label">Dirección</span>
-        <span class="detail-modal__value">{{ selectedCliente.direccion || 'No registrado' }}</span>
-      </div>
-      @if (selectedCliente.observaciones) {
-        <div class="detail-modal__field detail-modal__field--span-2">
-          <span class="detail-modal__label">Observaciones</span>
-          <span class="detail-modal__value">{{ selectedCliente.observaciones }}</span>
-        </div>
-      }
-    </div>
-  </div>
-
-  <div class="detail-modal__section">
-    <span class="detail-modal__label">Contactos ({{ selectedCliente.contactos?.length ?? 0 }})</span>
-    @if (selectedCliente.contactos && selectedCliente.contactos.length > 0) {
-      <div class="detail-modal__list">
-        @for (c of selectedCliente.contactos; track $index) {
-          <div class="detail-modal__list-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>{{ c.nombreCompleto }}</span>
-            <span class="detail-modal__list-meta">{{ metaContacto(c) }}</span>
-          </div>
-        }
-      </div>
-    } @else {
-      <p class="detail-modal__empty">No hay contactos registrados</p>
-    }
-  </div>
-
-  <div class="detail-modal__section">
-    <span class="detail-modal__label">Datos fiscales</span>
-    <div class="detail-modal__grid">
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">RFC</span>
-        <span class="detail-modal__value">{{ selectedCliente.rfc || 'No registrado' }}</span>
-      </div>
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">Razón Social</span>
-        <span class="detail-modal__value">{{ selectedCliente.razonSocial || 'No registrado' }}</span>
-      </div>
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">Uso de CFDI</span>
-        <span class="detail-modal__value">{{ selectedCliente.usoCFDI || 'No registrado' }}</span>
-      </div>
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">Régimen Fiscal</span>
-        <span class="detail-modal__value">{{ selectedCliente.regimenFiscal || 'No registrado' }}</span>
-      </div>
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">Código Postal Fiscal</span>
-        <span class="detail-modal__value">{{ selectedCliente.codigoPostal || 'No registrado' }}</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="detail-modal__section">
-    <span class="detail-modal__label">Resumen</span>
-    <div class="detail-modal__grid">
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">Obras activas</span>
-        <span class="detail-modal__value">{{ selectedCliente.obrasActivas }}</span>
-      </div>
-      <div class="detail-modal__field">
-        <span class="detail-modal__label">Datos SAT</span>
-        <span class="detail-modal__value">{{ selectedCliente.datosSat ? 'Registrados' : 'No Provistos' }}</span>
-      </div>
-    </div>
-  </div>
-</app-detail-modal>
 
 <app-confirm-modal
   *ngIf="confirmarEliminacion"

@@ -21,6 +21,7 @@ export const routes: Routes = [
       { path: 'trabajadores', loadComponent: () => import('./pages/Admin/trabajadores/trabajadores.component').then(m => m.TrabajadoresComponent) },
       { path: 'clientes', loadComponent: () => import('./pages/Admin/clientes/clientes.component').then(m => m.ClientesComponent) },
       { path: 'clientes/form', loadComponent: () => import('./pages/Admin/clientes/clientes-form/cliente-form.component').then(m => m.ClienteFormComponent) },
+      { path: 'clientes/:id', loadComponent: () => import('./pages/Admin/clientes/cliente-detail/cliente-detail.component').then(m => m.ClienteDetailComponent) },
       { path: 'trabajadores/nuevo', loadComponent: () => import('./pages/Admin/trabajadores/trabajador-new/trabajador-new.component').then(m => m.TrabajadorNewComponent) },
       { path: 'proveedores', loadComponent: () => import('./pages/Admin/proveedores/proveedores.component').then(m => m.ProveedoresComponent) },
       { path: 'proveedores/nuevo', loadComponent: () => import('./pages/Admin/proveedores/proveedor-new/proveedor-new.component').then(m => m.ProveedorNewComponent) },

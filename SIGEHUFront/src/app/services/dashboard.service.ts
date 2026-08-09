@@ -15,6 +15,15 @@ export interface DashboardResumen {
   garantiasCerradasMes: number;
 }
 
+export interface EventoCalendarioBackend {
+  tipoEvento: 'Obra' | 'Garantia' | string;
+  idObra: number;
+  nombreObra: string;
+  nombreCliente: string;
+  estadoObra: string;
+  fechaEvento: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -23,5 +32,9 @@ export class DashboardService {
 
   kpis(): Observable<DashboardResumen> {
     return this.api.get<DashboardResumen>('/Dashboard/kpis');
+  }
+
+  eventosCalendario(): Observable<EventoCalendarioBackend[]> {
+    return this.api.get<EventoCalendarioBackend[]>('/Dashboard/calendar-events');
   }
 }
