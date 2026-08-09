@@ -26,6 +26,7 @@
             "polyfills": [
               "src/polyfills.ts"
             ],
+            "baseHref": "./",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [

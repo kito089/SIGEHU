@@ -1,17 +1,11 @@
 import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
+import { getObrasUploadDir, getGarantiasUploadDir, getImssUploadDir } from "../config/paths.js";
 
-function getRootPath() {
-    if (process.env.NODE_ENV === "production") {
-        return path.dirname(process.execPath);
-    }
-    return process.cwd();
-}
-
-const uploadDir = path.join(getRootPath(), "uploads", "obras");
-const uploadGarantiaDir = path.join(getRootPath(), "uploads", "garantias");
-const uploadImssDir = path.join(getRootPath(), "uploads", "imss");
+const uploadDir = getObrasUploadDir();
+const uploadGarantiaDir = getGarantiasUploadDir();
+const uploadImssDir = getImssUploadDir();
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });

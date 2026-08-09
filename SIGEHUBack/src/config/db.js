@@ -1,16 +1,40 @@
 import path from "node:path";
+import fs from "node:fs";
 import config from '../../config.json' with { type: 'json' };
 import { createNativeClient } from "node-firebird-driver-native";
+import { getResourcesRoot, getDataRoot } from "./paths.js";
 
 let client = null;
 let attachment = null;
 
-function getRootPath() {
-    if (process.env.NODE_ENV === "production") {
-        return path.dirname(process.execPath);
+function prepareDatabaseFile() {
+    const dbPath = path.join(
+        getDataRoot(),
+        "database",
+        "SIGEHU.FDB"
+    );
+
+    if (fs.existsSync(dbPath)) {
+        return { dbPath, creado: false };
     }
 
-    return process.cwd();
+    const seedPath = path.join(
+        getResourcesRoot(),
+        "database",
+        "SIGEHU.FDB"
+    );
+
+    if (fs.existsSync(seedPath)) {
+        const databaseDir = path.dirname(dbPath);
+        if (!fs.existsSync(databaseDir)) {
+            fs.mkdirSync(databaseDir, { recursive: true });
+        }
+        fs.copyFileSync(seedPath, dbPath);
+        console.log("BD semilla copiada a la ruta de datos:", dbPath);
+        return { dbPath, creado: true };
+    }
+
+    return { dbPath, creado: false };
 }
 
 async function ensureConnection() {
@@ -19,18 +43,12 @@ async function ensureConnection() {
         return attachment;
     }
 
-    const rootPath = getRootPath();
+    const { dbPath } = prepareDatabaseFile();
 
     const fbClientPath = path.join(
-        rootPath,
+        getResourcesRoot(),
         "firebird",
         "fbclient.dll"
-    );
-
-    const dbPath = path.join(
-        rootPath,
-        "database",
-        "SIGEHU.FDB"
     );
 
     console.log("Firebird:", fbClientPath);

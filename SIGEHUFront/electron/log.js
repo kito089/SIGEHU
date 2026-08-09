@@ -3,10 +3,12 @@
  *
  * Persiste los logs en un archivo de texto plano con formato estructurado y
  * con timestamp ISO-8601.
- *   - En desarrollo:  <raíz del proyecto frontend>/sigehu.log
- *   - Empaquetado:    <userData>/logs/sigehu.log
+ *   - En desarrollo:  SIGEHUFront/electron.log
+ *   - Empaquetado:    <userData>/logs/electron.log
  *
- * Si el archivo no existe, se crea automáticamente.
+ * La ruta absoluta de escritura se registra como primera línea del log (lo hace
+ * `main.js` con `logStartupContext`), de modo que siempre pueda localizarse el
+ * archivo en instalaciones reales. Si el archivo no existe, se crea automáticamente.
  */
 
 'use strict';
@@ -15,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
 
+const LOG_FILE_NAME = 'electron.log';
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB antes de rotar
 const MAX_BACKUPS = 3;
 
@@ -27,11 +30,11 @@ function resolveLogPath() {
   if (app.isPackaged) {
     const dir = path.join(app.getPath('userData'), 'logs');
     fs.mkdirSync(dir, { recursive: true });
-    return path.join(dir, 'sigehu.log');
+    return path.join(dir, LOG_FILE_NAME);
   }
   // Desarrollo: raíz del proyecto del frontend.
   const root = app.getAppPath();
-  return path.join(root, 'sigehu.log');
+  return path.join(root, LOG_FILE_NAME);
 }
 
 function ensureFile() {
@@ -97,7 +100,26 @@ function write(level, category, message) {
 /** Acepta entradas a través del IPC del renderer. */
 function fromRenderer(event, payload) {
   if (!payload) return;
-  write(payload.level, payload.category, payload.message);
+  if (payload.preformatted && typeof payload.message === 'string') {
+    writePreformatted(payload.message);
+  } else {
+    write(payload.level, payload.category, payload.message);
+  }
+}
+
+/**
+ * Escribe una entrada ya formateada por el renderer (contiene su propio
+ * timestamp, nivel y categoría). No vuelve a añadir cabeceras para evitar
+ * bloques duplicados en el archivo.
+ */
+function writePreformatted(text) {
+  try {
+    ensureFile();
+    rotateIfNeeded();
+    fs.appendFileSync(logFile, (text.endsWith('\n') ? text : text + '\n'), 'utf8');
+  } catch (e) {
+    /* logging nunca debe romper la app */
+  }
 }
 
 /** Ruta actual del archivo de log (útil para depuración). */

@@ -1,6 +1,7 @@
 import { getConnection } from "../config/db.js";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { getDataRoot } from "../config/paths.js";
 import { uploadDir } from "../middlewares/upload.middleware.js";
 
 // ─── INSERT: guardar el registro de la foto ya subida por Multer ─────────────
@@ -56,13 +57,7 @@ const deleteFotoObra = async (idFotoObra) => {
     );
 
     // 3. Borrar el archivo físico
-    function getRootPath() {
-        return process.env.NODE_ENV === "production"
-            ? path.dirname(process.execPath)
-            : process.cwd();
-    }
-
-    const rutaAbsoluta = path.join(getRootPath(), rutaRelativa);
+    const rutaAbsoluta = path.join(getDataRoot(), rutaRelativa);
 
     try {
         await fs.unlink(rutaAbsoluta);

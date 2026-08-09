@@ -25,7 +25,7 @@ export interface LogEntry {
  * poder persistir los logs en un archivo. No está presente en web ni en móvil.
  */
 interface ElectronLogBridge {
-  write: (entry: { level: string; category: string; message: string }) => void;
+  write: (entry: { level: string; category: string; message: string; preformatted?: boolean }) => void;
 }
 
 /* istanbul ignore next */
@@ -203,7 +203,7 @@ export class LogService {
 
   private writeToFile(entry: LogEntry, text: string): void {
     try {
-      window.sigehuLog?.write({ level: entry.level, category: entry.category, message: text });
+      window.sigehuLog?.write({ level: entry.level, category: entry.category, message: text, preformatted: true });
     } catch {
       // Nunca permitir que un fallo de persistencia derribe la app.
     }

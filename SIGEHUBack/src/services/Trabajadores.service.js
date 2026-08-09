@@ -2,18 +2,17 @@ import { getConnection } from "../config/db.js";
 import audit from "./Auditoria.service.js";
 import fs from "node:fs";
 import path from "node:path";
+import { getDataRoot } from "../config/paths.js";
 
-function getRootPath() {
-    if (process.env.NODE_ENV === "production") {
-        return path.dirname(process.execPath);
-    }
-    return process.cwd();
+function getUploadsRoot() {
+    return path.join(getDataRoot(), "uploads");
 }
 
 function eliminarArchivoImss(rutaRelativa) {
     if (!rutaRelativa) return;
-    const ruta = path.join(getRootPath(), rutaRelativa);
-    if (!ruta.startsWith(path.join(getRootPath(), "uploads"))) return;
+    const uploadsRoot = getUploadsRoot();
+    const ruta = path.join(getDataRoot(), rutaRelativa);
+    if (!ruta.startsWith(uploadsRoot)) return;
     try {
         if (fs.existsSync(ruta)) {
             fs.unlinkSync(ruta);

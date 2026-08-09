@@ -378,5 +378,39 @@
 | 2026-08-07 | Developer | CORR | **Historial semántico contactos**: triggers ContactosClientes registran "Contacto agregado"/"Contacto eliminado"/"Contacto"(edit) dentro de `LAST_AUDIT_ID`; frontend historial muestra mensajes amigables (`esAccionContacto`/`etiquetaCampo`/`textoAccionContacto` en `historial.component.ts/html`). Verificado por HTTP: `Auditoria/cliente/2` → detalles con Campo `Contacto agregado`/`Contacto eliminado`/`Contacto` | Done |
 | 2026-08-07 | Developer | CORR | **Reporte Nuevos clientes por mes**: `Reportes.service.js` `getClientesNuevos` filtra solo activos (`JOIN Clientes c ... AND c.Activo = TRUE`). Verificado: serie `{anio,mes,total}` + listado; cliente eliminado queda excluido | Done |
 | 2026-08-07 | Developer | W10-VAL | **Validación runtime HTTP**: login kito089/123456 OK; POST /Clientes (empresa, RazonSocial, RFC, contacto) → 201; GET /Clientes/2 → RazonSocial+fiscal+contactos (IDCONTACTOCLIENTE); PUT edita contacto → auditoría "Contacto: Juan Pérez → Juan Pérez López"; PUT agrega contacto → "Contacto agregado: (nuevo) → Ana Torres"; PUT elimina contacto → "Contacto eliminado: Ana Torres → "; DELETE soft → listado vacío + reporte vacío. Backend reiniciado (PID 7696). Build frontend exit 0 | Done |
+| 2026-08-08 | Developer | P1-ICON | **Icono Electron blanco**: `win.icon` era `.png` → cambiado a `build/icon.ico` (6 frames 256→16 con alpha). Verificado `setup.iss` ya usa el `.ico` y accesos directos apuntan a `{app}\SIGU.exe` (heredan icono del exe, que contiene alpha 32×32) | Done |
+| 2026-08-08 | Developer | P2-RUTA | **EPERM empaquetado**: creado `src/config/paths.js` (rutas resources/data, `SIGEHU_DATA_DIR` env). Refactor `db.js` (copy seed FDB primer arranque), `upload.middleware.js`, `app.js` (cors.log→logs, static /uploads→data), `backup.job.js`, `FotosObras`, `FotosGarantias`, `Trabajadores`. Electron main.js spawn con `SIGEHU_DATA_DIR: userData`. Tabla KI-1 | Done |
+| 2026-08-08 | Developer | P2-VAL | **Validación SEA empaquetado**: se construiso `sigehu-back.exe` + recursos en sim (`resources/backend`): primer arranque copió el seed a dataRoot, `BD conectada`, `Servidor :3000`, backup generado; `uploads/` y `backups/` dentro de dataRoot (¡`%PROGRAM FILES%` intacto!); `node --check` 8 files OK | Done |
+| 2026-08-08 | Developer | P3-VAL | **Log Android**: cableado nativo verificado (plugin name `SigehuLog`, MainActivity registerPlugin, bridge TS). A falta de dispositivo: `cap sync` + APK + `adb logcat -s SIGEHU` — pendiente manual | Blocked (manual) |
 
-> **Formato:** `YYYY-MM-DD` | `Agent-Type` | `Wave X.Y` | `Descripción corta` | `Done/Blocked/Partial`
+---
+
+## Encargo: 3 Problemas de Empaquetado/Logs (2026-08-08)
+
+**Estado:** Problemas 1 ✅, 2 ✅ (validado runtime SEA), 3 ✅ (código verificado, prueba dispositivo pendiente)
+
+### Problema 1 — Icono con fondo blanco en acceso directo/barra de tareas ✅
+- **Diagnóstico:** los assets reales tienen alpha correcto: `www/assets/icon.png` (448×448, 0 pixeles blanco opaco), `build/icon.png` y `build/icon.ico` (6 frames 256→16 todos 32bpp, transparencia 29.7–38.2% por frame). El EXE instalado y `Release\SIGEHU.exe` ya incrustan icono 32×32 `Format32bppArgb` con transparencia real (357 px alpha / 1024, 0 blanco opaco).
+- **Causa raíz**: `electron-builder.yml` tenía `win.icon: build/icon.png`; Windows y electron-builder requieren `.ico` con alpha para el acceso directo/barra de tareas.
+- **Fix aplicado**: `win.icon: build/icon.ico`. Verificado que `Installer/setup.iss` ya referencia `..\SIGEHUFront\build\icon.ico` como `SetupIconFile` y que los accesos directos apuntan a `{app}\SIGEHU.exe` (heredan el icono del exe, ya transparente). No requiere `build.bat` (cambio directo en archivo de configuración).
+
+### Problema 2 — Backend empaquetado muere con EPERM en `resources\backend\uploads` ✅
+- **Causa raíz**: rutas duplicadas resueltas con `path.dirname(process.execPath)` = `C:\Program Files (x86)\SIGEHU\resources\backend` (protegido); `upload.middleware.js` hacía `mkdirSync` de `uploads/{obras,garantias,imss}` al cargar módulo → `EPERM`. Afectaba también `database/backups` (backup.job.js) y estático `/uploads`.
+- **Fix**: nuevo módulo único `SIGEHUBack/src/config/paths.js` separa **recursos de solo lectura** (`getResourcesRoot()` = `dirname(execPath)` → `...\resources\backend`) de **datos mutables** (`getDataRoot()`, prioridad: env `SIGEHU_DATA_DIR` [inyectado por Electron vía `app.getPath('userData')`] → prod `%APPDATA%\SIGEHU` → dev `process.cwd()`). Refactorizados: `db.js` (+ `prepareDatabaseFile()` copia seed `database/SIGEHU.FDB` al dataRoot en primer arranque), `upload.middleware.js`, `app.js` (CORS log→`getLogsDir()`, static `/uploads`→`getUploadsDir()`), `backup.job.js`, `FotosObras/FotosGarantias/Trabajadores.service.js` (fix: no duplicar `uploads` en el join).
+- **Electron**: `electron/main.js` spawn env ahora pasa `SIGEHU_DATA_DIR: app.getPath('userData')` (NOTA: `main.js` se considera protegido por AGENTS.md, pero este encargo exige configurar ahí la ruta; `apply-env.js` no lo toca).
+- **Validación (evidencia runtime)**: se construyó `sigehu-back.exe` SEA (blob+postject, exe + firebird + database seed + node_modules en `pkg-sim/resources/backend`), simulación exacta del paquete: `"BD semilla copiada a la ruta de datos"` → `BD conectada` → `Servidor escuchando en http://localhost:3000` → backup diario OK. Verificada la estructura resultante: `SIGUHE.FDB` + `backups/` (con `SIGEHU_*.fdb` real) + `uploads/{obras,garantias,imss}` todo bajo **data root**, y **ningún** directorio nuevo creado en `resources/backend` (recurso no escrito). Dev: `node src/app.js` → BD conectada :3000 OK. `node --check` OK en 8 archivos backend modificados; `build/sea-bundle.cjs` regenerado (241239 B).
+
+### Problema 3 — Logs Android no aparecen en Logcat tag `SIGEHU` ✅ (código; dispositivo pendiente)
+- **Diagnóstico**: flujo nativo completo correcto — `SigehuLogPlugin.java` (`@CapacitorPlugin(name="SigehuLog")`, `android.util.Log` tag `SIGEHU`), `MainActivity.registerPlugin(...)` antes de `super.onCreate()`, puente TS `registerPlugin('SigehuLog')`, `LogService.emit`→nativo cuando `env.isCapacitor`. `AppComponent` ya loguea `Aplicación Angular inicializada` al boot (llega a Logcat vía plugin). Filtro `adb logcat -s SIGEHU`/`package:mine` solo muestran PROCESS STARTED/ENDED cuando el APK instalado es viejo (sin plugin) o se prueba desde web/túnel (no nativo).
+- **Pendiente**: `npx cap sync android` + rebuild APK + instalación en dispositivo/emulador → `adb logcat -s SIGEHU` (esperado `[SIGEHU][INFO][SYS] Aplicación Angular inicializada`).
+
+| ID | Detalle | Evidencia |
+|----|---------|-----------|
+| KI-19 | EPERM empaquetado (uploads en resources) | Sim SEA: seed copiado + BD + backup + uploads en dataRoot, resources sin escritura |
+| KI-20 | win.icon era .png | ico 6 frames con alpha; exe conserva alpha 32×32 |
+
+---
+
+## Log de Ejecución (Actualizado por Agentes)
+
+> **Formato:** `YYYY-MM-DD` | `Agent-Type` | `Wave X.X` | `Descripción corta` | `Done/Blocked/Partial`

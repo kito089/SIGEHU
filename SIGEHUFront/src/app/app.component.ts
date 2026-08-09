@@ -25,8 +25,23 @@ export class AppComponent implements OnInit {
     console.log(`[SIGEHU] Backend URL: ${this.env.getBaseUrl()}`);
 
     this.log.info('Aplicación Angular inicializada', { url: window.location.href });
+    this.logElectronLogFile();
     this.wireNavigationLogging();
     this.wireGlobalErrorListeners();
+  }
+
+  /**
+   * En Electron, consulta vía preload la ruta absoluta del archivo de log y la
+   * registra (esa entrada queda persistida en electron.log).
+   */
+  private logElectronLogFile(): void {
+    const bridge = (window as unknown as { sigehuLog?: { getLogFile?: () => Promise<string> } }).sigehuLog;
+    if (bridge?.getLogFile) {
+      bridge
+        .getLogFile()
+        .then((logFile) => this.log.info('Archivo de log Electron', { logFile }))
+        .catch(() => undefined);
+    }
   }
 
   private wireNavigationLogging(): void {

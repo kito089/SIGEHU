@@ -3,19 +3,12 @@ import path from 'path';
 import crypto from 'crypto';
 import { execSync } from 'child_process';
 import cron from 'node-cron';
+import { getResourcesRoot, getDatabaseDir, getBackupDir } from '../config/paths.js';
 
-function getRootPath() {
-    return process.env.NODE_ENV === 'production'
-        ? path.dirname(process.execPath)
-        : process.cwd();
-}
-
-const ROOT_PATH = getRootPath();
-
-const DATABASE_DIR = path.join(ROOT_PATH, 'database');
+const DATABASE_DIR = getDatabaseDir();
 
 const DB_PATH = path.join(DATABASE_DIR, 'SIGEHU.FDB');
-const BACKUP_DIR = path.join(DATABASE_DIR, 'backups');
+const BACKUP_DIR = getBackupDir();
 
 const LOG_PATH = path.join(BACKUP_DIR, 'backup.log');
 const STATUS_PATH = path.join(BACKUP_DIR, 'backup_status.json');
@@ -141,8 +134,8 @@ async function hacerRespaldo() {
 
 function encontrarGbak() {
   const posibles = [
-    path.join(ROOT_PATH, 'firebird', 'firebird', 'gbak.exe'),
-    path.join(ROOT_PATH, 'firebird', 'gbak.exe'),
+    path.join(getResourcesRoot(), 'firebird', 'firebird', 'gbak.exe'),
+    path.join(getResourcesRoot(), 'firebird', 'gbak.exe'),
     'gbak'
   ];
 
