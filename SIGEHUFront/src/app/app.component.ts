@@ -3,7 +3,7 @@ import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
 import { EnvService } from './services/env.service';
-import { Runtime } from './services/environment-detector.service';
+import { EnvironmentDetector, Runtime } from './services/environment-detector.service';
 import { LogService } from './core/services/log.service';
 
 @Component({
@@ -14,11 +14,12 @@ import { LogService } from './core/services/log.service';
 export class AppComponent implements OnInit {
   private router = inject(Router);
   private env = inject(EnvService);
+  private envDetector = inject(EnvironmentDetector);
   private log = inject(LogService);
 
   private lastRoute = '';
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     // Imprime el entorno detectado y la URL base del backend una única vez al arrancar.
     // La URL proviene de EnvService, la misma fuente usada por ApiService para las peticiones HTTP.
     console.log(`[SIGEHU] Runtime: ${this.runtimeLabel(this.env.runtime)}`);
@@ -28,6 +29,26 @@ export class AppComponent implements OnInit {
     this.logElectronLogFile();
     this.wireNavigationLogging();
     this.wireGlobalErrorListeners();
+    await this.bootstrapNative();
+  }
+
+  /**
+   * Configuración nativa (Capacitor/Android). En Android 15+ edge-to-edge es
+   * forzado por el SO, por lo que NO se debe superponer la webview. En versiones
+   * previas, setOverlaysWebView({overlay:false}) desplaza el webview debajo de
+   * la status bar. El plugin es no-op si la plataforma no lo soporta.
+   */
+  private async bootstrapNative(): Promise<void> {
+    if (!this.envDetector.isCapacitor) return;
+    try {
+      const { StatusBar, Style } = await import('@capacitor/status-bar');
+      // style DARK -> texto blanco (legible sobre fondo oscuro del layout)
+      await StatusBar.setStyle({ style: Style.Dark }).catch(() => undefined);
+      // Android <15: separa la webview de la status bar (no-op en 15+)
+      await StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
+    } catch {
+      // El plugin StatusBar no está disponible en runtime (web/electron): se ignora.
+    }
   }
 
   /**

@@ -1,0 +1,119 @@
+:host {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.m-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sigehu-space-2);
+  padding: var(--sigehu-space-2) var(--sigehu-space-3);
+  background: var(--sigehu-topbar-bg);
+  border-bottom: var(--sigehu-border-width) solid var(--sigehu-border-divider);
+  font-family: var(--sigehu-font-family);
+  height: 56px;
+  box-sizing: border-box;
+  // safe-area superior (notch / status bar)
+  padding-top: constant(safe-area-inset-top, 0px);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.m-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--sigehu-space-2);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.m-header__logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.m-header__title {
+  margin: 0;
+  font-size: var(--sigehu-font-size-md);
+  font-weight: var(--sigehu-font-weight-bold);
+  color: var(--sigehu-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.m-header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--sigehu-space-1);
+  flex-shrink: 0;
+}
+
+.m-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  border-radius: var(--sigehu-radius-md);
+  color: var(--sigehu-text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.m-icon-btn:hover,
+.m-icon-btn:focus-visible {
+  background: var(--sigehu-active-bg);
+  color: var(--sigehu-active-text);
+  outline: none;
+}
+
+.m-icon-btn ::ng-deep svg {
+  width: 20px;
+  height: 20px;
+}
+
+.m-notif-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.m-notif-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sigehu-notification-dot);
+  border: 2px solid var(--sigehu-topbar-bg);
+}
+
+/* Panel de notificaciones desplegado debajo del header */
+.m-notif-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(92vw, 360px);
+  z-index: 60;
+}
+
+/* Override: máximo 3 notificaciones visibles con scroll interno */
+.m-notif-panel ::ng-deep .notif-list {
+  max-height: calc(3 * 72px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}

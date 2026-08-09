@@ -1,13 +1,22 @@
 <div class="main-layout">
-  <!-- Sidebar (nombre de usuario autenticado se resuelve internamente) -->
+  <!-- Sidebar desktop (sin cambios en ≥1024px) -->
   <app-sidebar
+    class="layout-desktop-sidebar"
     [activeRoute]="currentRoute()"
   ></app-sidebar>
 
+  <!-- Header móvil (visible solo en <1024px) -->
+  <app-mobile-header
+    class="layout-mobile-header"
+    [pageTitle]="pageConfig.title"
+    (newWorkClick)="onNewWork()"
+  ></app-mobile-header>
+
   <!-- Content Wrapper -->
   <div class="content-wrapper">
-    <!-- Topbar -->
+    <!-- Topbar desktop (sin cambios en ≥1024px) -->
     <app-topbar
+      class="layout-desktop-topbar"
       [pageTitle]="pageConfig.title"
       [pageSubtitle]="pageConfig.subtitle"
       (newWorkClick)="onNewWork()"
@@ -19,4 +28,9 @@
     </main>
   </div>
 
-  </div>
+  <!-- Bottom Navigation móvil (visible solo en <1024px) -->
+  <app-mobile-bottom-nav
+    class="layout-mobile-bottom-nav"
+    [activeRoute]="currentRoute()"
+  ></app-mobile-bottom-nav>
+</div>

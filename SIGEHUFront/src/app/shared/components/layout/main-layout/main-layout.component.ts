@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
+import { MobileHeaderComponent } from '../mobile-header/mobile-header.component';
+import { MobileBottomNavComponent } from '../mobile-bottom-nav/mobile-bottom-nav.component';
 
 import { filter } from 'rxjs/operators';
 
@@ -14,7 +16,7 @@ interface PageConfig {
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, TopbarComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, TopbarComponent, MobileHeaderComponent, MobileBottomNavComponent],
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.scss'
 })

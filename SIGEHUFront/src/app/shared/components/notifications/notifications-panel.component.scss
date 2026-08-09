@@ -63,6 +63,10 @@
   color: var(--sigehu-warning, #F59E0B);
   border-color: var(--sigehu-warning, #F59E0B);
 }
+.notif-action--close:hover{
+  color: var(--sigehu-danger, #EF4444);
+  border-color: var(--sigehu-danger, #EF4444);
+}
 
 .notif-list{
   max-height: 380px;
