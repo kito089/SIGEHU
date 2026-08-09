@@ -33,9 +33,9 @@ Source: "..\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 
 [Icons]
 
-Name: "{group}\SIGEHU"; Filename: "{app}\SIGEHU.exe"
+Name: "{group}\SIGEHU"; Filename: "{app}\SIGEHU.exe"; IconFilename: "{app}\SIGEHU.exe"; IconIndex: 0
 
-Name: "{autodesktop}\SIGEHU"; Filename: "{app}\SIGEHU.exe"; Tasks: desktopicon
+Name: "{autodesktop}\SIGEHU"; Filename: "{app}\SIGEHU.exe"; IconFilename: "{app}\SIGEHU.exe"; IconIndex: 0; Tasks: desktopicon
 
 [Run]
 Filename: "{cmd}"; Parameters: "/C winget install Cloudflare.cloudflared"; Flags: runhidden

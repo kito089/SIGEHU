@@ -389,10 +389,13 @@
 
 **Estado:** Problemas 1 ✅, 2 ✅ (validado runtime SEA), 3 ✅ (código verificado, prueba dispositivo pendiente)
 
-### Problema 1 — Icono con fondo blanco en acceso directo/barra de tareas ✅
-- **Diagnóstico:** los assets reales tienen alpha correcto: `www/assets/icon.png` (448×448, 0 pixeles blanco opaco), `build/icon.png` y `build/icon.ico` (6 frames 256→16 todos 32bpp, transparencia 29.7–38.2% por frame). El EXE instalado y `Release\SIGEHU.exe` ya incrustan icono 32×32 `Format32bppArgb` con transparencia real (357 px alpha / 1024, 0 blanco opaco).
-- **Causa raíz**: `electron-builder.yml` tenía `win.icon: build/icon.png`; Windows y electron-builder requieren `.ico` con alpha para el acceso directo/barra de tareas.
-- **Fix aplicado**: `win.icon: build/icon.ico`. Verificado que `Installer/setup.iss` ya referencia `..\SIGEHUFront\build\icon.ico` como `SetupIconFile` y que los accesos directos apuntan a `{app}\SIGEHU.exe` (heredan el icono del exe, ya transparente). No requiere `build.bat` (cambio directo en archivo de configuración).
+### Problema 1 — Icono con fondo blanco en acceso directo/barra de tareas ✅ (revisado 2026-08-09)
+- **Revisión 2026-08-09 (tras purga de caché):** la hipótesis inicial (caché de iconos) quedó **descartada** tras borrar 29 archivos `iconcache*.db`/`thumbcache*.db` + `IconCache.db` + reiniciar explorer + `ie4uinit -show` y comprobar que el patrón blanco persistía; un `.lnk` nuevo recién creado apuntando al exe correcto también devolvía el icono con 90 px blancos vía `SHGetFileInfo`/`ExtractAssociatedIcon`.
+- **Causa raíz revisada:** `Installer/setup.iss` sección `[Icons]` **no especificaba `IconFilename`** → el `.lnk` del escritorio creado por Inno Setup quedaba con `IconLocation` **vacío** (bandera `hasIconLocation=false` en el MS-SHLLINK), mientras que el `.lnk` del menú Inicio generado por electron-builder NSIS sí escribía `IconLocation` explícito. La diferencia estructural confirmada: Desktop Inno = 1048 bytes con `IconLocation=,0` (vacío); Start Menu NSIS = 2298 bytes con `IconLocation=C:\...\SIGEHU.exe,0`. Con `IconLocation` vacío en `Program Files (x86)` + `PrivilegesRequired=admin`, Windows puede caer en el icono fallback del tipo `.lnk` (página con flecha sobre cuadrado blanco = ~90 px blancos a 32×32) en lugar de resolver el target.
+- **Evidencia clave:** hashes idénticos de los 3 EXE analizados (`4EC02949...`); recurso embebido correcto (6 frames, 0 px blanco en cada uno); `ExtractIcon(exe,0)` devolvía 0 px blanco y `ExtractAssociatedIcon(.lnk)` devolvía 90 px blanco — mismo exe, distintas API; un `.lnk` a un exe inexistente devolvía los mismos 90 px blanco (icono fallback de `.lnk`).
+- **Fix aplicado:** `Installer/setup.iss` `[Icons]` ahora añade `IconFilename: "{app}\SIGEHU.exe"; IconIndex: 0` a las dos líneas (grupo Start Menu + escritorio) → los `.lnk` generados por Inno escribirán `IconLocation` explícito, igual que hace NSIS.
+- **Verificado:** `ISCC setup.iss` compiló correctamente → `Installer/Output/SIGEHU_Setup.exe` (158 081 201 bytes, 2026-08-09 02:51). El `.lnk` del escritorio público se reescribió manualmente con `IconLocation` explícito para validación visual.
+- **Pendiente del usuario:** ejecutar el nuevo `SIGEHU_Setup.exe` (UAC, requiere admin) y verificar visualmente escritorio + barra de tareas + menú Inicio. Documento completo en `docs/electron_icono_blanco_diagnostico.md`.
 
 ### Problema 2 — Backend empaquetado muere con EPERM en `resources\backend\uploads` ✅
 - **Causa raíz**: rutas duplicadas resueltas con `path.dirname(process.execPath)` = `C:\Program Files (x86)\SIGEHU\resources\backend` (protegido); `upload.middleware.js` hacía `mkdirSync` de `uploads/{obras,garantias,imss}` al cargar módulo → `EPERM`. Afectaba también `database/backups` (backup.job.js) y estático `/uploads`.
@@ -414,3 +417,5 @@
 ## Log de Ejecución (Actualizado por Agentes)
 
 > **Formato:** `YYYY-MM-DD` | `Agent-Type` | `Wave X.X` | `Descripción corta` | `Done/Blocked/Partial`
+
+| 2026-08-09 | Developer | P1-ICON-REV | **Revisión causa raíz icono blanco**: descartada caché (purga 29 archivos persiste blanco), confirmada diferencia estructural `.lnk` Desktop Inno (1048 B, IconLocation vacío) vs Start Menu NSIS (2298 B, IconLocation explícito). Fix: `Installer/setup.iss [Icons]` añade `IconFilename:"{app}\SIGEHU.exe"; IconIndex:0` en ambas líneas. ISCC recompilado → `SIGEHU_Setup.exe` (158 MB). `.lnk` Desktop reescrito manualmente con IconLocation explícito para validación visual. Documento `docs/electron_icono_blanco_diagnostico.md` reescrito. Pendiente: reinstalación UAC + verificación visual usuario | Done |
