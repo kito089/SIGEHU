@@ -31,14 +31,51 @@
   }
 }
 
-/* Responsive */
+/* Componentes móviles ocultos en desktop por defecto */
+.layout-mobile-header,
+.layout-mobile-bottom-nav {
+  display: none;
+}
+
+/* Topbar desktop: ocultar en móvil (la topbar existente se oculta vía wrap) */
 @media (max-width: 1024px) {
+  .layout-desktop-topbar {
+    display: none;
+  }
+}
+
+/* Responsive: a ≤1024px activamos la experiencia móvil */
+@media (max-width: 1024px) {
+  .main-layout {
+    // Apila el header móvil sobre el contenido (en desktop es row por defecto)
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .layout-desktop-sidebar {
+    display: none;
+  }
+
+  .layout-mobile-header {
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  .layout-mobile-bottom-nav {
+    display: block;
+  }
+
   .content-wrapper {
     margin-left: 0;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .main-content {
     padding: var(--sigehu-space-4) var(--sigehu-space-4);
+    // Reserva espacio para el bottom navigation fijo
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 }
 

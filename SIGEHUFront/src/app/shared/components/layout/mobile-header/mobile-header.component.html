@@ -1,0 +1,41 @@
+<header class="m-header" role="banner">
+  <div class="m-header__left">
+    <img src="assets/icon/icon.png" alt="SIGEHU" class="m-header__logo" />
+    <h1 class="m-header__title">{{ pageTitle() }}</h1>
+  </div>
+
+  <div class="m-header__right">
+    <button
+      class="m-icon-btn"
+      (click)="onNewWork()"
+      type="button"
+      aria-label="Agregar obra"
+      title="Agregar obra"
+    >
+      <span [innerHTML]="icon('plus')" aria-hidden="true"></span>
+    </button>
+
+    <div class="m-notif-wrap" #notifWrapper (click)="$event.stopPropagation()">
+      <button
+        class="m-icon-btn"
+        (click)="toggleNotifications()"
+        [attr.aria-expanded]="panelAbierto()"
+        aria-label="Notificaciones"
+        aria-haspopup="dialog"
+        type="button"
+      >
+        <span [innerHTML]="icon('bell')" aria-hidden="true"></span>
+        @if (notificationCount() > 0) {
+          <span class="m-notif-dot" [attr.aria-label]="notificationCount() + ' notificaciones'"></span>
+        }
+      </button>
+
+      @if (panelAbierto()) {
+        <app-notifications-panel
+          class="m-notif-panel"
+          (closeClick)="panelAbierto.set(false)"
+        ></app-notifications-panel>
+      }
+    </div>
+  </div>
+</header>

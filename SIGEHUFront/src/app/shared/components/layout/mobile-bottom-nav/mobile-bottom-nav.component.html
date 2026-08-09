@@ -1,0 +1,49 @@
+<nav class="m-bottom" role="navigation" aria-label="Navegación inferior" #wrapper>
+  <div class="m-bottom__panels">
+    <!-- Submenú Catálogos (encima del bottom nav) -->
+    @if (catalogOpen()) {
+      <div class="m-submenu m-submenu--catalog" role="menu" aria-label="Catálogos">
+        @for (c of catalogChildren; track c.route) {
+          <a
+            class="m-submenu__item"
+            role="menuitem"
+            [routerLink]="c.route"
+            [class.active]="isActive(c.route)"
+            (click)="closeAll()"
+            [attr.aria-label]="c.label"
+            [title]="c.label"
+          >
+            <span class="m-submenu__icon" [innerHTML]="icon(c.icon)" aria-hidden="true"></span>
+            <span class="m-submenu__label">{{ c.label }}</span>
+          </a>
+        }
+      </div>
+    }
+
+    <!-- Buscador (Omnibox reutilizado, resultados por encima) -->
+    @if (searchOpen()) {
+      <div class="m-search" role="dialog" aria-label="Búsqueda global">
+        <app-omnibox class="m-search__omnibox"></app-omnibox>
+      </div>
+    }
+  </div>
+
+  <ul class="m-bottom__bar" role="list">
+    @for (item of mainItems; track item.label) {
+      <li class="m-bottom__item">
+        <button
+          type="button"
+          class="m-bottom__btn"
+          [class.active]="item.action === 'catalogs' ? isCatalogActive() : (item.route ? isActive(item.route) : false)"
+          [class.open]="item.action === 'catalogs' ? catalogOpen() : (item.action === 'search' ? searchOpen() : false)"
+          (click)="onItemClick(item)"
+          [attr.aria-label]="item.label"
+          [title]="item.label"
+          [attr.aria-expanded]="item.action === 'catalogs' ? catalogOpen() : (item.action === 'search' ? searchOpen() : null)"
+        >
+          <span class="m-bottom__icon" [innerHTML]="icon(item.icon)" aria-hidden="true"></span>
+        </button>
+      </li>
+    }
+  </ul>
+</nav>

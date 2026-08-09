@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationService, AppNotification, NotificationType } from '../../../core/services/notification.service';
 
@@ -11,7 +11,8 @@ import { NotificationService, AppNotification, NotificationType } from '../../..
      - botón "eliminar" por notificación
      - botón "eliminar todas"
      - botón "silenciar" (detiene el registro de nuevas notificaciones)
-   El panel permanece abierto/cerrado por el componente padre (topbar).
+     - botón "cerrar" (emite closeClick al componente padre)
+   El panel permanece abierto/cerrado por el componente padre (topbar/header).
    ========================================================================= */
 
 @Component({
@@ -26,6 +27,7 @@ export class NotificationsPanelComponent {
 
   readonly notificaciones$ = this.service.notifications$;
   readonly muted = signal(this.service.isMuted);
+  readonly closeClick = output<void>();
 
   get isEmpty(): boolean {
     return this.service.lista.length === 0;
@@ -45,6 +47,10 @@ export class NotificationsPanelComponent {
 
   silenciar(): void {
     this.muted.set(this.service.toggleMuted());
+  }
+
+  cerrar(): void {
+    this.closeClick.emit();
   }
 
   icono(tipo: NotificationType): string {

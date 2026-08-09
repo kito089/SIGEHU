@@ -46,7 +46,7 @@
       </button>
 
       @if (panelAbierto()) {
-        <app-notifications-panel></app-notifications-panel>
+        <app-notifications-panel (closeClick)="panelAbierto.set(false)"></app-notifications-panel>
       }
     </div>
   </div>
