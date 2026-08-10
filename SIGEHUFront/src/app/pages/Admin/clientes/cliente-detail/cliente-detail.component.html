@@ -319,6 +319,27 @@
                   <span class="field-error">{{ mensajeError('codigoPostal') }}</span>
                 }
               </div>
+
+              <div class="field field-full">
+                <label>Dirección fiscal</label>
+                <div class="field-control">
+                  @if (estaEditando('direccionFiscal')) {
+                    <input type="text" [formControl]="control('direccionFiscal')" maxlength="400" />
+                  } @else {
+                    <p class="field-value">{{ valor('direccionFiscal') || '—' }}</p>
+                  }
+                  <button type="button"
+                          class="btn-edit"
+                          [class.btn-saving]="guardando()"
+                          (click)="estaEditando('direccionFiscal') ? guardarCampo('direccionFiscal') : editarCampo('direccionFiscal')"
+                          [disabled]="guardando()">
+                    {{ estaEditando('direccionFiscal') ? 'Guardar' : 'Editar' }}
+                  </button>
+                </div>
+                @if (invalidarCampo('direccionFiscal')) {
+                  <span class="field-error">{{ mensajeError('direccionFiscal') }}</span>
+                }
+              </div>
             </div>
 
             <p class="field-note">

@@ -2,7 +2,7 @@
   display: block;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--sigehu-z-dropdown, 100);
   width: 100%;
   box-sizing: border-box;
 }

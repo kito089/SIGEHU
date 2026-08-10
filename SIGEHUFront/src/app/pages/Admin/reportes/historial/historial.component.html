@@ -2,7 +2,7 @@
 
   <section class="panel-frame">
     <app-filter-bar
-      [searchPlaceholder]="'Buscar por descripción, usuario o entidad…'"
+      [searchPlaceholder]="'Buscar actividad…'"
       [searchTerm]="busqueda"
       [options]="diaOpciones"
       [filterValue]="filtroDia"
@@ -19,37 +19,76 @@
         icon="cloud-offline-outline"
       ></app-empty-state>
     } @else {
-      <app-data-table
-        [columns]="columnas"
-        [data]="paginaSlice"
-        [loading]="false"
-        [rowKey]="'id'"
-        emptyMessage="No hay registros para el día o búsqueda seleccionada"
-      >
-        <ng-template #cell let-row let-col="column">
-          @switch (col.key) {
-            @case ('accion') {
+      <div class="hist-table">
+        <app-data-table
+          [columns]="columnas"
+          [data]="paginaSlice"
+          [loading]="false"
+          [rowKey]="'id'"
+          emptyMessage="No hay registros para el día o búsqueda seleccionada"
+        >
+          <ng-template #cell let-row let-col="column">
+            @switch (col.key) {
+              @case ('accion') {
+                <span class="badge" [class]="badgeClass(row.accion)">{{ etiquetaAccion(row.accion) }}</span>
+              }
+              @case ('descripcion') {
+                <span class="td-descripcion">{{ row.descripcion }}</span>
+              }
+              @case ('fecha') {
+                <span class="td-fecha">{{ fechaHora(row.fecha) }}</span>
+              }
+              @default {
+                <span>{{ row[col.key] }}</span>
+              }
+            }
+          </ng-template>
+          <ng-template #actions let-row>
+            @if (row.accion === 'UPDATE') {
+              <button class="icon-btn" (click)="verDetalles(row)" aria-label="Ver detalles" title="Ver detalles">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            }
+          </ng-template>
+        </app-data-table>
+      </div>
+
+      <ul class="hist-cards">
+        @for (row of paginaSlice; track row.id) {
+          <li class="hist-card">
+            <div class="hist-card__head">
               <span class="badge" [class]="badgeClass(row.accion)">{{ etiquetaAccion(row.accion) }}</span>
-            }
-            @case ('descripcion') {
-              <span class="td-descripcion">{{ row.descripcion }}</span>
-            }
-            @case ('fecha') {
-              <span class="td-fecha">{{ fechaHora(row.fecha) }}</span>
-            }
-            @default {
-              <span>{{ row[col.key] }}</span>
-            }
-          }
-        </ng-template>
-        <ng-template #actions let-row>
-          @if (row.accion === 'UPDATE') {
-            <button class="icon-btn" (click)="verDetalles(row)" aria-label="Ver detalles" title="Ver detalles">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          }
-        </ng-template>
-      </app-data-table>
+              @if (row.accion === 'UPDATE') {
+                <button class="icon-btn hist-card__action" (click)="verDetalles(row)" aria-label="Detalles de la actualización" title="Detalles de la actualización">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              }
+            </div>
+            <p class="hist-card__desc">{{ row.descripcion }}</p>
+            <dl class="hist-card__grid">
+              <div class="hist-card__field">
+                <dt>Usuario</dt>
+                <dd>{{ row.usuario }}</dd>
+              </div>
+              <div class="hist-card__field">
+                <dt>Fecha</dt>
+                <dd>{{ fechaHora(row.fecha) }}</dd>
+              </div>
+              <div class="hist-card__field">
+                <dt>Operación</dt>
+                <dd>{{ etiquetaAccion(row.accion) }}</dd>
+              </div>
+              <div class="hist-card__field">
+                <dt>Entidad</dt>
+                <dd>{{ row.tabla }}</dd>
+              </div>
+            </dl>
+          </li>
+        }
+        @if (paginaSlice.length === 0) {
+          <li class="hist-cards__empty">No hay registros para el día o búsqueda seleccionada</li>
+        }
+      </ul>
 
       @if (historialFiltrado.length > 0) {
         <div class="paginacion">

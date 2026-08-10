@@ -157,6 +157,92 @@
 
 app-filter-bar { margin-block: 14px 6px; display: block; }
 
+/* ── Historial: tabla Desktop/Web + tarjetas Mobile ─────────────────────── */
+.hist-table { display: block; }
+
+.hist-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hist-card {
+  background: var(--sigehu-card-bg, #0f172a);
+  border: 1px solid var(--sigehu-border-subtle, #232d47);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.hist-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.hist-card__action {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.hist-card__desc {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--sigehu-text-primary, #eef1f7);
+  word-break: break-word;
+}
+
+.hist-card__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  min-width: 0;
+}
+
+.hist-card__field {
+  min-width: 0;
+}
+
+.hist-card__field dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sigehu-text-tertiary, #64748b);
+  margin-bottom: 2px;
+}
+
+.hist-card__field dd {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sigehu-text-primary, #eef1f7);
+  word-break: break-word;
+}
+
+.hist-cards__empty {
+  margin: 0;
+  padding: 20px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--sigehu-text-tertiary, #64748b);
+  border: 1px dashed var(--sigehu-border-subtle, #232d47);
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  .hist-table { display: none; }
+
+  .hist-cards { display: flex; }
+}
+
 @media (max-width: 720px) {
   .page { padding: 20px 16px 50px; }
   .panel-frame { padding: 16px; }

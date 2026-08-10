@@ -130,72 +130,85 @@
           </div>
         }
 
-        <!-- Datos fiscales: siempre visibles, sin switch -->
+        <!-- Datos fiscales: activables con checkbox -->
         <div class="fiscal-block" [formGroup]="fiscalGroup">
-          <div class="field-row">
-            <div class="field">
-              <label for="rfc">RFC</label>
-              <input id="rfc" type="text" formControlName="rfc" placeholder="Ej. UTCA850101AB1">
-              <span class="field-error" *ngIf="form.get('fiscal')?.get('rfc')?.touched && form.get('fiscal')?.get('rfc')?.invalid">
-                RFC inválido (12-13 caracteres)
-              </span>
-            </div>
-            <div class="field">
-              <label for="razonSocial">Razón Social</label>
-              <input id="razonSocial" type="text" formControlName="razonSocial" placeholder="Razón social fiscal">
-            </div>
-          </div>
+          <label class="fiscal-toggle" for="datosFiscales">
+            <input id="datosFiscales" type="checkbox" formControlName="datosFiscales">
+            <span class="fiscal-toggle__label">Datos Fiscales</span>
+            <span class="fiscal-toggle__hint">Capturar información de facturación SAT (RFC, régimen, CFDI…)</span>
+          </label>
 
-          <div class="field-row">
-            <div class="field">
-              <label for="regimen">Régimen Fiscal</label>
-              <input
-                id="regimen"
-                type="text"
-                autocomplete="off"
-                [value]="labelCatalogo(form.get('fiscal')?.get('regimenFiscal')?.value ?? '', regimenesFiscales)"
-                (focus)="abrirCombo('regimen')"
-                (click)="abrirCombo('regimen')"
-                (blur)="cerrarCombo()"
-                (input)="busquedaRegimen.set($any($event.target).value)"
-                placeholder="Busca un régimen…">
-              <div class="combo-list" *ngIf="mostrarListaRegimen()">
-                <button type="button" class="combo-item" *ngFor="let r of listadoRegimen()" (click)="seleccionarRegimen(r)">
-                  {{ r.label }}
-                </button>
-                <div class="combo-empty" *ngIf="listadoRegimen().length === 0">Sin resultados</div>
+          @if (fiscalGroup.get('datosFiscales')?.value) {
+            <div class="field-row">
+              <div class="field">
+                <label for="rfc">RFC</label>
+                <input id="rfc" type="text" formControlName="rfc" placeholder="Ej. UTCA850101AB1">
+                <span class="field-error" *ngIf="form.get('fiscal')?.get('rfc')?.touched && form.get('fiscal')?.get('rfc')?.invalid">
+                  RFC inválido (12-13 caracteres)
+                </span>
+              </div>
+              <div class="field">
+                <label for="razonSocial">Razón Social</label>
+                <input id="razonSocial" type="text" formControlName="razonSocial" placeholder="Razón social fiscal">
               </div>
             </div>
+
             <div class="field">
-              <label for="uso">Uso de CFDI</label>
-              <input
-                id="uso"
-                type="text"
-                autocomplete="off"
-                [value]="labelCatalogo(form.get('fiscal')?.get('usoCFDI')?.value ?? '', usosCfdi)"
-                (focus)="abrirCombo('uso')"
-                (click)="abrirCombo('uso')"
-                (blur)="cerrarCombo()"
-                (input)="busquedaUso.set($any($event.target).value)"
-                placeholder="Selecciona un uso…">
-              <div class="combo-list" *ngIf="mostrarListaUso()">
-                <button type="button" class="combo-item" *ngFor="let u of listadoUso()" (click)="seleccionarUso(u)">
-                  {{ u.label }}
-                </button>
-                <div class="combo-empty" *ngIf="listadoUso().length === 0">Sin resultados</div>
+              <label for="dirFiscal">Dirección Fiscal</label>
+              <input id="dirFiscal" type="text" formControlName="direccionFiscal" placeholder="Calle, número, colonia, ciudad (domicilio fiscal)">
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="regimen">Régimen Fiscal</label>
+                <input
+                  id="regimen"
+                  type="text"
+                  autocomplete="off"
+                  [value]="labelCatalogo(form.get('fiscal')?.get('regimenFiscal')?.value ?? '', regimenesFiscales)"
+                  (focus)="abrirCombo('regimen')"
+                  (click)="abrirCombo('regimen')"
+                  (blur)="cerrarCombo()"
+                  (input)="busquedaRegimen.set($any($event.target).value)"
+                  placeholder="Busca un régimen…">
+                <div class="combo-list" *ngIf="mostrarListaRegimen()">
+                  <button type="button" class="combo-item" *ngFor="let r of listadoRegimen()" (click)="seleccionarRegimen(r)">
+                    {{ r.label }}
+                  </button>
+                  <div class="combo-empty" *ngIf="listadoRegimen().length === 0">Sin resultados</div>
+                </div>
+              </div>
+              <div class="field">
+                <label for="uso">Uso de CFDI</label>
+                <input
+                  id="uso"
+                  type="text"
+                  autocomplete="off"
+                  [value]="labelCatalogo(form.get('fiscal')?.get('usoCFDI')?.value ?? '', usosCfdi)"
+                  (focus)="abrirCombo('uso')"
+                  (click)="abrirCombo('uso')"
+                  (blur)="cerrarCombo()"
+                  (input)="busquedaUso.set($any($event.target).value)"
+                  placeholder="Selecciona un uso…">
+                <div class="combo-list" *ngIf="mostrarListaUso()">
+                  <button type="button" class="combo-item" *ngFor="let u of listadoUso()" (click)="seleccionarUso(u)">
+                    {{ u.label }}
+                  </button>
+                  <div class="combo-empty" *ngIf="listadoUso().length === 0">Sin resultados</div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="field-row">
-            <div class="field">
-              <label for="cp">Código Postal Fiscal</label>
-              <input id="cp" type="text" formControlName="codigoPostal" placeholder="5 dígitos">
-              <span class="field-error" *ngIf="form.get('fiscal')?.get('codigoPostal')?.touched && form.get('fiscal')?.get('codigoPostal')?.invalid">
-                Código postal de 5 dígitos
-              </span>
+            <div class="field-row">
+              <div class="field">
+                <label for="cp">Código Postal Fiscal</label>
+                <input id="cp" type="text" formControlName="codigoPostal" placeholder="5 dígitos">
+                <span class="field-error" *ngIf="form.get('fiscal')?.get('codigoPostal')?.touched && form.get('fiscal')?.get('codigoPostal')?.invalid">
+                  Código postal de 5 dígitos
+                </span>
+              </div>
             </div>
-          </div>
+          }
         </div>
       </div>
 

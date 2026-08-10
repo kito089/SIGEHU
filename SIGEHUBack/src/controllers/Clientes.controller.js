@@ -60,12 +60,12 @@ const create = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud esta vacio' });
         }
 
-        const { Nombre, RazonSocial, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
+        const { Nombre, RazonSocial, Direccion, DireccionFiscal, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
                 idUsoCFDI, Observaciones, contactos } = req.body;
 
         await service.createCliente({
             Nombre: Nombre ?? null, RazonSocial: RazonSocial ?? null,
-            Direccion: Direccion ?? null, RFC: RFC ?? null,
+            Direccion: Direccion ?? null, DireccionFiscal: DireccionFiscal ?? null, RFC: RFC ?? null,
             Telefono: Telefono ?? null, Correo: Correo ?? null,
             idRegimenFiscal: idRegimenFiscal ?? null,
             CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null,
@@ -90,14 +90,15 @@ const update = async (req, res) => {
             return res.status(400).json({ error: 'El cuerpo de la solicitud esta vacio' });
         }
 
-        const { Nombre, RazonSocial, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
+        const { Nombre, RazonSocial, Direccion, DireccionFiscal, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
                 idUsoCFDI, Observaciones } = req.body;
 
         const affected = await service.updateCliente(
             req.params.id,
             {
                 Nombre: Nombre ?? null, RazonSocial: RazonSocial ?? null,
-                Direccion: Direccion ?? null, RFC: RFC ?? null, Telefono: Telefono ?? null,
+                Direccion: Direccion ?? null, DireccionFiscal: DireccionFiscal ?? null, RFC: RFC ?? null,
+                Telefono: Telefono ?? null, Correo: Correo ?? null,
                 Correo: Correo ?? null, idRegimenFiscal: idRegimenFiscal ?? null,
                 CodigoPostal: CodigoPostal ?? null, idUsoCFDI: idUsoCFDI ?? null,
                 Observaciones: Observaciones ?? null,

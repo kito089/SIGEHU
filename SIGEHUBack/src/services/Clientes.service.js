@@ -106,7 +106,7 @@ const getClienteById = async (id) => {
 
     const Clientes = await db.query(
         `SELECT c.idCliente, c.NombreCompleto AS Nombre, c.RazonSocial,
-                c.Direccion, c.RFC, c.CodigoPostal, c.Observaciones, c.Activo,
+                c.Direccion, c.DireccionFiscal, c.RFC, c.CodigoPostal, c.Observaciones, c.Activo,
                 c.Tipo,
                 c.RegimenesFiscales_idRegimenFiscal AS idRegimenFiscal,
                 c.UsosCFDI_idUsoCFDI AS idUsoCFDI,
@@ -205,7 +205,7 @@ const getTrabajosByCliente = async (idCliente) => {
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
 const createCliente = async ({
-    Nombre, RazonSocial, Direccion, RFC, idRegimenFiscal, CodigoPostal,
+    Nombre, RazonSocial, Direccion, DireccionFiscal, RFC, idRegimenFiscal, CodigoPostal,
     idUsoCFDI, Observaciones, contactos, Correo, Telefono, tipo = 'persona', idTrabajadorCtx = 1
 }) => {
     if (RFC && !validateRFC(RFC)) {
@@ -255,17 +255,18 @@ const createCliente = async ({
             []
         );
         const dirBuffer = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
+        const dirFiscalBuffer = DireccionFiscal != null ? Buffer.from(String(DireccionFiscal), "utf8") : null;
         const obsBuffer = Observaciones != null ? Buffer.from(String(Observaciones), "utf8") : null;
         const rows = await txInsert.executeReturning(
             `INSERT INTO Clientes (
-                NombreCompleto, RazonSocial, Direccion, RFC, CodigoPostal,
+                NombreCompleto, RazonSocial, Direccion, DireccionFiscal, RFC, CodigoPostal,
                 RegimenesFiscales_idRegimenFiscal,
                 UsosCFDI_idUsoCFDI, Observaciones, Tipo
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING IdCliente`,
             [
-                Nombre ?? null, RazonSocial ?? null, dirBuffer, RFC ?? null,
+                Nombre ?? null, RazonSocial ?? null, dirBuffer, dirFiscalBuffer, RFC ?? null,
                 CodigoPostal ?? null,
                 idRegimenFiscal ?? null, idUsoCFDI ?? null,
                 obsBuffer, tipoNormalizado
@@ -310,7 +311,7 @@ const createCliente = async ({
 
 // ─── UPDATE ──────────────────────────────────────────────────────────────────
 const updateCliente = async (id, {
-    Nombre, RazonSocial, Direccion, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
+    Nombre, RazonSocial, Direccion, DireccionFiscal, RFC, Telefono, Correo, idRegimenFiscal, CodigoPostal,
     idUsoCFDI, Observaciones, contactos, tipo, idTrabajadorCtx = 1
 }) => {
     if (RFC && !validateRFC(RFC)) {
@@ -342,7 +343,7 @@ const updateCliente = async (id, {
 
     try {
         const rows = await txRead.query(
-            `SELECT NombreCompleto, RazonSocial, Direccion, RFC, RegimenesFiscales_idRegimenFiscal,
+            `SELECT NombreCompleto, RazonSocial, Direccion, DireccionFiscal, RFC, RegimenesFiscales_idRegimenFiscal,
                     CodigoPostal, UsosCFDI_idUsoCFDI, Observaciones, Tipo
              FROM Clientes WHERE IdCliente = ?`,
             [id]
@@ -375,15 +376,16 @@ try {
             []
         );
         const dirBuffer = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
+        const dirFiscalBuffer = DireccionFiscal != null ? Buffer.from(String(DireccionFiscal), "utf8") : null;
         const obsBuffer = Observaciones != null ? Buffer.from(String(Observaciones), "utf8") : null;
         await txUpdate.execute(
             `UPDATE Clientes
-             SET NombreCompleto = ?, RazonSocial = ?, Direccion = ?, RFC = ?,
+             SET NombreCompleto = ?, RazonSocial = ?, Direccion = ?, DireccionFiscal = ?, RFC = ?,
                  RegimenesFiscales_idRegimenFiscal = ?, CodigoPostal = ?,
                  UsosCFDI_idUsoCFDI = ?, Observaciones = ?, Tipo = ?
              WHERE IdCliente = ?`,
             [
-                Nombre ?? null, RazonSocial ?? null, dirBuffer, RFC ?? null,
+                Nombre ?? null, RazonSocial ?? null, dirBuffer, dirFiscalBuffer, RFC ?? null,
                 idRegimenFiscal ?? null, CodigoPostal ?? null,
                 idUsoCFDI ?? null, obsBuffer, tipoNormalizado, id
             ]
@@ -539,6 +541,7 @@ try {
         { campo: 'Nombre', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre ?? null },
         { campo: 'RazonSocial', anterior: anterior.RAZONSOCIAL, nuevo: RazonSocial ?? null },
         { campo: 'Direccion', anterior: anterior.DIRECCION, nuevo: Direccion ?? null },
+        { campo: 'DireccionFiscal', anterior: anterior.DIRECCIONFISCAL, nuevo: DireccionFiscal ?? null },
         { campo: 'RFC', anterior: anterior.RFC, nuevo: RFC ?? null },
         { campo: 'RegimenesFiscales_idRegimenFiscal', anterior: anterior.REGIMENESFISCALES_IDREGIMENFISCAL, nuevo: idRegimenFiscal ?? null },
         { campo: 'CodigoPostal', anterior: anterior.CODIGOPOSTAL, nuevo: CodigoPostal ?? null },
