@@ -297,3 +297,9 @@
     display: flex;
   }
 }
+
+@media (max-width: 720px) {
+  .reportes {
+    padding: var(--sigehu-space-5, 20px) var(--sigehu-space-4, 16px) 50px;
+  }
+}

@@ -191,3 +191,14 @@
   font-size: 0.8rem;
   flex-shrink: 0;
 }
+
+@media (max-width: 720px) {
+  .page { padding: 20px 16px 50px; }
+
+  .panel-frame {
+    padding: 16px;
+    border: 1.5px solid var(--sigehu-accent, #2f8fef);
+    border-radius: var(--sigehu-radius-lg, 14px);
+    background: linear-gradient(180deg, rgba(47, 143, 239, 0.04), transparent 20%);
+  }
+}

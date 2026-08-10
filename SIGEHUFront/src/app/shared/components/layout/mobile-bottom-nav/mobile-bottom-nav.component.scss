@@ -180,19 +180,18 @@
 .m-bottom__item {
   flex: 1 1 0;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
+  height: 56px;
+  min-width: 0;
 }
 
-/* Botón con tamaño fijo cuadrado: el área táctil (48×48) queda PERFECTAMENTE
-   centrada sobre el icono (24×24). Al fijar width/height y centrar con flex,
-   la zona de interacción coincide en todos los ejes con el centro visual. */
 .m-bottom__btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 100%;
+  height: 100%;
   background: transparent;
   border: none;
   color: var(--sigehu-text-secondary);

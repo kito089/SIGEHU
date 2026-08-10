@@ -35,7 +35,7 @@ export class ToastService {
     const id = ++this.counter;
     const toast: ToastItem = { id, type, message, duration, createdAt: Date.now() };
     const current = this.toastsSubject.value;
-    this.toastsSubject.next([...current, toast]);
+    this.toastsSubject.next([toast, ...current]);
   }
 
   dismiss(id: number): void {
