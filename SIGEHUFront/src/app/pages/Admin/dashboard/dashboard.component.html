@@ -59,11 +59,12 @@
     </section>
   }
   @case ('calendar') {
-    <section class="dashboard-panel" aria-labelledby="calendar-heading">
+    <section class="dashboard-panel dashboard-panel--calendar" aria-labelledby="calendar-heading">
       <app-calendar
         [events]="calendarioEventos()"
         [loading]="calendarioCargando()"
         (eventClick)="onEventoClick($event)"
+        (registrarVisita)="onRegistrarVisita($event)"
       ></app-calendar>
     </section>
   }

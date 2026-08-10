@@ -158,11 +158,13 @@
 
 .field-row{
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   margin-bottom: 16px;
 }
 .field-row .field{ margin-bottom: 0; }
+.field{ min-width: 0; }
+.field input, .field textarea, .field select{ min-width: 0; }
 
 .field-row-between{
   display: flex;
@@ -259,6 +261,37 @@ select{ cursor: pointer; }
   padding: 14px 14px 2px;
   margin-top: 4px;
   margin-bottom: 16px;
+}
+
+.fiscal-toggle{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.fiscal-toggle input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+
+.fiscal-toggle__label{
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.fiscal-toggle__hint{
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 0;
 }
 
 /* ---------- Acciones ---------- */

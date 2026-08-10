@@ -1,39 +1,85 @@
 <div class="cl">
   <div class="cl__header">
-    <h4 class="cl__title">Contactos ({{ contactos.length }})</h4>
-    <app-button variant="ghost" (buttonClick)="showForm = !showForm">
-      <ion-icon name="add"></ion-icon> {{ showForm ? 'Cancelar' : 'Agregar' }}
+    <span class="cl__title">Contactos ({{ contactos.length }})</span>
+    <app-button variant="ghost" (buttonClick)="agregar()">
+      <ion-icon name="add"></ion-icon> Agregar
     </app-button>
   </div>
 
-  <app-contact-form
-    *ngIf="showForm"
-    [existentes]="contactos"
-    (saved)="onSaved($event)"
-    (cancelled)="showForm = false"></app-contact-form>
-
-  <div class="cl__list" *ngIf="contactos.length > 0; else empty">
-    <div class="cl__item" *ngFor="let c of contactos; let i = index">
-      <div class="cl__info">
-        <strong>{{ c.nombreCompleto }}</strong>
-        <span *ngIf="c.telefono">{{ c.telefono }}</span>
-        <span *ngIf="c.correo">{{ c.correo }}</span>
-      </div>
-      <button
-        class="cl__remove"
-        (click)="solicitarEliminar(i)"
-        [attr.aria-label]="'Eliminar contacto ' + c.nombreCompleto"
-        title="Eliminar contacto">
-        <ion-icon name="trash-outline"></ion-icon>
-      </button>
+  @if (contactos.length > 0) {
+    <div class="cl__table-wrap">
+      <table class="cl__table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Correo</th>
+            <th>Notas</th>
+            <th class="cl__col-actions" aria-label="Acciones"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of contactos; track $index; let i = $index) {
+            <tr>
+              <td>
+                <input
+                  class="cl__input"
+                  type="text"
+                  name="c-nombre-{{ i }}"
+                  [ngModelOptions]="{ standalone: true }"
+                  [(ngModel)]="c.nombreCompleto"
+                  placeholder="Nombre y apellido">
+              </td>
+              <td>
+                <input
+                  class="cl__input"
+                  type="tel"
+                  name="c-telefono-{{ i }}"
+                  [ngModelOptions]="{ standalone: true }"
+                  [(ngModel)]="c.telefono"
+                  placeholder="10-15 dígitos">
+              </td>
+              <td>
+                <input
+                  class="cl__input"
+                  type="email"
+                  name="c-correo-{{ i }}"
+                  [ngModelOptions]="{ standalone: true }"
+                  [(ngModel)]="c.correo"
+                  placeholder="correo@ejemplo.com">
+              </td>
+              <td>
+                <input
+                  class="cl__input"
+                  type="text"
+                  name="c-notas-{{ i }}"
+                  [ngModelOptions]="{ standalone: true }"
+                  [(ngModel)]="c.observaciones"
+                  placeholder="Notas opcionales">
+              </td>
+              <td class="cl__col-actions">
+                <button
+                  class="cl__remove"
+                  (click)="solicitarEliminar(i)"
+                  [attr.aria-label]="'Eliminar contacto ' + (c.nombreCompleto || (i + 1))"
+                  title="Eliminar contacto">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
-  </div>
+
+    <button type="button" class="cl__add-row" (click)="agregar()">
+      <ion-icon name="add"></ion-icon> Agregar contacto
+    </button>
+  } @else {
+    <p class="cl__empty">No hay contactos registrados</p>
+  }
 
   <p class="cl__live" role="status" aria-live="polite">{{ contactos.length }} contactos registrados</p>
-
-  <ng-template #empty>
-    <p class="cl__empty">No hay contactos registrados</p>
-  </ng-template>
 
   <app-confirm-modal
     *ngIf="indiceEliminar !== null"

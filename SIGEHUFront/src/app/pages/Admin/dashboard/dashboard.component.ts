@@ -174,7 +174,13 @@ export class DashboardComponent {
   }
 
   onEventoClick(evento: CalendarEvent): void {
-    this.router.navigate(['/admin/obras'], { queryParams: { ver: evento.extendedProps.obraId } });
+    const obraId = evento.extendedProps.obraId;
+    if (obraId === null || obraId === undefined || obraId === '') return;
+    this.router.navigate(['/admin/obras'], { queryParams: { ver: obraId } });
+  }
+
+  onRegistrarVisita(evento: CalendarEvent): void {
+    this.calendarioEventos.update(lista => [...lista, evento]);
   }
 
   readonly kanbanColumns = signal<KanbanColumnData[]>([

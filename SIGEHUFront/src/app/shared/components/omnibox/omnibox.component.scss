@@ -1,31 +1,33 @@
 .omnibox {
   position: relative;
   width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 100%;
 }
 
 .omnibox__box {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  height: 42px;
-  padding: 0 var(--spacing-md);
-  background: var(--bg-input);
-  border: 1px solid var(--border-input);
-  border-radius: var(--radius-full);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  gap: var(--sigehu-space-2, 8px);
+  height: 40px;
+  padding: 0 var(--sigehu-space-3, 12px);
+  background: var(--sigehu-search-bg, #0F172A);
+  border: 1px solid var(--sigehu-border-divider, #334155);
+  border-radius: var(--sigehu-radius-md, 8px);
+  transition: border-color var(--sigehu-transition-fast, 0.15s ease), box-shadow var(--sigehu-transition-fast, 0.15s ease);
 
   &:focus-within {
-    border-color: var(--border-focus);
-    box-shadow: var(--focus-ring);
+    border-color: var(--sigehu-primary-btn-bg, #3B82F6);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
   }
 }
 
 .omnibox__icon {
-  color: var(--text-muted);
-  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  color: var(--sigehu-text-tertiary, #64748B);
+  font-size: 1.1rem;
 }
 
 .omnibox__input {
@@ -34,23 +36,24 @@
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-primary);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  color: var(--sigehu-text-primary, #F8FAFC);
+  font-family: var(--sigehu-font-family);
+  font-size: var(--sigehu-font-size-md, 14px);
 
-  &::placeholder { color: var(--text-muted); }
+  &::placeholder {
+    color: var(--sigehu-text-secondary, #94A3B8);
+  }
 }
 
 .omnibox__kbd {
   flex-shrink: 0;
-  padding: 1px 8px;
-  border: 1px solid var(--border-subtle);
-  border-bottom-width: 2px;
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-family: var(--font-family);
-  font-size: var(--font-size-xs);
-  background: var(--bg-card);
+  padding: 2px 8px;
+  border: 1px solid var(--sigehu-border-divider, #334155);
+  background: var(--sigehu-search-bg, #0F172A);
+  border-radius: var(--sigehu-radius-sm, 6px);
+  color: var(--sigehu-text-tertiary, #64748B);
+  font-family: var(--sigehu-font-family);
+  font-size: var(--sigehu-font-size-xs, 10px);
 }
 
 .omnibox__panel {
@@ -58,32 +61,32 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  z-index: var(--z-dropdown);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  z-index: var(--sigehu-z-dropdown, 100);
+  background: var(--sigehu-card-bg, #0F172A);
+  border: 1px solid var(--sigehu-card-border, #334155);
+  border-radius: var(--sigehu-radius-lg, 12px);
+  box-shadow: var(--sigehu-shadow-subtle, 0 1px 2px rgba(0, 0, 0, 0.1));
   overflow: hidden;
 }
 
 .omnibox__inner {
   max-height: 400px;
   overflow-y: auto;
-  padding: var(--spacing-sm);
+  padding: var(--sigehu-space-2, 8px);
 }
 
 .omnibox__loading {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
+  gap: var(--sigehu-space-2, 8px);
+  padding: var(--sigehu-space-3, 12px);
 }
 
 .omnibox__skeleton {
   display: block;
   height: 14px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%);
+  border-radius: var(--sigehu-radius-sm, 6px);
+  background: linear-gradient(90deg, var(--skeleton-base, #1e293b) 25%, var(--skeleton-shine, #334155) 50%, var(--skeleton-base, #1e293b) 75%);
   background-size: 200% 100%;
   animation: omnibox-shine 1.2s infinite;
 }
@@ -95,18 +98,18 @@
   to { background-position: -200% 0; }
 }
 
-.omnibox__group { margin-bottom: var(--spacing-xs); }
+.omnibox__group { margin-bottom: var(--sigehu-space-2, 8px); }
 
 .omnibox__group-title {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-xs);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
+  gap: var(--sigehu-space-2, 8px);
+  padding: var(--sigehu-space-1, 4px) var(--sigehu-space-2, 8px);
+  font-size: var(--sigehu-font-size-xs, 10px);
+  font-weight: var(--sigehu-font-weight-bold, 700);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--sigehu-text-tertiary, #64748B);
 
   ion-icon { font-size: 0.9rem; }
 }
@@ -115,32 +118,32 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
+  padding: var(--sigehu-space-2, 8px) var(--sigehu-space-3, 12px);
+  border-radius: var(--sigehu-radius-md, 8px);
   cursor: pointer;
   text-decoration: none;
 
   &:hover {
-    background: var(--bg-hover);
+    background: var(--sigehu-active-bg, #1E3A8A);
   }
 }
 
 .omnibox__result-title {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: var(--sigehu-font-size-sm, 11px);
+  font-weight: var(--sigehu-font-weight-semibold, 600);
+  color: var(--sigehu-text-primary, #F8FAFC);
 }
 
 .omnibox__result-sub {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  font-size: var(--sigehu-font-size-xs, 10px);
+  color: var(--sigehu-text-secondary, #94A3B8);
 }
 
 .omnibox__empty {
-  padding: var(--spacing-lg);
+  padding: var(--sigehu-space-6, 24px);
   text-align: center;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  color: var(--sigehu-text-secondary, #94A3B8);
+  font-size: var(--sigehu-font-size-sm, 11px);
 }
 
 @media (max-width: 768px) {

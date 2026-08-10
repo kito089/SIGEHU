@@ -2,7 +2,7 @@
   display: block;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--sigehu-z-dropdown, 100);
   width: 100%;
   box-sizing: border-box;
 }
@@ -16,11 +16,15 @@
   background: var(--sigehu-topbar-bg);
   border-bottom: var(--sigehu-border-width) solid var(--sigehu-border-divider);
   font-family: var(--sigehu-font-family);
-  height: 56px;
   box-sizing: border-box;
-  // safe-area superior (notch / status bar)
+  // safe-area superior (notch / status bar): la altura TOTAL del header crece
+  // exactamente por el inset, de modo que el contenido (56px) queda SIEMPRE
+  // debajo de la status bar y nunca superpuesto. En dispositivos sin inset
+  // (env() = 0px) la altura vuelve a 56px sin espacio extra.
   padding-top: constant(safe-area-inset-top, 0px);
   padding-top: env(safe-area-inset-top, 0px);
+  height: calc(56px + constant(safe-area-inset-top, 0px));
+  height: calc(56px + env(safe-area-inset-top, 0px));
 }
 
 .m-header__left {

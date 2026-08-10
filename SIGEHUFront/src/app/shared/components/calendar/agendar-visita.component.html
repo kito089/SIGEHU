@@ -1,0 +1,93 @@
+<div class="modal__backdrop" (click)="onCancelar()">
+  <div
+    class="modal__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="agendar-titulo"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="modal__header">
+      <span class="modal__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </span>
+      <h2 id="agendar-titulo" class="modal__title">Agendar Visita</h2>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onGuardar()" novalidate>
+      <div class="modal__body">
+        <div class="form-field">
+          <label class="form-label" for="agendar-tipo">Tipo de actividad <span class="form-required">*</span></label>
+          <select
+            id="agendar-tipo"
+            class="form-select"
+            formControlName="tipo"
+            [class.form-select--error]="form.controls['tipo'].invalid && form.controls['tipo'].touched"
+          >
+            @for (t of tipos; track t.value) {
+              <option [ngValue]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="agendar-titulo">Nombre de la actividad <span class="form-required">*</span></label>
+          <input
+            id="agendar-titulo"
+            class="form-input"
+            type="text"
+            placeholder="Ej. Instalación de cancel principal"
+            formControlName="titulo"
+            [class.form-input--error]="form.controls['titulo'].invalid && form.controls['titulo'].touched"
+          />
+          @if (form.controls['titulo'].invalid && form.controls['titulo'].touched) {
+            <span class="form-error">Este campo es obligatorio</span>
+          }
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label" for="agendar-fecha">Fecha <span class="form-required">*</span></label>
+            <input
+              id="agendar-fecha"
+              class="form-input"
+              type="date"
+              formControlName="fecha"
+              [class.form-input--error]="form.controls['fecha'].invalid && form.controls['fecha'].touched"
+            />
+            @if (form.controls['fecha'].invalid && form.controls['fecha'].touched) {
+              <span class="form-error">Este campo es obligatorio</span>
+            }
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="agendar-hora">Hora</label>
+            <input
+              id="agendar-hora"
+              class="form-input"
+              type="time"
+              formControlName="hora"
+            />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="agendar-notas">Notas / Referencia</label>
+          <textarea
+            id="agendar-notas"
+            class="form-textarea"
+            rows="3"
+            placeholder="Dirección, referencias, responsables, etc."
+            formControlName="notas"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn-cancelar" (click)="onCancelar()">Cancelar</button>
+        <button type="submit" class="btn-guardar">Guardar Actividad</button>
+      </div>
+    </form>
+  </div>
+</div>

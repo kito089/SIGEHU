@@ -21,6 +21,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--sigehu-space-6) var(--sigehu-space-8);
 
   // Container max-width para contenido centrado
@@ -74,8 +75,8 @@
 
   .main-content {
     padding: var(--sigehu-space-4) var(--sigehu-space-4);
-    // Reserva espacio para el bottom navigation fijo
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    // Reserva EXACTAMENTE la altura del bottom navigation fijo (56px + gesto).
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 }
 

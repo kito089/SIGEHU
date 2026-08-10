@@ -9,7 +9,7 @@
   padding: 0 var(--sigehu-space-6);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--sigehu-z-dropdown);
   font-family: var(--sigehu-font-family);
   margin-left: var(--sigehu-sidebar-width);
   width: calc(100% - var(--sigehu-sidebar-width));
@@ -72,7 +72,7 @@
 /* Buscador */
 .topbar-search {
   flex: 1 1 auto;
-  max-width: 420px;
+  max-width: 560px;
   min-width: 0;
 }
 

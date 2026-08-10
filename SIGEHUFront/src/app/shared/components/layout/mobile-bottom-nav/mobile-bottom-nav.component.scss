@@ -165,24 +165,34 @@
   background: var(--sigehu-sidebar-bg);
   border-top: var(--sigehu-border-width) solid var(--sigehu-border-divider);
   box-sizing: border-box;
-  // safe-area inferior (gesture bar / home indicator)
+  // safe-area inferior (gesture bar / home indicator): la altura TOTAL del
+  // bottom nav crece por el inset (56px de botones + área gesto), y los botones
+  // quedan SIEMPRE por encima de la barra de gestos. Sin inset → 56px exactos,
+  // sin espacios excesivos.
   padding-bottom: constant(safe-area-inset-bottom, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  min-height: 56px;
+  height: calc(56px + constant(safe-area-inset-bottom, 0px));
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  min-height: calc(56px + constant(safe-area-inset-bottom, 0px));
+  min-height: calc(56px + env(safe-area-inset-bottom, 0px));
 }
 
 .m-bottom__item {
   flex: 1 1 0;
   display: flex;
+  align-items: center;
   justify-content: center;
 }
 
+/* Botón con tamaño fijo cuadrado: el área táctil (48×48) queda PERFECTAMENTE
+   centrada sobre el icono (24×24). Al fijar width/height y centrar con flex,
+   la zona de interacción coincide en todos los ejes con el centro visual. */
 .m-bottom__btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  min-height: 48px;
+  width: 48px;
+  height: 48px;
   background: transparent;
   border: none;
   color: var(--sigehu-text-secondary);
