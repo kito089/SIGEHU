@@ -60,6 +60,13 @@
   flex-shrink: 0;
 }
 
+/* Logout: separación adicional a la derecha para evitar falsos toques con
+   el botón "Agregar obra" (área táctil mínima garantizada por el botón). */
+.m-header__logout {
+  margin-right: var(--sigehu-space-2);
+  display: flex;
+}
+
 .m-icon-btn {
   display: flex;
   align-items: center;

@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../../services/auth.service';
 import { SidebarIconRegistry } from './sidebar-icon-registry.service';
+import { LogoutButtonComponent } from '../../logout-button/logout-button.component';
 
 export interface NavItem {
   icon: string;      // SVG inline o nombre icono
@@ -21,7 +22,7 @@ export interface NavGroup {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LogoutButtonComponent],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
