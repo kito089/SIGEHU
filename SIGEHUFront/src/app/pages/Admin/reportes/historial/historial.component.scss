@@ -155,6 +155,40 @@
 .d-new { color: var(--sigehu-success, #34d399); word-break: break-word; }
 .d-arrow { color: var(--sigehu-text-tertiary, #64748b); }
 
+/* Cambios del documento IMSS (agregado/modificado/eliminado) en el historial */
+.d-doc-text {
+  color: var(--sigehu-success, #34d399);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.d-doc-text--danger {
+  color: var(--sigehu-danger, #ef4444);
+}
+
+.d-doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--sigehu-accent, #2f8fef);
+  background: rgba(47, 143, 239, 0.12);
+  color: var(--sigehu-accent, #2f8fef);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.d-doc-btn svg { flex-shrink: 0; }
+
+.d-doc-btn:hover {
+  background: rgba(47, 143, 239, 0.22);
+  color: var(--sigehu-accent, #2f8fef);
+}
+
 app-filter-bar { margin-block: 14px 6px; display: block; }
 
 /* ── Historial: tabla Desktop/Web + tarjetas Mobile ─────────────────────── */
@@ -244,7 +278,6 @@ app-filter-bar { margin-block: 14px 6px; display: block; }
 }
 
 @media (max-width: 720px) {
-  .page { padding: 20px 16px 50px; }
   .panel-frame { padding: 16px; }
 
   .panel-header__title {

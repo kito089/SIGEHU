@@ -7,6 +7,7 @@ import { DetailModalComponent } from '../../../../shared/components/detail-modal
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { AuditoriaService, AuditoriaRegistro, AuditoriaDetalle } from '../../../../services/auditoria.service';
+import { EnvService } from '../../../../services/env.service';
 
 /* =========================================================================
    SIGEHU — Historial completo de auditorías (RF-33).
@@ -33,6 +34,7 @@ import { AuditoriaService, AuditoriaRegistro, AuditoriaDetalle } from '../../../
 })
 export class HistorialComponent implements OnInit {
   private auditoria = inject(AuditoriaService);
+  private env = inject(EnvService);
 
   historial: AuditoriaRegistro[] = [];
   cargando = false;
@@ -194,6 +196,7 @@ export class HistorialComponent implements OnInit {
   }
 
   etiquetaCampo(campo: string): string {
+    if (campo === 'RutaDocumentoIMSS') return 'Documento IMSS';
     return this.esAccionContacto(campo) ? 'Contacto' : campo;
   }
 
@@ -212,5 +215,47 @@ export class HistorialComponent implements OnInit {
       default:
         return '';
     }
+  }
+
+  // ── Cambios del documento IMSS en actualizaciones de trabajadores ─────────
+  // El servicio de Trabajadores registra en AuditoriasDetalles el campo
+  // RutaDocumentoIMSS con la ruta anterior/nueva. Se interpretan tres estados:
+  //   anterior vacío + nuevo con ruta   → documento agregado
+  //   anterior con ruta + otro nuevo    → documento modificado
+  //   anterior con ruta + nuevo vacío   → documento eliminado
+  esCambioDocumentoImss(d: AuditoriaDetalle): boolean {
+    return d?.campo === 'RutaDocumentoIMSS';
+  }
+
+  tipoCambioDocumentoImss(d: AuditoriaDetalle): 'agregado' | 'modificado' | 'eliminado' {
+    const hayAnterior = !!(d.valorAnterior && d.valorAnterior.trim().length > 0);
+    const hayNuevo = !!(d.valorNuevo && d.valorNuevo.trim().length > 0);
+    if (!hayAnterior && hayNuevo) return 'agregado';
+    if (hayAnterior && !hayNuevo) return 'eliminado';
+    return 'modificado';
+  }
+
+  documentoImssEliminado(d: AuditoriaDetalle): boolean {
+    return this.esCambioDocumentoImss(d) && this.tipoCambioDocumentoImss(d) === 'eliminado';
+  }
+
+  textoCambioDocumentoImss(d: AuditoriaDetalle): string {
+    switch (this.tipoCambioDocumentoImss(d)) {
+      case 'agregado': return 'Se agregó el documento asignado';
+      case 'modificado': return 'Se modificó el documento asignado';
+      case 'eliminado': return 'Se eliminó el documento asignado';
+    }
+  }
+
+  // Reutiliza el mecanismo del módulo Trabajadores: la BD guarda solo la ruta
+  // relativa (uploads/imss/...) y el visor se construye con el base URL.
+  abrirDocumentoImss(ruta: string | null): void {
+    if (!ruta) return;
+    if (/^(blob:|https?:|data:)/i.test(ruta)) {
+      window.open(ruta, '_blank');
+      return;
+    }
+    const base = (this.env.getBaseUrl() || '').replace(/\/+$/, '');
+    window.open(base + '/' + ruta.replace(/^\/+/, ''), '_blank');
   }
 }
