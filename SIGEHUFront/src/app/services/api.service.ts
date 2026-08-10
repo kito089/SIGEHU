@@ -22,7 +22,7 @@ export class ApiService {
   }
 
   private getHeaders(): HttpHeaders {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     let headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });

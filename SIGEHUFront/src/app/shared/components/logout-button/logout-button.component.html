@@ -1,0 +1,22 @@
+<button
+  type="button"
+  class="logout-btn"
+  (click)="abrirConfirmacion()"
+  [attr.aria-label]="'Cerrar sesión'"
+  title="Cerrar sesión"
+>
+  <span class="logout-btn__icon" [innerHTML]="getIconSvg()" aria-hidden="true"></span>
+</button>
+
+@if (confirmAbierto()) {
+  <app-confirm-modal
+    variant="danger"
+    title="¿Cerrar sesión?"
+    message="¿Está seguro de que desea cerrar la sesión?"
+    confirmLabel="Aceptar"
+    cancelLabel="Cancelar"
+    [loading]="cerrando()"
+    (confirmed)="confirmar()"
+    (cancelled)="cancelar()"
+  ></app-confirm-modal>
+}

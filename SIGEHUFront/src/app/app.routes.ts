@@ -3,11 +3,13 @@ import { LoginComponent } from './pages/login/login.component';
 import { MainLayoutComponent } from './shared/components/layout/main-layout/main-layout.component';
 import { AdminGuard } from './guards/admin.guard';
 import { WorkerGuard } from './guards/worker.guard';
+import { LoginGuard } from './guards/login.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent,
+    canActivate: [LoginGuard],
   },
   {
     path: 'admin',

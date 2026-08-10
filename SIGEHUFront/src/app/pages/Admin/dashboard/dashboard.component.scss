@@ -38,6 +38,39 @@
   min-height: 520px;
 }
 
+/* ── Selector de columna Kanban (solo móvil) ───────────────────────────────
+   Vive debajo de app-dashboard-tabs y se muestra únicamente en móvil
+   (≤1024px) con la pestaña Kanban activa. En desktop no ocupa espacio. */
+.dashboard-kanban-selector {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-kanban-selector {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--sigehu-space-4);
+  }
+
+  .dashboard-kanban-selector__select {
+    max-width: 100%;
+    background: var(--sigehu-search-bg);
+    border: var(--sigehu-border-width) solid var(--sigehu-border-divider);
+    border-radius: var(--sigehu-radius-md);
+    color: var(--sigehu-text-primary);
+    font-family: inherit;
+    font-size: var(--sigehu-font-size-md);
+    font-weight: var(--sigehu-font-weight-medium);
+    padding: var(--sigehu-space-2) var(--sigehu-space-3);
+    cursor: pointer;
+  }
+
+  .dashboard-kanban-selector__select option {
+    background: var(--sigehu-sidebar-bg);
+    color: var(--sigehu-text-primary);
+  }
+}
+
 /* ── Compras pendientes ───────────────────────────────────────────────────
    Sección independiente del bloque Kanban/Calendario: convive debajo del
    panel activo y su contenido no depende del cambio de pestaña.
@@ -56,9 +89,9 @@
 
 .dashboard-compras__title {
   margin: 0;
-  // Mismo peso visual que el valor de los KPI ([value]="kpi.value" = 3xl bold).
-  font-size: var(--sigehu-font-size-3xl);
-  font-weight: var(--sigehu-font-weight-bold);
+  // Tamaño de un nivel por debajo del valor de los KPI ([value]="kpi.value" = 3xl bold).
+  font-size: var(--sigehu-font-size-2xl);
+  font-weight: var(--sigehu-font-weight-semibold);
   color: var(--sigehu-text-primary);
   line-height: 1.2;
 }

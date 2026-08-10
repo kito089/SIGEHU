@@ -1,0 +1,45 @@
+:host {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--sigehu-radius-md);
+  color: var(--sigehu-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.logout-btn:hover {
+  background: var(--sigehu-active-bg);
+  color: var(--sigehu-active-text);
+}
+
+.logout-btn:focus-visible {
+  outline: 2px solid var(--sigehu-accent);
+  outline-offset: 2px;
+}
+
+.logout-btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: currentColor;
+}
+
+.logout-btn__icon svg {
+  width: 100%;
+  height: 100%;
+}

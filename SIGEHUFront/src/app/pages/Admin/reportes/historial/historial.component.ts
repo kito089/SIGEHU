@@ -49,7 +49,7 @@ export class HistorialComponent implements OnInit {
   ];
 
   // ── Paginación (cliente) ────────────────────────────────────────────────
-  tamanoPagina = 20;
+  tamanoPagina = 10;
   paginaActual = 1;
 
   get paginasTotales(): number {
