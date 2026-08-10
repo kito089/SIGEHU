@@ -43,3 +43,23 @@
 }
 
 .filter-bar__select:focus { outline: none; border-color: var(--sigehu-accent, #2f8fef); }
+
+/* Mobile: buscador ocupa el ancho disponible y el filtro queda a su derecha
+   en la misma fila (sin desbordamiento ni elementos superpuestos). */
+@media (max-width: 768px) {
+  .filter-bar {
+    flex-wrap: nowrap;
+    margin-bottom: var(--sigehu-space-4, 16px);
+  }
+
+  .filter-bar__search {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .filter-bar__select {
+    min-width: 0;
+    max-width: 46%;
+    flex: 0 1 auto;
+  }
+}

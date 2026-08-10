@@ -4,7 +4,20 @@
       <h1 class="reportes__title">Reportes</h1>
       <p class="reportes__subtitle">Análisis y consultas por dominio del negocio</p>
     </div>
-    <p class="reportes__hint">Se muestran hasta 2 gráficas grandes a la vez + detalle</p>
+    <div class="reportes__header-actions">
+      <p class="reportes__hint">Se muestran hasta 2 gráficas grandes a la vez + detalle</p>
+      <select
+        class="reportes__select"
+        [ngModel]="activeCategory()"
+        (ngModelChange)="selectCategory($any($event))"
+        aria-label="Categoría de reporte"
+        title="Categoría de reporte"
+      >
+        @for (cat of categorias; track cat.id) {
+          <option [value]="cat.id">{{ cat.label }}</option>
+        }
+      </select>
+    </div>
   </header>
 
   <nav class="reportes__tabs" role="tablist" aria-label="Categorías de reporte">
@@ -166,21 +179,49 @@
         <section class="report-card report-card--full">
           <h2 class="report-card__title">Compras pendientes de recibir</h2>
           @if (compras().length) {
-            <table class="report-table">
-              <thead>
-                <tr><th>Fecha</th><th>Proveedores</th><th>Materiales</th><th>Líneas</th></tr>
-              </thead>
-              <tbody>
-                @for (c of compras(); track c.idCompra) {
-                  <tr>
-                    <td class="report-table__muted">{{ c.fechaCompra }}</td>
-                    <td>{{ c.proveedores }}</td>
-                    <td>{{ c.materiales }}</td>
-                    <td class="report-table__strong">{{ c.lineas }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+            <div class="reportes__table-wrap">
+              <table class="report-table">
+                <thead>
+                  <tr><th>Fecha</th><th>Proveedores</th><th>Materiales</th><th>Líneas</th></tr>
+                </thead>
+                <tbody>
+                  @for (c of compras(); track c.idCompra) {
+                    <tr>
+                      <td class="report-table__muted">{{ c.fechaCompra }}</td>
+                      <td>{{ c.proveedores }}</td>
+                      <td>{{ c.materiales }}</td>
+                      <td class="report-table__strong">{{ c.lineas }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <ul class="compra-cards">
+              @for (c of compras(); track c.idCompra) {
+                <li class="compra-card">
+                  <h3 class="compra-card__title">Orden de Compra #{{ c.idCompra }}</h3>
+                  <dl class="compra-card__grid">
+                    <div class="compra-card__field">
+                      <dt>Fecha</dt>
+                      <dd>{{ c.fechaCompra }}</dd>
+                    </div>
+                    <div class="compra-card__field">
+                      <dt>Proveedores</dt>
+                      <dd>{{ c.proveedores }}</dd>
+                    </div>
+                    <div class="compra-card__field">
+                      <dt>Materiales</dt>
+                      <dd>{{ c.materiales }}</dd>
+                    </div>
+                    <div class="compra-card__field">
+                      <dt>Líneas</dt>
+                      <dd>{{ c.lineas }}</dd>
+                    </div>
+                  </dl>
+                </li>
+              }
+            </ul>
           } @else {
             <p class="report-card__empty">No hay compras pendientes. 
               <button class="report-card__link" (click)="irAOrdenes()">Ver órdenes</button></p>
