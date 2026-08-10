@@ -13,9 +13,9 @@
         [searchPlaceholder]="'Buscar por folio, obra o descripción.'"
         (searchTermChange)="onSearchChange($event)"
       ></app-filter-bar>
-      <button class="btn-primary" (click)="nuevaGarantia()">
+      <button class="btn-primary" (click)="nuevaGarantia()" aria-label="Agregar nueva garantía" title="Agregar Nueva Garantía">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        Nueva Garantía
+        <span class="btn-primary__label">Nueva Garantía</span>
       </button>
     </div>
 
@@ -50,14 +50,12 @@
           <button class="icon-btn" (click)="verDetalle(row)" aria-label="Ver detalle" title="Ver Detalle">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
-          <button class="btn-ghost" (click)="abrirReporte(row)" title="Abrir reporte">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
-            Reporte
+          <button class="icon-btn" (click)="abrirReporte(row)" aria-label="Abrir reporte de garantía" title="Abrir Reporte">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
           </button>
           @if (row.estado !== 'Cerrada') {
-            <button class="btn-ghost" (click)="cerrarGarantia(row)" title="Cerrar garantía">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-              Cerrar
+            <button class="icon-btn icon-btn--success" (click)="cerrarGarantia(row)" aria-label="Cerrar garantía" title="Cerrar Garantía">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
             </button>
           }
         </div>

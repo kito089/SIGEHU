@@ -60,4 +60,60 @@
       }
     </tbody>
   </table>
+
+  <!-- ============================================================
+       VISTA MÓVIL — TARJETAS
+       Se renderiza solo bajo el breakpoint móvil via CSS (display).
+       Reutiliza los mismos cellTemplate + actionsTemplate que la
+       tabla desktop. No duplica lógica: consume el mismo `data`.
+       Si la página provee `cardTemplate` se usa ese template
+       explícito por fila; si no, se construye una tarjeta por
+       defecto recorriendo las columnas y mostrando
+       "<label>: <cellTemplate>".
+       ============================================================ -->
+  <div class="data-cards" [class.data-cards--loading]="loading">
+    @if (loading) {
+      <div class="data-cards__empty">Cargando…</div>
+    } @else if (data.length === 0) {
+      <div class="data-cards__empty">{{ emptyMessage }}</div>
+    } @else {
+      @for (row of data; track $index) {
+        <article class="data-card" (click)="onRowClick(row)">
+          @if (cardTemplate) {
+            <ng-container
+              [ngTemplateOutlet]="cardTemplate"
+              [ngTemplateOutletContext]="cardContext(row)"
+            ></ng-container>
+          } @else {
+            <div class="data-card__body">
+              @for (col of columns; track col.key) {
+                <div class="data-card__field">
+                  <span class="data-card__label">{{ col.label }}</span>
+                  <span class="data-card__value">
+                    @if (cellTemplate) {
+                      <ng-container
+                        [ngTemplateOutlet]="cellTemplate"
+                        [ngTemplateOutletContext]="cellContext(row, col)"
+                      ></ng-container>
+                    } @else {
+                      {{ cellValue(row, col.key) }}
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          }
+
+          @if (actionsTemplate) {
+            <div class="data-card__actions">
+              <ng-container
+                [ngTemplateOutlet]="actionsTemplate"
+                [ngTemplateOutletContext]="actionsContext(row)"
+              ></ng-container>
+            </div>
+          }
+        </article>
+      }
+    }
+  </div>
 </div>

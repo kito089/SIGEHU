@@ -13,9 +13,9 @@
         [searchPlaceholder]="'Buscar por obra, cliente o dirección.'"
         (searchTermChange)="onSearchChange($event)"
       ></app-filter-bar>
-      <button class="btn-primary" (click)="nuevoObra()">
+      <button class="btn-primary" (click)="nuevoObra()" aria-label="Agregar nueva obra" title="Agregar Nueva Obra">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        Nueva obra
+        <span class="btn-primary__label">Nueva obra</span>
       </button>
     </div>
 

@@ -125,14 +125,8 @@
 .icon-btn:hover { color: var(--sigehu-active-text, #3B82F6); border-color: var(--sigehu-accent, #3B82F6); }
 
 /* Responsive (O3.2) */
-@media (max-width: 992px) {
-  .page { padding: 24px 24px 50px; }
-  .panel-frame { padding: 18px; }
-}
-
-@media (max-width: 768px) {
-  .page { padding: 20px 16px 48px; }
+@media (max-width: 720px) {
+  .page { padding: 20px 16px 50px; }
   .panel-frame { padding: 16px; }
   .panel-header h1 { font-size: 17px; }
-  .btn-primary { width: 100%; justify-content: center; }
 }

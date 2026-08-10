@@ -105,6 +105,8 @@
 
 .icon-btn:hover { color: var(--sigehu-accent, #2f8fef); border-color: var(--sigehu-accent, #2f8fef); }
 
+.icon-btn--success:hover { color: var(--sigehu-success, #10b981); border-color: var(--sigehu-success, #10b981); }
+
 .btn-ghost {
   background: transparent;
   border: 1px solid var(--sigehu-border-subtle, #232d47);
