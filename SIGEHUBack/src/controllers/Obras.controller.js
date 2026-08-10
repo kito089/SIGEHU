@@ -34,7 +34,7 @@ const create = async (req, res) => {
             return res.status(400).json({ error: "El cuerpo de la solicitud está vacío" });
         }
 
-        const { idCliente, Nombre, Direccion } = req.body;
+        const { idCliente, Nombre, Direccion, idTrabajo, FechaInicio } = req.body;
 
         const datos = { idCliente, Nombre };
         const faltantes = Object.entries(datos)
@@ -51,6 +51,8 @@ const create = async (req, res) => {
             idCliente,
             Nombre,
             Direccion,
+            idTrabajo: idTrabajo ?? null,
+            FechaInicio: FechaInicio ?? null,
             idTrabajadorCtx: req.user?.idTrabajador
         });
 

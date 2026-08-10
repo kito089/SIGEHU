@@ -354,11 +354,17 @@
     @if (tab() === 'obras') {
       <div class="detail-body">
         <section class="card">
-          <h2>Obras y trabajos de {{ esPersona ? 'este cliente' : 'esta empresa' }}</h2>
+          <div class="card-header">
+            <h2>Obras y trabajos de {{ esPersona ? 'este cliente' : 'esta empresa' }}</h2>
+            <button type="button" class="btn-nueva-obra" (click)="abrirNuevaObra()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva Obra
+            </button>
+          </div>
 
           @if (!tieneObras()) {
             <div class="empty">
-              <p>No hay obras o trabajos registrados para este cliente.</p>
+              <p>No hay obras y trabajos registrados para este cliente.</p>
             </div>
           } @else {
             <div class="work-tree">
@@ -411,5 +417,13 @@
         </section>
       </div>
     }
+  }
+
+  @if (mostrarNuevaObra()) {
+    <app-nueva-obra-modal
+      [idClienteInicial]="clienteId"
+      (creada)="onNuevaObraCreada()"
+      (cancelar)="cerrarNuevaObra()">
+    </app-nueva-obra-modal>
   }
 </div>

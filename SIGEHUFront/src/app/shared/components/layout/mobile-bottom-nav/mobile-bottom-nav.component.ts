@@ -55,8 +55,20 @@ export class MobileBottomNavComponent {
 
   @ViewChild('wrapper') wrapper?: ElementRef<HTMLElement>;
 
+  // Se cachea el SafeHtml por icono: al devolver SIEMPRE la misma instancia, el
+  // binding [innerHTML] no se re-renderiza en cada detección de cambios. Si se
+  // devolviera un SafeHtml nuevo por llamada, Angular recrearía el SVG en cada
+  // ciclo de CD y el elemento que recibe el click quedaría desconectado del DOM,
+  // haciendo que el tap en el icono (p. ej. Catálogos / Buscar) no se completara.
+  private readonly iconCache = new Map<string, SafeHtml>();
+
   icon(name: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(this.icons.get(name));
+    let cached = this.iconCache.get(name);
+    if (!cached) {
+      cached = this.sanitizer.bypassSecurityTrustHtml(this.icons.get(name));
+      this.iconCache.set(name, cached);
+    }
+    return cached;
   }
 
   isActive(route: string): boolean {

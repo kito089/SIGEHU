@@ -67,8 +67,29 @@ const getObraById = async (id) => {
 };
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
-const createObra = async ({ idCliente, Nombre, Direccion, idTrabajadorCtx = 1 }) => {
+const createObra = async ({ idCliente, Nombre, Direccion, idTrabajo = null, FechaInicio = null, idTrabajadorCtx = 1 }) => {
     const db = await getConnection();
+
+    // ── 1. Validar que el cliente existe y está activo ────────────────────────
+    const clientes = await db.query(
+        `SELECT idCliente FROM Clientes WHERE idCliente = ? AND Activo = TRUE`,
+        [idCliente]
+    );
+
+    if (!clientes || clientes.length === 0) {
+        throw new Error("El cliente asociado no existe o está inactivo");
+    }
+
+    // ── 2. Validar que el trabajo (si se indica) pertenece al mismo cliente ──
+    if (idTrabajo) {
+        const trabajos = await db.query(
+            `SELECT idTrabajo FROM TRABAJO WHERE idTrabajo = ? AND Clientes_idCliente = ?`,
+            [idTrabajo, idCliente]
+        );
+        if (!trabajos || trabajos.length === 0) {
+            throw new Error("El tipo de trabajo no pertenece al cliente seleccionado");
+        }
+    }
 
     const txInsert = await db.transaction();
 
@@ -79,9 +100,14 @@ const createObra = async ({ idCliente, Nombre, Direccion, idTrabajadorCtx = 1 })
             [String(idTrabajadorCtx)]
         );
 
+        const fechaInicioDb = FechaInicio
+            ? (FechaInicio instanceof Date ? FechaInicio : new Date(FechaInicio))
+            : null;
+        const direccionDb = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
+
         const rows = await txInsert.query(
-            `SELECT * FROM SP_INSERTAR_OBRA (?, ?, ?)`,
-            [idCliente, Nombre, Direccion ?? null]
+            `SELECT * FROM SP_INSERTAR_OBRA (?, ?, ?, ?, ?)`,
+            [idCliente, Nombre, direccionDb, idTrabajo ?? null, fechaInicioDb]
         );
 
         nuevoId = rows[0]?.OIDOBRA; // ajustar nombre del parámetro RETURNS según tu SP

@@ -121,6 +121,38 @@
   font-weight: 700;
 }
 
+.card-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.card-header h2{
+  margin: 0;
+  text-align: left;
+}
+
+.btn-nueva-obra{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #071022;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: filter .15s ease, opacity .15s ease;
+}
+.btn-nueva-obra:hover{ filter: brightness(1.08); }
+
 .field-grid{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -326,4 +358,6 @@ input::placeholder, textarea::placeholder{ color: var(--text-tertiary); }
   .field-full{ grid-column: auto; }
   .field-control{ flex-wrap: wrap; }
   .btn-edit{ width: 100%; }
+  .card-header{ flex-direction: column; align-items: flex-start; }
+  .btn-nueva-obra{ width: 100%; justify-content: center; }
 }
