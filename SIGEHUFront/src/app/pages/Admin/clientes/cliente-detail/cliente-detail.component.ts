@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../../services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { NuevaObraModalComponent } from './nueva-obra-modal/nueva-obra-modal.component';
 import type { ClienteTipo, Contacto } from '../../../../core/models/cliente.model';
 import {
   RFC_PATTERN,
@@ -73,7 +74,7 @@ interface TrabajoDetalle {
 @Component({
   selector: 'app-cliente-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SkeletonComponent],
+  imports: [CommonModule, ReactiveFormsModule, SkeletonComponent, NuevaObraModalComponent],
   templateUrl: './cliente-detail.component.html',
   styleUrl: './cliente-detail.component.scss',
 })
@@ -93,6 +94,9 @@ export class ClienteDetailComponent implements OnInit {
 
   // Pestañas: 'general' | 'obras'
   tab = signal<'general' | 'obras'>('general');
+
+  // Modal "Nueva Obra" desde la pestaña Trabajos y Obras.
+  mostrarNuevaObra = signal(false);
 
   // Campo actualmente en edición (su botón muestra "Guardar").
   campoEditando = signal<CampoEditable | null>(null);
@@ -438,6 +442,19 @@ export class ClienteDetailComponent implements OnInit {
 
   tieneObras(): boolean {
     return this.obrasIndependientes().length > 0 || this.trabajos().some((t) => t.obras.length > 0);
+  }
+
+  abrirNuevaObra(): void {
+    this.mostrarNuevaObra.set(true);
+  }
+
+  cerrarNuevaObra(): void {
+    this.mostrarNuevaObra.set(false);
+  }
+
+  async onNuevaObraCreada(): Promise<void> {
+    this.mostrarNuevaObra.set(false);
+    await this.cargarTrabajos();
   }
 
   abrirObra(obra: ObraDetalle): void {

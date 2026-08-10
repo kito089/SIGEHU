@@ -401,6 +401,7 @@ CREATE TABLE Obras (
     Alto DECIMAL(10,2),
     Profundidad DECIMAL(10,2),
     EstadosObra_idEstadoObra INTEGER NOT NULL,
+    FechaInicio TIMESTAMP,
     FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FechaUltimaActualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     Activo BOOLEAN DEFAULT TRUE NOT NULL,
@@ -2502,19 +2503,22 @@ END^
 -- -----------------------------------------------------------------------------
 -- SP_INSERTAR_OBRA
 -- Crea una obra y la deja en estado "Solicitud recibida" (idEstadoObra = 1).
+-- Acepta el trabajo (tipo de trabajo) asociado y la fecha de inicio.
 -- -----------------------------------------------------------------------------
 CREATE OR ALTER PROCEDURE SP_INSERTAR_OBRA (
     pIdCliente INTEGER,
     pNombre    VARCHAR(100),
-    pDireccion BLOB SUB_TYPE TEXT
+    pDireccion BLOB SUB_TYPE TEXT,
+    pIdTrabajo INTEGER,
+    pFechaInicio TIMESTAMP
 )
 RETURNS (
     oIdObra INTEGER
 )
 AS
 BEGIN
-    INSERT INTO Obras (Clientes_idCliente, Nombre, Direccion, EstadosObra_idEstadoObra)
-    VALUES (:pIdCliente, :pNombre, :pDireccion, 1)
+    INSERT INTO Obras (Clientes_idCliente, Nombre, Direccion, TRABAJOS_IDTRABAJO, FechaInicio, EstadosObra_idEstadoObra)
+    VALUES (:pIdCliente, :pNombre, :pDireccion, :pIdTrabajo, :pFechaInicio, 1)
     RETURNING idObra INTO :oIdObra;
 
     SUSPEND;

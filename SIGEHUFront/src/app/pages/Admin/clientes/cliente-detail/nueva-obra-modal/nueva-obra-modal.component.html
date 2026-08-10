@@ -1,0 +1,116 @@
+<div class="no-modal__backdrop" (click)="onCancelar()">
+  <div
+    class="no-modal__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="nueva-obra-titulo"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="no-modal__header">
+      <span class="no-modal__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><circle cx="12" cy="15" r="1"/><path d="M9 18h6"/><path d="M5 12h2"/>
+        </svg>
+      </span>
+      <div>
+        <h2 id="nueva-obra-titulo" class="no-modal__title">Nueva Obra</h2>
+        <p class="no-modal__subtitle">Registra una obra y asóciala a un cliente existente</p>
+      </div>
+      <button type="button" class="no-modal__close" (click)="onCancelar()" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </header>
+
+    @if (cargando) {
+      <div class="no-modal__loading">
+        Cargando datos…
+      </div>
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="onGuardar()" novalidate>
+        <div class="no-modal__body">
+          <div class="form-field">
+            <label class="form-label" for="no-cliente">Cliente asociado <span class="form-required">*</span></label>
+            <select
+              id="no-cliente"
+              class="form-select"
+              formControlName="idCliente"
+              [class.form-select--error]="form.controls['idCliente'].invalid && form.controls['idCliente'].touched"
+              (change)="onClienteCambio()"
+            >
+              <option [ngValue]="null" disabled>Selecciona el cliente</option>
+              @for (c of clientes; track c.idCliente) {
+                <option [ngValue]="c.idCliente">{{ c.nombre }}</option>
+              }
+            </select>
+            @if (form.controls['idCliente'].invalid && form.controls['idCliente'].touched) {
+              <span class="form-error">Selecciona un cliente registrado</span>
+            }
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="no-nombre">Nombre de la obra <span class="form-required">*</span></label>
+            <input
+              id="no-nombre"
+              class="form-input"
+              type="text"
+              placeholder="Ej. Portón corredizo 4x3"
+              formControlName="nombre"
+              [class.form-input--error]="form.controls['nombre'].invalid && form.controls['nombre'].touched"
+            />
+            @if (form.controls['nombre'].invalid && form.controls['nombre'].touched) {
+              <span class="form-error">Ingresa el nombre de la obra</span>
+            }
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label" for="no-trabajo">Tipo de trabajo <span class="form-required">*</span></label>
+              <select
+                id="no-trabajo"
+                class="form-select"
+                formControlName="idTrabajo"
+              >
+                <option [ngValue]="null">— Obra independiente (sin trabajo) —</option>
+                @for (t of trabajos; track t.idTrabajo) {
+                  <option [ngValue]="t.idTrabajo">{{ t.nombre }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="no-fecha">Fecha de inicio <span class="form-required">*</span></label>
+              <input
+                id="no-fecha"
+                class="form-input"
+                type="date"
+                formControlName="fechaInicio"
+                [class.form-input--error]="form.controls['fechaInicio'].invalid && form.controls['fechaInicio'].touched"
+              />
+              @if (form.controls['fechaInicio'].invalid && form.controls['fechaInicio'].touched) {
+                <span class="form-error">Indica la fecha de inicio</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="no-direccion">Dirección</label>
+            <input
+              id="no-direccion"
+              class="form-input"
+              type="text"
+              placeholder="Calle, número, colonia, ciudad"
+              formControlName="direccion"
+            />
+          </div>
+        </div>
+
+        <div class="no-modal__actions">
+          <button type="button" class="btn-cancelar" (click)="onCancelar()">Cancelar</button>
+          <button type="submit" class="btn-guardar" [disabled]="guardando">
+            {{ guardando ? 'Guardando…' : 'Guardar Obra' }}
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</div>
