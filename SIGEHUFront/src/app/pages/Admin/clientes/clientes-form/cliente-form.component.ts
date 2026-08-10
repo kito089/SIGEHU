@@ -11,7 +11,6 @@ import type { ClienteTipo, Contacto } from '../../../../core/models/cliente.mode
 import {
   RFC_PATTERN,
   CODIGO_POSTAL_PATTERN,
-  TELEFONO_PATTERN,
   EMAIL_MAX,
   NOMBRE_MAX,
   DIRECCION_MAX,
@@ -19,6 +18,11 @@ import {
   RAZON_SOCIAL_MAX,
   telefonoOcorreoRequired,
 } from '../../../../shared/validators/custom-validators';
+import {
+  TELEFONO_REACTIVO_PATTERN,
+  filtrarTelefonoInput,
+  sanitizarTelefono,
+} from '../../../../core/utils/telefono.util';
 
 /* =========================================================================
    SIGEHU — Agregar / Editar Cliente (componente Angular standalone)
@@ -126,7 +130,7 @@ export class ClienteFormComponent implements OnInit {
   private buildForm(): FormGroup {
     const group = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(NOMBRE_MAX)]],
-      telefono: ['', [Validators.pattern(TELEFONO_PATTERN), Validators.maxLength(15)]],
+      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN), Validators.maxLength(15)]],
       correo: ['', [Validators.email, Validators.maxLength(EMAIL_MAX)]],
       direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
       observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
@@ -224,6 +228,17 @@ export class ClienteFormComponent implements OnInit {
     this.contactos.set(lista);
   }
 
+  // ── Teléfono ─────────────────────────────────────────────────────────────
+  // Filtra en vivo: solo "+", números y espacios (misma regla que Trabajadores).
+  onTelefonoInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const limpio = filtrarTelefonoInput(input.value);
+    if (limpio !== input.value) {
+      input.value = limpio;
+      this.form.get('telefono')?.setValue(limpio);
+    }
+  }
+
   // ----------------------------------------------------------------------
   // Submit
   // ----------------------------------------------------------------------
@@ -235,6 +250,24 @@ export class ClienteFormComponent implements OnInit {
         ? 'Registra al menos un contacto para la empresa.'
         : 'Corrige los campos marcados antes de guardar.');
       return;
+    }
+
+    // Teléfono del cliente persona: mismo saneado/validación que Trabajadores.
+    const raw = this.form.getRawValue();
+    if (this.tipo() === 'persona' && raw.telefono && sanitizarTelefono(raw.telefono) === null) {
+      this.toast.error('Teléfono inválido: usa solo "+" y números, máximo 15 dígitos');
+      return;
+    }
+
+    // Teléfono de los contactos de una empresa: misma regla por contacto.
+    if (this.tipo() === 'empresa') {
+      const conTelefonoInvalido = this.contactos().some(
+        c => (c.telefono ?? '').trim() !== '' && sanitizarTelefono(c.telefono ?? '') === null
+      );
+      if (conTelefonoInvalido) {
+        this.toast.warning('Revisa el teléfono de los contactos: usa solo "+" y números, máximo 15 dígitos');
+        return;
+      }
     }
 
     this.guardando = true;
@@ -282,9 +315,9 @@ export class ClienteFormComponent implements OnInit {
         idRegimenFiscal: fiscal.regimenFiscal ? Number(fiscal.regimenFiscal) : null,
         idUsoCFDI: fiscal.usoCFDI ? Number(fiscal.usoCFDI) : null,
         CodigoPostal: fiscal.codigoPostal || null,
-        Direccion: null,
+        Direccion: raw.direccion || null,
         DireccionFiscal: fiscal.direccionFiscal || null,
-        Telefono: raw.telefono ? String(raw.telefono).replace(/\D/g, '') : null,
+        Telefono: raw.telefono ? sanitizarTelefono(raw.telefono) : null,
         Correo: raw.correo || null,
         tipo: 'persona',
       };
@@ -319,7 +352,7 @@ export class ClienteFormComponent implements OnInit {
       .map(c => ({
       idContactoCliente: c.id ?? null,
       NombreCompleto: c.nombreCompleto,
-      Telefono: String(c.telefono || '').replace(/\D/g, ''),
+      Telefono: c.telefono ? sanitizarTelefono(c.telefono) : null,
       Correo: c.correo || null,
       Observaciones: c.observaciones || null,
     }));

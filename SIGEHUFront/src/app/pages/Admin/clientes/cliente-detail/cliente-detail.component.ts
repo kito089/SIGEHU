@@ -10,13 +10,17 @@ import type { ClienteTipo, Contacto } from '../../../../core/models/cliente.mode
 import {
   RFC_PATTERN,
   CODIGO_POSTAL_PATTERN,
-  TELEFONO_PATTERN,
   EMAIL_MAX,
   NOMBRE_MAX,
   DIRECCION_MAX,
   OBSERVACIONES_MAX,
   RAZON_SOCIAL_MAX,
 } from '../../../../shared/validators/custom-validators';
+import {
+  TELEFONO_REACTIVO_PATTERN,
+  filtrarTelefonoInput,
+  sanitizarTelefono,
+} from '../../../../core/utils/telefono.util';
 
 /* =========================================================================
    SIGEHU — Detalle de Cliente (página completa, reemplaza el modal)
@@ -144,7 +148,7 @@ export class ClienteDetailComponent implements OnInit {
   private buildForm(): FormGroup {
     const group = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(NOMBRE_MAX)]],
-      telefono: ['', [Validators.pattern(TELEFONO_PATTERN), Validators.maxLength(15)]],
+      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN), Validators.maxLength(15)]],
       correo: ['', [Validators.email, Validators.maxLength(EMAIL_MAX)]],
       direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
       observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
@@ -185,6 +189,17 @@ export class ClienteDetailComponent implements OnInit {
     if (this.guardando()) return;
     this.control(campo)?.enable();
     this.campoEditando.set(campo);
+  }
+
+  // ── Teléfono ─────────────────────────────────────────────────────────────
+  // Filtra en vivo: solo "+", números y espacios (misma regla que Trabajadores).
+  onTelefonoInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const limpio = filtrarTelefonoInput(input.value);
+    if (limpio !== input.value) {
+      input.value = limpio;
+      this.control('telefono')?.setValue(limpio);
+    }
   }
 
   // --- Catálogos fiscales --------------------------------------------------
@@ -334,7 +349,7 @@ export class ClienteDetailComponent implements OnInit {
       case 'required': return 'Este campo es obligatorio.';
       case 'email': return 'Correo electrónico inválido.';
       case 'pattern':
-        return campo === 'telefono' ? 'Teléfono inválido (10-15 dígitos).'
+        return campo === 'telefono' ? 'Teléfono inválido: usa "+", números y espacios (máx. 15 caracteres).'
           : campo === 'rfc' ? 'RFC inválido (12-13 caracteres).'
           : campo === 'codigoPostal' ? 'Código postal de 5 dígitos.'
           : 'Formato inválido.';
@@ -403,8 +418,8 @@ export class ClienteDetailComponent implements OnInit {
       // No se envían `contactos` para no alterar la lista de contactos.
       return {
         ...base,
-        Direccion: null,
-        Telefono: raw.telefono ? String(raw.telefono).replace(/\D/g, '') : null,
+        Direccion: raw.direccion || null,
+        Telefono: raw.telefono ? sanitizarTelefono(raw.telefono) : null,
         Correo: raw.correo || null,
         tipo: 'persona',
       };

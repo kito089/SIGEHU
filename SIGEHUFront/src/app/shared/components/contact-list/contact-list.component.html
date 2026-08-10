@@ -37,7 +37,16 @@
                   name="c-telefono-{{ i }}"
                   [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="c.telefono"
-                  placeholder="10-15 dígitos">
+                  inputmode="tel"
+                  maxlength="15"
+                  placeholder="+52 449 0000000"
+                  title="Máximo 15 caracteres: solo '+', números y espacios"
+                  (input)="onTelefonoInput($event, i)"
+                  (blur)="marcarTelTocado(i)"
+                  [class.invalid]="mostrarErrorTel(i, c)">
+                @if (mostrarErrorTel(i, c)) {
+                  <span class="cl__tel-error">Teléfono inválido: usa "+", números y espacios (máx. 15)</span>
+                }
               </td>
               <td>
                 <input

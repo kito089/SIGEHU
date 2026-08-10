@@ -72,7 +72,7 @@
                 <label>Teléfono</label>
                 <div class="field-control">
                   @if (estaEditando('telefono')) {
-                    <input type="tel" [formControl]="control('telefono')" maxlength="15" />
+                    <input type="tel" [formControl]="control('telefono')" maxlength="15" inputmode="tel" (input)="onTelefonoInput($event)" />
                   } @else {
                     <p class="field-value">{{ valor('telefono') || '—' }}</p>
                   }
