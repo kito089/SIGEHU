@@ -146,6 +146,34 @@ const updateRutaImss = async (id, rutaImss, idTrabajadorCtx = 1) => {
         );
         await transaction.commit();
 
+        // El trigger TR_Auditorias_Trabajadores_AU ya registró la cabecera
+        // (Accion=UPDATE, LAST_AUDIT_ID). Se añade el detalle por campo para que
+        // el historial distinga agregado/modificado/eliminado del documento IMSS.
+        try {
+            const txAudit = await db.transaction();
+            let idAudit = null;
+            try {
+                const rows = await txAudit.query(
+                    `SELECT RDB$GET_CONTEXT('USER_SESSION', 'LAST_AUDIT_ID') AS ID FROM RDB$DATABASE`
+                );
+                idAudit = rows[0]?.ID ?? null;
+                await txAudit.commit();
+            } catch (err) {
+                await txAudit.rollback();
+                throw err;
+            }
+            if (idAudit) {
+                await audit.createAuditoriaDetalle({
+                    pIdAuditoria: idAudit,
+                    pCampo: "RutaDocumentoIMSS",
+                    pValorAnterior: rutaAnterior ?? "",
+                    pValorNuevo: rutaImss,
+                });
+            }
+        } catch (errAudit) {
+            console.error("Error al registrar el detalle IMSS en auditoría:", errAudit.message);
+        }
+
         if (rutaAnterior && rutaAnterior !== rutaImss) {
             eliminarArchivoImss(rutaAnterior);
         }
@@ -282,6 +310,10 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, C
         await txAudit.rollback();
         throw err;
     } 
+    // El UPDATE general conserva la ruta IMSS (COALESCE) salvo que `deleteImss`
+    // la vuelva NULL, o que se envíe una ruta nueva explícitamente.
+    const rutaNueva = deleteImss ? null : (RutaDocumentoIMSS ?? rutaAnterior);
+
     const comparacion = [
         { campo: 'NombreUsuario', anterior: anterior.NOMBREUSUARIO, nuevo: Usuario },
         { campo: 'NombreCompleto', anterior: anterior.NOMBRECOMPLETO, nuevo: Nombre },
@@ -289,6 +321,7 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, C
         { campo: 'Tipo', anterior: anterior.TIPOSUSUARIOS_IDTIPOUSUARIO, nuevo: tipoInmutable },
         { campo: 'Correo', anterior: anterior.CORREO, nuevo: Correo ?? null },
         { campo: 'Observaciones', anterior: anterior.OBSERVACIONES, nuevo: Observaciones ?? null },
+        { campo: 'RutaDocumentoIMSS', anterior: rutaAnterior, nuevo: rutaNueva },
     ];
 
     const cambios = comparacion.filter(
