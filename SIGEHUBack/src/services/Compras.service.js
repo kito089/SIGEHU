@@ -496,7 +496,8 @@ const getComprasPendientes = async () => {
                 c.FechaCompra AS FECHA,
                 LIST(DISTINCT p.Nombre, ' | ') AS PROVEEDORES,
                 LIST(DISTINCT m.Nombre, ', ') AS MATERIALES,
-                COUNT(*) AS LINEAS
+                COUNT(*) AS LINEAS,
+                COALESCE(SUM(dc.Cantidad), 0) AS CANTIDADTOTAL
          FROM Compras c
          JOIN DetallesCompras dc ON dc.Compras_idCompra = c.idCompra
          JOIN Proveedores_has_Materiales phm
@@ -516,6 +517,7 @@ const getComprasPendientes = async () => {
         proveedores: String(r['PROVEEDORES'] ?? ''),
         materiales: String(r['MATERIALES'] ?? ''),
         lineas: Number(r['LINEAS'] || 0),
+        cantidadTotal: Number(r['CANTIDADTOTAL'] || 0),
     }));
 };
 

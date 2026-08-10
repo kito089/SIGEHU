@@ -2,6 +2,7 @@
   @for (column of columns(); track column.id) {
     <app-kanban-column
       [column]="column"
+      [class.kanban-column--oculta-movil]="column.id !== columnaActiva()"
       (cardClick)="onCardClick($event)"
     ></app-kanban-column>
   }

@@ -121,6 +121,7 @@ export class ReportesService {
           proveedores: String(r['proveedores'] ?? ''),
           materiales: String(r['materiales'] ?? ''),
           lineas: Number(r['lineas'] ?? 0),
+          cantidadTotal: Number(r['cantidadTotal'] ?? r['CANTIDADTOTAL'] ?? 0),
         }))
       )
     );

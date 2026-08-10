@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ComprasService } from '../../../services/compras.service';
 import { Compra } from '../../../core/models/compra.model';
@@ -15,6 +15,8 @@ import { DetailModalComponent } from '../../../shared/components/detail-modal/de
    Datos reales vía GET /Compras. Acciones: Ver detalle (modal con cabecera
    y materiales), Editar (navega al formulario con queryParam id) y Eliminar
    (soft-delete con modal de confirmación, RNF-07).
+   Soporta apertura directa del detalle con ?ver=<id> (patrón igual a Obras),
+   usado por el Dashboard al hacer clic en una "Compra pendiente".
    ========================================================================= */
 
 @Component({
@@ -26,12 +28,16 @@ import { DetailModalComponent } from '../../../shared/components/detail-modal/de
 })
 export class OrdenesCompraComponent implements OnInit {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private service = inject(ComprasService);
   private toast = inject(ToastService);
 
   compras: Compra[] = [];
   searchTerm = '';
   cargando = false;
+
+  // Detalle directo (?ver=<id>), reutiliza el modal de detalle existente.
+  private detallePendienteId: number | null = null;
 
   selectedCompra: Compra | null = null;
   cargandoDetalle = false;
@@ -50,6 +56,13 @@ export class OrdenesCompraComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarCompras();
+
+    // Apertura directa del detalle desde el Dashboard (?ver=<id>).
+    this.route.queryParamMap.subscribe(params => {
+      const ver = params.get('ver');
+      this.detallePendienteId = ver ? Number(ver) || null : null;
+      this.abrirDetallePendiente();
+    });
   }
 
   async cargarCompras(): Promise<void> {
@@ -60,7 +73,17 @@ export class OrdenesCompraComponent implements OnInit {
       this.compras = [];
     } finally {
       this.cargando = false;
+      this.abrirDetallePendiente();
     }
+  }
+
+  private abrirDetallePendiente(): void {
+    const id = this.detallePendienteId;
+    if (id == null) return;
+    const compra = this.compras.find(c => c.idCompra === id);
+    if (!compra) return;
+    this.detallePendienteId = null;
+    void this.verDetalle(compra);
   }
 
   get comprasFiltradas(): Compra[] {

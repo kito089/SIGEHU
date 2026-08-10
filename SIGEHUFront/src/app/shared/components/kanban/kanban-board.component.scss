@@ -30,3 +30,20 @@
     border-radius: 4px;
   }
 }
+
+/* Móvil (<1024px, misma frontera del layout mobile): solo se muestra la
+   columna seleccionada en el combobox, centrada y sin scroll horizontal.
+   En desktop estas reglas no aplican y se conservan las 6 columnas. */
+@media (max-width: 1024px) {
+  .kanban-board {
+    grid-auto-columns: minmax(0, 1fr);
+    justify-content: center;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0 0 var(--sigehu-space-4);
+  }
+
+  app-kanban-column.kanban-column--oculta-movil {
+    display: none;
+  }
+}

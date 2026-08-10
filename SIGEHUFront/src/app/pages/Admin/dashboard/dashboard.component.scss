@@ -38,31 +38,29 @@
   min-height: 520px;
 }
 
-.assigned-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--sigehu-space-10) var(--sigehu-space-6);
-}
-
-/* ── Compras pendientes ─────────────────────────────────────────────────── */
+/* ── Compras pendientes ───────────────────────────────────────────────────
+   Sección independiente del bloque Kanban/Calendario: convive debajo del
+   panel activo y su contenido no depende del cambio de pestaña.
+   ──────────────────────────────────────────────────────────────────────── */
 .dashboard-compras {
-  margin-top: var(--sigehu-space-5);
-  min-height: 0;
+  margin-top: var(--sigehu-space-6);
 }
 
 .dashboard-compras__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--sigehu-space-3);
+  margin-bottom: var(--sigehu-space-4);
+  gap: var(--sigehu-space-2);
 }
 
 .dashboard-compras__title {
   margin: 0;
-  font-size: var(--sigehu-font-size-md);
-  font-weight: var(--sigehu-font-weight-semibold);
+  // Mismo peso visual que el valor de los KPI ([value]="kpi.value" = 3xl bold).
+  font-size: var(--sigehu-font-size-3xl);
+  font-weight: var(--sigehu-font-weight-bold);
   color: var(--sigehu-text-primary);
+  line-height: 1.2;
 }
 
 .dashboard-compras__count {
@@ -77,6 +75,7 @@
   color: var(--sigehu-session-active-text, #FFFFFF);
   font-size: var(--sigehu-font-size-xs);
   font-weight: var(--sigehu-font-weight-semibold);
+  flex-shrink: 0;
 }
 
 .dashboard-compras__list {
@@ -88,15 +87,36 @@
   gap: var(--sigehu-space-2);
 }
 
+.dashboard-compras__wrap {
+  margin: 0;
+  padding: 0;
+}
+
 .dashboard-compras__item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sigehu-space-4);
+  width: 100%;
   padding: var(--sigehu-space-3) var(--sigehu-space-4);
   background: var(--sigehu-card-bg, #0F172A);
   border: 1px solid var(--sigehu-card-border, #334155);
   border-radius: 10px;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: var(--sigehu-active-bg);
+    border-color: var(--sigehu-active-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--sigehu-accent);
+    outline-offset: 2px;
+  }
 }
 
 .dashboard-compras__body {
@@ -106,6 +126,12 @@
   min-width: 0;
 }
 
+.dashboard-compras__prov {
+  font-size: var(--sigehu-font-size-base);
+  font-weight: var(--sigehu-font-weight-semibold);
+  color: var(--sigehu-text-primary);
+}
+
 .dashboard-compras__proveedor {
   font-size: var(--sigehu-font-size-base);
   font-weight: var(--sigehu-font-weight-semibold);
@@ -113,21 +139,28 @@
 }
 
 .dashboard-compras__mat {
-  font-size: var(--sigehu-font-size-xs);
+  font-size: var(--sigehu-font-size-sm);
   color: var(--sigehu-text-tertiary);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .dashboard-compras__meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 4px;
   font-size: var(--sigehu-font-size-xs);
   color: var(--sigehu-text-tertiary);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dashboard-compras__meta-tag strong {
+  color: var(--sigehu-text-primary);
+  font-weight: var(--sigehu-font-weight-bold);
 }
 
 .dashboard-compras__empty {

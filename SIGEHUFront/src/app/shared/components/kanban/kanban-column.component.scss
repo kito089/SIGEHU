@@ -138,3 +138,13 @@
 .kanban-column[data-estado="garantias"] .column-title {
   color: var(--sigehu-estado-garantias);
 }
+
+/* Móvil: la columna visible ocupa el ancho disponible (centrada, sin exceder
+   el ancho estándar de columna para conservar la tarjeta legible). */
+@media (max-width: 1024px) {
+  .kanban-column {
+    width: 100%;
+    max-width: var(--sigehu-kanban-column-width);
+    margin: 0 auto;
+  }
+}

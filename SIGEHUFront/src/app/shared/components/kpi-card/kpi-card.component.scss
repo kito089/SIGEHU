@@ -108,3 +108,34 @@
     flex: 1;
   }
 }
+
+/* Móvil (<1024px, misma frontera del layout): value a la izquierda y label a
+   la derecha, con alineación vertical centrada dentro de la tarjeta.
+   Desktop ≥1024px conserva su disposición actual (value sobre label). */
+@media (max-width: 1024px) {
+  .kpi-card {
+    align-items: center;
+  }
+
+  .kpi-card__content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sigehu-space-3);
+  }
+
+  .kpi-card__value {
+    margin: 0;
+    font-size: var(--sigehu-font-size-2xl);
+    line-height: 1.2;
+  }
+
+  .kpi-card__label {
+    text-align: right;
+  }
+
+  .kpi-badge {
+    align-self: center;
+    margin-top: 0;
+  }
+}

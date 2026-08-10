@@ -44,4 +44,6 @@ export interface CompraPendiente {
   proveedores: string;
   materiales: string;
   lineas: number;
+  /** Cantidad total real de materiales de la compra (suma de Cantidad de sus líneas). */
+  cantidadTotal: number;
 }

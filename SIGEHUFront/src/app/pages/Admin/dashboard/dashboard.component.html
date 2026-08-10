@@ -17,7 +17,11 @@
 <!-- Tabs -->
 <app-dashboard-tabs
   [activeTab]="activeTab()"
+  [columnasKanban]="kanbanColumns()"
+  [columnaKanban]="kanbanColumna()"
   (tabChange)="onTabChange($event)"
+  (columnaKanbanChange)="onColumnaKanbanChange($event)"
+  (navCalendario)="navegacionCalendario($event)"
 ></app-dashboard-tabs>
 
 <!-- Tab Panels -->
@@ -26,36 +30,9 @@
     <section class="dashboard-panel" aria-labelledby="kanban-heading">
       <app-kanban-board
         [columns]="kanbanColumns()"
+        [columnaActiva]="kanbanColumna()"
         (cardClick)="onCardClick($event)"
       ></app-kanban-board>
-
-      <!-- Compras pendientes -->
-      <section class="dashboard-panel dashboard-compras" aria-label="Compras pendientes">
-        <div class="dashboard-compras__head">
-          <h2 class="dashboard-compras__title">Compras pendientes de recibir</h2>
-          <span class="dashboard-compras__count">{{ comprasPendientes().length }}</span>
-        </div>
-        @if (comprasCargando()) {
-          <p class="dashboard-compras__empty">Cargando…</p>
-        } @else if (comprasPendientes().length) {
-          <ul class="dashboard-compras__list">
-            @for (c of comprasPendientes().slice(0, 6); track c.idCompra) {
-              <li class="dashboard-compras__item">
-                <div class="dashboard-compras__body">
-                  <span class="dashboard-compras__prov">{{ c.proveedores }}</span>
-                  <span class="dashboard-compras__mat">{{ c.materiales }}</span>
-                </div>
-                <div class="dashboard-compras__meta">
-                  <span>{{ c.fechaCompra }}</span>
-                  <span>{{ c.lineas }} línea(s)</span>
-                </div>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="dashboard-compras__empty">No hay compras pendientes.</p>
-        }
-      </section>
     </section>
   }
   @case ('calendar') {
@@ -68,15 +45,41 @@
       ></app-calendar>
     </section>
   }
-  @case ('assigned') {
-    <section class="dashboard-panel" aria-labelledby="assigned-heading">
-      <div class="assigned-placeholder">
-        <app-empty-state
-          title="Trabajos asignados"
-          subtitle="Vista de trabajos agrupados por responsable"
-          icon="people-outline"
-        ></app-empty-state>
-      </div>
-    </section>
-  }
 }
+
+<!-- Compras pendientes: sección independiente del bloque Kanban/Calendario -->
+<section class="dashboard-compras" aria-label="Compras pendientes">
+  <div class="dashboard-compras__head">
+    <h2 class="dashboard-compras__title">Compras pendientes de recibir</h2>
+    <span class="dashboard-compras__count">{{ comprasPendientes().length }}</span>
+  </div>
+  @if (comprasCargando()) {
+    <p class="dashboard-compras__empty">Cargando…</p>
+  } @else if (comprasPendientes().length) {
+    <ul class="dashboard-compras__list">
+      @for (c of comprasPendientes().slice(0, 6); track c.idCompra) {
+        <li class="dashboard-compras__wrap">
+          <button
+            type="button"
+            class="dashboard-compras__item"
+            (click)="irDetalleCompra(c.idCompra)"
+            [attr.aria-label]="'Ver detalle de la compra ' + c.idCompra"
+          >
+            <div class="dashboard-compras__body">
+              <span class="dashboard-compras__prov">{{ proveedoresCortos(c) }}</span>
+              <span class="dashboard-compras__mat">{{ materialesCortos(c) }}</span>
+            </div>
+            <div class="dashboard-compras__meta">
+              <span class="dashboard-compras__fecha">{{ c.fechaCompra }}</span>
+              <span class="dashboard-compras__meta-tag">
+                <strong>{{ c.cantidadTotal }}</strong> Cantidad total de materiales
+              </span>
+            </div>
+          </button>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="dashboard-compras__empty">No hay compras pendientes.</p>
+  }
+</section>

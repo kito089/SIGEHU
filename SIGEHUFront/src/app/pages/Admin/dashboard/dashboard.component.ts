@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -6,7 +6,6 @@ import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.c
 import { DashboardTabsComponent, DashboardTab } from '../../../shared/components/dashboard/tabs/dashboard-tabs.component';
 import { KanbanBoardComponent, KanbanColumnData, KanbanCardData } from '../../../shared/components/kanban/kanban-board.component';
 import { CalendarComponent } from '../../../shared/components/calendar/calendar.component';
-import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { DashboardService } from '../../../services/dashboard.service';
 import type { EventoCalendarioBackend } from '../../../services/dashboard.service';
 import { ReportesService } from '../../../services/reportes.service';
@@ -32,8 +31,7 @@ interface KpiCardConfig {
     KpiCardComponent,
     DashboardTabsComponent,
     KanbanBoardComponent,
-    CalendarComponent,
-    EmptyStateComponent
+    CalendarComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
@@ -43,8 +41,16 @@ export class DashboardComponent {
   private dashboard = inject(DashboardService);
   private reportes = inject(ReportesService);
 
+  // Calendario instanciado bajo una sola pestaña; se usa para reenviar la
+  // navegación móvil (‹ Hoy ›) sin duplicar la lógica del calendario.
+  private readonly calendar = viewChild<CalendarComponent>(CalendarComponent);
+
   // Estado UI
   activeTab = signal<DashboardTab>('kanban');
+
+  // Columna del Kanban seleccionada en el control móvil (se conserva mientras
+  // el usuario permanezca en la vista Kanban).
+  readonly kanbanColumna = signal<string>('solicitud');
 
   // KPIs reales (GET /Dashboard/kpis)
   readonly kpiData = signal<KpiCardConfig[]>([]);
@@ -245,6 +251,47 @@ export class DashboardComponent {
 
   onTabChange(tab: DashboardTab): void {
     this.activeTab.set(tab);
+  }
+
+  // ── Control móvil del Kanban ─────────────────────────────────────────────
+  onColumnaKanbanChange(columnaId: string): void {
+    if (columnaId) this.kanbanColumna.set(columnaId);
+  }
+
+  // ── Controles móviles del Calendario (reutilizan los métodos del calendar) ──
+  navegacionCalendario(direccion: 'anterior' | 'hoy' | 'siguiente'): void {
+    const cal = this.calendar();
+    if (!cal) return;
+    if (direccion === 'anterior') cal.irAnterior();
+    else if (direccion === 'siguiente') cal.irSiguiente();
+    else cal.irHoy();
+  }
+
+  // ── Compras pendientes ────────────────────────────────────────────────────
+  // Límite visual: 4 proveedores y 5 materiales como máximo (… si hay más).
+  // Solo afecta a la presentación; los datos provienen de GET /Compras/pendientes.
+  private cortarLista(valor: string, separador: string, max: number): string {
+    const items = (valor ?? '')
+      .split(separador)
+      .map(i => i.trim())
+      .filter(Boolean);
+    if (items.length === 0) return '';
+    if (items.length <= max) return items.join(', ');
+    return `${items.slice(0, max).join(', ')}, ...`;
+  }
+
+  proveedoresCortos(c: CompraPendiente): string {
+    return this.cortarLista(c.proveedores, '|', 4);
+  }
+
+  materialesCortos(c: CompraPendiente): string {
+    return this.cortarLista(c.materiales, ',', 5);
+  }
+
+  // Toda la tarjeta navega al detalle real de la compra (routing existente).
+  irDetalleCompra(idCompra: number): void {
+    if (idCompra == null) return;
+    this.router.navigate(['/admin/orden'], { queryParams: { ver: idCompra } });
   }
 
   onCardClick(card: KanbanCardData): void {

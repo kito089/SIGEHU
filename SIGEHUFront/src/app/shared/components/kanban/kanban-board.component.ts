@@ -37,6 +37,11 @@ export class KanbanBoardComponent {
   columns = input.required<KanbanColumnData[]>();
   cardClick = output<KanbanCardData>();
 
+  // Columna activa seleccionada en el control móvil. En desktop no se usa
+  // (todas las columnas se muestran); en móvil oculta las demás y deja una
+  // sola columna centrada, sin scroll horizontal.
+  columnaActiva = input<string>('');
+
   onCardClick(card: KanbanCardData): void {
     this.cardClick.emit(card);
   }

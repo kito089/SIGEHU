@@ -1,14 +1,37 @@
-<nav class="dashboard-tabs" role="tablist" aria-label="Vistas del dashboard">
-  @for (tab of tabs; track tab.key) {
-    <button
-      role="tab"
-      [attr.aria-selected]="activeTab() === tab.key"
-      [class]="tabClass(tab.key)"
-      (click)="onTabClick(tab.key)"
-      class="tab-btn"
-    >
-      <span class="tab-icon" [innerHTML]="getSafeIconSvg(tab.icon)" aria-hidden="true"></span>
-      <span class="tab-label">{{ tab.label }}</span>
-    </button>
+<div class="dashboard-tabs__row">
+  <nav class="dashboard-tabs" role="tablist" aria-label="Vistas del dashboard">
+    @for (tab of tabs; track tab.key) {
+      <button
+        role="tab"
+        [attr.aria-selected]="activeTab() === tab.key"
+        [class]="tabClass(tab.key)"
+        (click)="onTabClick(tab.key)"
+        class="tab-btn"
+      >
+        <span class="tab-icon" [innerHTML]="getSafeIconSvg(tab.icon)" aria-hidden="true"></span>
+        <span class="tab-label">{{ tab.label }}</span>
+      </button>
+    }
+  </nav>
+
+  @if (activeTab() === 'kanban') {
+    <div class="dashboard-tabs__control" aria-label="Columnas del tablero">
+      <select
+        class="dashboard-tabs__select"
+        [value]="columnaKanban()"
+        (change)="onColumnaKanbanChange($event)"
+        aria-label="Columna del tablero Kanban"
+      >
+        @for (col of columnasKanban(); track col.id) {
+          <option [value]="col.id">{{ col.title }}</option>
+        }
+      </select>
+    </div>
+  } @else if (activeTab() === 'calendar') {
+    <div class="dashboard-tabs__control dashboard-tabs__control--calendar" aria-label="Controles del calendario">
+      <button class="dashboard-tabs__cal-btn" type="button" (click)="navCalendario.emit('anterior')" aria-label="Anterior">&#8249;</button>
+      <button class="dashboard-tabs__cal-btn dashboard-tabs__cal-btn--hoy" type="button" (click)="navCalendario.emit('hoy')">Hoy</button>
+      <button class="dashboard-tabs__cal-btn" type="button" (click)="navCalendario.emit('siguiente')" aria-label="Siguiente">&#8250;</button>
+    </div>
   }
-</nav>
+</div>

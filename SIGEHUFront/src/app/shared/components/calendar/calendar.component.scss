@@ -293,6 +293,15 @@
   }
 }
 
+@media (max-width: 1024px) {
+  // En móvil, los controles ‹ Hoy › se ocultan aquí y se muestran en su
+  // lugar a la derecha de app-dashboard-tabs (mismas acciones irAnterior,
+  // irHoy, irSiguiente reutilizadas, sin duplicar la lógica del calendario).
+  .cal__nav {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .cal {
     padding: var(--sigehu-space-3, 12px);
@@ -311,13 +320,36 @@
     flex: 1;
   }
 
+  // Mensual y semanal se adaptan al ancho disponible (sin scroll horizontal).
+  // Las columnas se reparten el 100% (minmax(0,1fr)) y la tipografía/padding
+  // se compactan para que toda la vista quepa en el ancho del dispositivo.
   .cal__rejilla--mes,
   .cal__rejilla--semana {
-    grid-template-columns: repeat(7, minmax(124px, 1fr));
-    overflow-x: auto;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    overflow-x: hidden;
+  }
+
+  .cal__cabecera {
+    font-size: var(--sigehu-font-size-xs);
+    letter-spacing: 0;
+    padding: var(--sigehu-space-2) 0;
+  }
+
+  .cal__dia,
+  .cal__col {
+    padding: var(--sigehu-space-1);
   }
 
   .cal__dia {
-    min-height: 72px;
+    min-height: 64px;
+  }
+
+  .cal__evento {
+    font-size: 10px;
+    padding: 2px 3px;
+  }
+
+  .cal__num {
+    font-size: var(--sigehu-font-size-sm);
   }
 }

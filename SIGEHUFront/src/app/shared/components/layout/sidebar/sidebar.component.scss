@@ -161,6 +161,11 @@
   flex-direction: column;
   gap: 2px;
   padding-left: var(--sigehu-space-4);
+  // Mismo espaciado vertical entre "Catálogos" y su primer hijo ("Trabajadores")
+  // que el existente entre los subítems del acordeón (p. ej. Trabajadores →
+  // Materiales / Herramientas). Solo afecta al sidebar de escritorio: en
+  // <1024px el sidebar está oculto, por lo que queda invariante en móvil.
+  margin-top: 2px;
 }
 
 .nav-sublist.open {
