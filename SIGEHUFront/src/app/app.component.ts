@@ -3,8 +3,10 @@ import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
 import { EnvService } from './services/env.service';
+import { AuthService } from './services/auth.service';
 import { EnvironmentDetector, Runtime } from './services/environment-detector.service';
 import { LogService } from './core/services/log.service';
+import { NotificationService } from './core/services/notification.service';
 
 @Component({
   selector: 'app-root',
@@ -16,6 +18,8 @@ export class AppComponent implements OnInit {
   private env = inject(EnvService);
   private envDetector = inject(EnvironmentDetector);
   private log = inject(LogService);
+  private auth = inject(AuthService);
+  private notifications = inject(NotificationService);
 
   private lastRoute = '';
 
@@ -29,7 +33,31 @@ export class AppComponent implements OnInit {
     this.logElectronLogFile();
     this.wireNavigationLogging();
     this.wireGlobalErrorListeners();
+    this.wireNotificationSync();
     await this.bootstrapNative();
+  }
+
+  /**
+   * Sincronización de notificaciones por CUENTA (SSE multidispositivo).
+   * - Sesión ya iniciada al arrancar → arranca inmediatamente.
+   * - Navegación a /login (logout o sesión expirada) → detiene el SSE.
+   * - Cualquier otra ruta autenticada → arranca (idempotente).
+   * Cada sesión de usuario abre su propia conexión anclada a su JWT.
+   */
+  private wireNotificationSync(): void {
+    if (this.auth.isLoggedIn()) {
+      this.notifications.start();
+    }
+
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        if (event.urlAfterRedirects.startsWith('/login')) {
+          this.notifications.stop();
+        } else if (this.auth.isLoggedIn()) {
+          this.notifications.start();
+        }
+      });
   }
 
   /**
