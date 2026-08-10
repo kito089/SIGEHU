@@ -27,6 +27,7 @@ export class DataTableComponent {
 
   @ContentChild('cell') cellTemplate?: TemplateRef<unknown>;
   @ContentChild('actions') actionsTemplate?: TemplateRef<unknown>;
+  @ContentChild('card') cardTemplate?: TemplateRef<unknown>;
 
   @Output() rowClick = new EventEmitter<unknown>();
 
@@ -39,6 +40,10 @@ export class DataTableComponent {
   }
 
   actionsContext(row: unknown): Record<string, unknown> {
+    return { $implicit: row };
+  }
+
+  cardContext(row: unknown): Record<string, unknown> {
     return { $implicit: row };
   }
 

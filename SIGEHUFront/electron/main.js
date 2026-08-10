@@ -220,6 +220,8 @@ function createWindow() {
     const win = new BrowserWindow({
         width: 1400,
         height: 900,
+        minWidth: 1100,
+        minHeight: 680,
         title: 'SIGEHU',
         icon: path.join(wwwDir, 'assets', 'icon.png'),
         autoHideMenuBar: true,

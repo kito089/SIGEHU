@@ -175,6 +175,36 @@ main.main-content .panel-toolbar .header-actions {
   main.main-content .panel-toolbar {
     gap: var(--sigehu-space-2, 8px);
     margin-bottom: var(--sigehu-space-4, 16px);
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  /* En móvil el buscador crece y ocupa todo el espacio disponible; el botón
+     "Agregar" (solo el que sigue al buscador, patrón CRUD) se reduce a su
+     icono. El texto del botón se oculta únicamente en móvil. */
+  main.main-content .panel-toolbar app-filter-bar {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  main.main-content .panel-toolbar app-filter-bar .filter-bar {
+    min-width: 0;
+  }
+
+  main.main-content .panel-toolbar app-filter-bar .filter-bar__search {
+    min-width: 0;
+  }
+
+  main.main-content .panel-toolbar app-filter-bar + .btn-primary {
+    flex-shrink: 0;
+    padding: 10px;
+    width: 38px;
+    height: 38px;
+    justify-content: center;
+  }
+
+  main.main-content .panel-toolbar app-filter-bar + .btn-primary .btn-primary__label {
+    display: none;
   }
 }
 

@@ -13,9 +13,9 @@
         [searchPlaceholder]="'Buscar trabajadores...'"
         (searchTermChange)="onSearchChange($event)"
       ></app-filter-bar>
-      <button class="btn-primary" (click)="nuevoTrabajador()">
+      <button class="btn-primary" (click)="nuevoTrabajador()" aria-label="Agregar nuevo trabajador" title="Agregar Nuevo Trabajador">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-        Nuevo Trabajador
+        <span class="btn-primary__label">Nuevo Trabajador</span>
       </button>
     </div>
 
@@ -59,8 +59,8 @@
             Ver IMSS
           </button>
 
-          <button class="btn-update" (click)="actualizarDatos(row)">
-            Actualizar Datos
+          <button class="icon-btn" (click)="actualizarDatos(row)" aria-label="Actualizar datos del trabajador" title="Actualizar Datos">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
           </button>
 
           <button class="icon-btn icon-btn-danger" (click)="eliminarTrabajador(row)" aria-label="Eliminar trabajador" title="Eliminar">

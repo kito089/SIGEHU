@@ -50,3 +50,87 @@
   padding: 28px 16px;
   font-size: 13px;
 }
+
+/* ============================================================
+   VISTA MÓVIL — TARJETAS
+   En desktop (>=720px) la tabla se muestra y las tarjetas
+   se ocultan. En móvil (<720px) se invierte: la tabla desaparece
+   y cada fila se convierte en una tarjeta. El breakpoint 720px
+   coincide con el que ya usan las páginas Admin en sus SCSS.
+   ============================================================ */
+
+.data-cards { display: none; }
+
+.data-cards__empty {
+  text-align: center;
+  color: var(--sigehu-text-tertiary, #5c6580);
+  padding: 28px 16px;
+  font-size: 13px;
+}
+
+.data-card {
+  background: var(--sigehu-panel-bg, #0e1424);
+  border: 1px solid var(--sigehu-border-subtle, #1c2438);
+  border-radius: var(--sigehu-radius-md, 10px);
+  padding: 14px 14px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.data-card + .data-card { margin-top: 10px; }
+.data-card:hover { background: var(--sigehu-surface-hover, #131a2c); }
+
+.data-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.data-card__label {
+  font-size: var(--sigehu-font-size-xs, 10px);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sigehu-text-tertiary, #5c6580);
+  font-weight: 700;
+}
+
+.data-card__value {
+  font-size: 13px;
+  color: var(--sigehu-text-primary, #eef1f7);
+  word-break: break-word;
+}
+
+.data-card__actions {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sigehu-border-subtle, #1c2438);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Las acciones al pasar al contexto de tarjeta heredan las clases
+   `acciones-group`/`icon-btn`/`btn-imss` definidas en cada página:
+   al ser reglas scoped de esa página, se aplican dentro del
+   ContentChild renderizado. Aquí solo neutralizamos el justify
+   flex-end por defecto del acciones-group para centrar las acciones
+   en la tarjeta móvil. */
+.data-card__actions ::ng-deep .acciones-group,
+.data-card__actions ::ng-deep .acciones-group {
+  justify-content: center;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .data-table { display: none; }
+  .data-table__wrap { overflow-x: visible; background: transparent; border: none; }
+  .data-cards { display: block; }
+}
