@@ -1,30 +1,17 @@
-export interface KPI {
-  obrasActivas: number;
-  finalizadasMes: number;
-  enGarantia: number;
-  alertas: number;
-}
-
-export interface ActivityFeedItem {
-  id: number;
-  usuario: string;
-  accion: string;
-  entidad: string;
-  entidadId: number;
-  fecha: string;
-  detalles?: string;
-}
-
 export interface CalendarEvent {
-  id: number;
+  id: string | number;
   title: string;
   start: string;
   end?: string;
-  color: string;
+  color?: string;
+  bordered?: boolean;
   extendedProps: {
-    type: 'Levantamiento' | 'Fabricacion' | 'Instalacion' | 'Garantia';
-    obraId: number;
-    obraNombre: string;
-    clienteNombre: string;
+    type: string;
+    obraId?: string | number | null;
+    obraNombre?: string;
+    clienteNombre?: string;
+    esActividad?: boolean;
+    hora?: string;
+    notas?: string;
   };
 }

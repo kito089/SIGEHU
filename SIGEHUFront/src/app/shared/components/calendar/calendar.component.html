@@ -1,4 +1,122 @@
 <div class="cal">
   <app-skeleton *ngIf="loading" type="card"></app-skeleton>
-  <div #calendarEl class="cal__instance" *ngIf="!loading"></div>
+
+  @if (!loading) {
+    <div class="cal__toolbar">
+      <div class="cal__nav">
+        <button class="cal__btn" type="button" (click)="irAnterior()" aria-label="Anterior">&#8249;</button>
+        <button class="cal__btn cal__btn--hoy" type="button" (click)="irHoy()">Hoy</button>
+        <button class="cal__btn" type="button" (click)="irSiguiente()" aria-label="Siguiente">&#8250;</button>
+      </div>
+
+      <h2 class="cal__titulo">{{ titulo() }}</h2>
+
+      <div class="cal__vistas" role="tablist" aria-label="Vista del calendario">
+        <button
+          class="cal__vista"
+          [class.cal__vista--activa]="vista() === 'mes'"
+          type="button"
+          (click)="cambiarVista('mes')"
+          role="tab"
+          [attr.aria-selected]="vista() === 'mes'"
+        >Mes</button>
+        <button
+          class="cal__vista"
+          [class.cal__vista--activa]="vista() === 'semana'"
+          type="button"
+          (click)="cambiarVista('semana')"
+          role="tab"
+          [attr.aria-selected]="vista() === 'semana'"
+        >Semana</button>
+      </div>
+
+      <button
+        class="cal__btn cal__btn--agendar"
+        type="button"
+        (click)="abrirAgendar()"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Agendar Visita</span>
+      </button>
+    </div>
+
+    @if (!hayEventos()) {
+      <p class="cal__aviso">No hay eventos registrados para este periodo. Haz clic en un día para agendar una visita.</p>
+    }
+
+    @if (vista() === 'mes') {
+      <div class="cal__rejilla cal__rejilla--mes" role="grid" aria-label="Calendario mensual">
+        @for (d of diasSemana; track d) {
+          <div class="cal__cabecera">{{ d }}</div>
+        }
+        @for (celda of celdasMes(); track celda.iso) {
+          <div
+            class="cal__dia"
+            role="gridcell"
+            [class.cal__dia--fuera]="!celda.enMes"
+            [class.cal__dia--hoy]="celda.esHoy"
+            [class.cal__dia--clic]="true"
+            (click)="abrirAgendar(celda.fecha)"
+            [attr.aria-label]="'Agendar actividad el ' + celda.iso"
+          >
+            <span class="cal__num">{{ celda.dia }}</span>
+            <div class="cal__eventos">
+              @for (e of celda.eventos.slice(0, 2); track e.id) {
+                <button
+                  class="cal__evento"
+                  type="button"
+                  [style.background-color]="e.color"
+                  (click)="onEventoClick(e, $event)"
+                  [title]="tooltipEvento(e)"
+                >{{ e.title }}</button>
+              }
+              @if (celda.eventos.length > 2) {
+                <span class="cal__mas">+{{ celda.eventos.length - 2 }} más</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="cal__rejilla cal__rejilla--semana" role="grid" aria-label="Calendario semanal">
+        @for (celda of diasDeSemana(); track celda.iso) {
+          <div
+            class="cal__col"
+            role="gridcell"
+            [class.cal__col--hoy]="celda.esHoy"
+            (click)="abrirAgendar(celda.fecha)"
+          >
+            <div class="cal__col-cab">
+              <span class="cal__col-dia">{{ diasSemana[$index] }}</span>
+              <span class="cal__num">{{ celda.dia }}</span>
+            </div>
+            <div class="cal__col-eventos">
+              @for (e of celda.eventos; track e.id) {
+                <button
+                  class="cal__evento"
+                  type="button"
+                  [style.background-color]="e.color"
+                  (click)="onEventoClick(e, $event)"
+                  [title]="tooltipEvento(e)"
+                >{{ e.title }}</button>
+              }
+              @if (celda.eventos.length === 0) {
+                <span class="cal__vacio">Sin eventos</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (agendarAbierto()) {
+      <app-agendar-visita
+        [fechaInicial]="fechaAgendar()"
+        (guardar)="onGuardarVisita($event)"
+        (cancelar)="cerrarAgendar()"
+      ></app-agendar-visita>
+    }
+  }
 </div>
