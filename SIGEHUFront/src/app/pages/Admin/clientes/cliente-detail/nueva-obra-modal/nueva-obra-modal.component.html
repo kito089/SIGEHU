@@ -14,7 +14,7 @@
       </span>
       <div>
         <h2 id="nueva-obra-titulo" class="no-modal__title">Nueva Obra</h2>
-        <p class="no-modal__subtitle">Registra una obra y asóciala a un cliente existente</p>
+        <p class="no-modal__subtitle">Registra una obra con medidas, notas y fotos de levantamiento</p>
       </div>
       <button type="button" class="no-modal__close" (click)="onCancelar()" aria-label="Cerrar">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -63,19 +63,21 @@
           </div>
 
           <div class="form-row">
-            <div class="form-field">
-              <label class="form-label" for="no-trabajo">Tipo de trabajo <span class="form-required">*</span></label>
-              <select
-                id="no-trabajo"
-                class="form-select"
-                formControlName="idTrabajo"
-              >
-                <option [ngValue]="null">— Obra independiente (sin trabajo) —</option>
-                @for (t of trabajos; track t.idTrabajo) {
-                  <option [ngValue]="t.idTrabajo">{{ t.nombre }}</option>
-                }
-              </select>
-            </div>
+            @if (!ocultarCampoTrabajo) {
+              <div class="form-field">
+                <label class="form-label" for="no-trabajo">Tipo de trabajo</label>
+                <select
+                  id="no-trabajo"
+                  class="form-select"
+                  formControlName="idTrabajo"
+                >
+                  <option [ngValue]="null">— Obra independiente (sin trabajo) —</option>
+                  @for (t of trabajos; track t.idTrabajo) {
+                    <option [ngValue]="t.idTrabajo">{{ t.nombre }}</option>
+                  }
+                </select>
+              </div>
+            }
 
             <div class="form-field">
               <label class="form-label" for="no-fecha">Fecha de inicio <span class="form-required">*</span></label>
@@ -92,15 +94,114 @@
             </div>
           </div>
 
+          <!-- Dirección: combobox con las direcciones del cliente + otra -->
           <div class="form-field">
-            <label class="form-label" for="no-direccion">Dirección</label>
+            <label class="form-label" for="no-direccion-opcion">Dirección</label>
+            <select
+              id="no-direccion-opcion"
+              class="form-select"
+              [value]="usarOtraDireccion ? '__otra__' : (form.get('direccion')?.value || '')"
+              (change)="onDireccionSelect($any($event.target).value)"
+            >
+              <option [ngValue]="''">— Selecciona o escribe una dirección —</option>
+              @for (d of direccionesCliente; track d.valor) {
+                <option [value]="d.valor">{{ d.label }}</option>
+              }
+              <option value="__otra__">Otra dirección…</option>
+            </select>
+          </div>
+
+          @if (usarOtraDireccion || form.get('direccion')?.value) {
+            <div class="form-field">
+              <label class="form-label" for="no-direccion">Dirección de la obra</label>
+              <input
+                id="no-direccion"
+                class="form-input"
+                type="text"
+                placeholder="Calle, número, colonia, ciudad"
+                formControlName="direccion"
+              />
+            </div>
+          }
+
+          <!-- Medidas estimadas -->
+          <fieldset class="no-modal__group">
+            <legend class="form-label">Medidas estimadas</legend>
+            <div class="form-row form-row--3">
+              <div class="form-field">
+                <label class="form-label" for="no-ancho">Ancho</label>
+                <input
+                  id="no-ancho"
+                  class="form-input"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="m"
+                  formControlName="ancho"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="no-alto">Alto</label>
+                <input
+                  id="no-alto"
+                  class="form-input"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="m"
+                  formControlName="alto"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="no-profundidad">Profundidad</label>
+                <input
+                  id="no-profundidad"
+                  class="form-input"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="m"
+                  formControlName="profundidad"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Primeras notas → Levantamientos -->
+          <div class="form-field">
+            <label class="form-label" for="no-notas">Primeras notas</label>
+            <textarea
+              id="no-notas"
+              class="form-input no-modal__textarea"
+              rows="3"
+              placeholder="Se asignarán a la etapa de Levantamientos…"
+              formControlName="notasIniciales"
+            ></textarea>
+          </div>
+
+          <!-- Fotos → Levantamientos -->
+          <div class="form-field">
+            <label class="form-label" for="no-fotos">Fotos (etapa Levantamientos)</label>
             <input
-              id="no-direccion"
-              class="form-input"
-              type="text"
-              placeholder="Calle, número, colonia, ciudad"
-              formControlName="direccion"
+              id="no-fotos"
+              class="form-input no-modal__file"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              (change)="onFotosChange($event)"
             />
+            @if (fotosSeleccionadas.length > 0) {
+              <div class="no-modal__fotos">
+                @for (f of fotosSeleccionadas; track f.nombre; let i = $index) {
+                  <div class="no-modal__foto">
+                    <img [src]="f.url" [alt]="f.nombre" />
+                    <button type="button" class="no-modal__foto-remove" (click)="quitarFoto(i)" aria-label="Quitar foto">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
           </div>
         </div>
 

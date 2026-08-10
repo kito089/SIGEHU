@@ -130,13 +130,13 @@ export class ClienteFormComponent implements OnInit {
   private buildForm(): FormGroup {
     const group = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(NOMBRE_MAX)]],
-      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN), Validators.maxLength(15)]],
+      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN), Validators.maxLength(14)]],
       correo: ['', [Validators.email, Validators.maxLength(EMAIL_MAX)]],
       direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
       observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
       fiscal: this.fb.group({
         datosFiscales: [false],
-        rfc: ['', [Validators.pattern(RFC_PATTERN)]],
+        rfc: ['', [Validators.minLength(12), Validators.maxLength(13), Validators.pattern(RFC_PATTERN)]],
         razonSocial: ['', [Validators.maxLength(RAZON_SOCIAL_MAX)]],
         regimenFiscal: ['', []],
         usoCFDI: ['', []],
@@ -150,13 +150,22 @@ export class ClienteFormComponent implements OnInit {
   }
 
   // Validación condicional según el tipo: para Persona se exige al menos
-  // teléfono o correo (validator cruzado a nivel FormGroup).
+  // teléfono o correo (validator cruzado a nivel FormGroup). Para Empresa el
+  // RFC es obligatorio (12-13 caracteres), por lo que se activa el bloque de
+  // datos fiscales y se añade el validador de requerido.
   private aplicarValidacionTipo(group: FormGroup, tipo: ClienteTipo): void {
+    const rfc = group.get(['fiscal', 'rfc']);
     if (tipo === 'persona') {
       group.setValidators([telefonoOcorreoRequired]);
+      rfc?.clearValidators();
+      rfc?.addValidators([Validators.minLength(12), Validators.maxLength(13), Validators.pattern(RFC_PATTERN)]);
     } else {
       group.setValidators([]);
+      group.get(['fiscal', 'datosFiscales'])?.setValue(true);
+      rfc?.clearValidators();
+      rfc?.addValidators([Validators.required, Validators.minLength(12), Validators.maxLength(13), Validators.pattern(RFC_PATTERN)]);
     }
+    rfc?.updateValueAndValidity();
     group.updateValueAndValidity();
   }
 
@@ -255,7 +264,7 @@ export class ClienteFormComponent implements OnInit {
     // Teléfono del cliente persona: mismo saneado/validación que Trabajadores.
     const raw = this.form.getRawValue();
     if (this.tipo() === 'persona' && raw.telefono && sanitizarTelefono(raw.telefono) === null) {
-      this.toast.error('Teléfono inválido: usa solo "+" y números, máximo 15 dígitos');
+      this.toast.error('Teléfono inválido: usa "+52" y el número, máximo 14 caracteres incluyendo espacios');
       return;
     }
 
@@ -265,7 +274,19 @@ export class ClienteFormComponent implements OnInit {
         c => (c.telefono ?? '').trim() !== '' && sanitizarTelefono(c.telefono ?? '') === null
       );
       if (conTelefonoInvalido) {
-        this.toast.warning('Revisa el teléfono de los contactos: usa solo "+" y números, máximo 15 dígitos');
+        this.toast.warning('Revisa el teléfono de los contactos: usa "+52" y el número, máximo 14 caracteres incluyendo espacios');
+        return;
+      }
+
+      // Cada contacto con datos debe tener al menos teléfono o correo
+      // (los contactos por registrar y que queden vacíos no se guardarán).
+      const conSinMedio = this.contactos().some(c => {
+        const tieneDatos =
+          (c.nombreCompleto ?? '').trim() !== '' || (c.observaciones ?? '').trim() !== '';
+        return tieneDatos && (c.telefono ?? '').trim() === '' && (c.correo ?? '').trim() === '';
+      });
+      if (conSinMedio) {
+        this.toast.warning('Cada contacto debe tener al menos un teléfono o un correo.');
         return;
       }
     }

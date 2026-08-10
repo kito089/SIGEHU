@@ -153,6 +153,13 @@
 }
 .btn-nueva-obra:hover{ filter: brightness(1.08); }
 
+.work-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .field-grid{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -294,6 +301,37 @@ input::placeholder, textarea::placeholder{ color: var(--text-tertiary); }
 
 .muted{ color: var(--text-tertiary); font-size: 12px; }
 
+/* ---------- Filtros de trabajos / obras ---------- */
+.work-filters{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.work-filter{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.work-filter__label{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+.work-filter__select{
+  background: var(--sigehu-card-bg, #0f172a);
+  border: 1px solid var(--sigehu-border-divider, #1f2b44);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-family: inherit;
+  padding: 8px 12px;
+  outline: none;
+  cursor: pointer;
+}
+.work-filter__select:focus{ border-color: var(--accent); }
+
 /* ---------- Árbol de trabajos / obras ---------- */
 .work-tree{ display: grid; gap: 18px; }
 
@@ -310,11 +348,19 @@ input::placeholder, textarea::placeholder{ color: var(--text-tertiary); }
 
 .work-children{ display: grid; gap: 8px; margin-left: 14px; border-left: 1px dashed var(--field-border); padding-left: 14px; }
 
+.work-row{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .work-item{
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
   text-align: left;
   padding: 12px 14px;
   background: var(--sigehu-card-bg, #0f172a);
@@ -326,11 +372,108 @@ input::placeholder, textarea::placeholder{ color: var(--text-tertiary); }
   cursor: pointer;
   transition: border-color .15s ease, transform .15s ease;
 }
+.work-item--row{ flex-direction: row; align-items: center; gap: 10px; flex-wrap: wrap; }
 .work-item:hover{ border-color: var(--accent); transform: translateX(2px); }
 
 .work-name{ font-weight: 600; }
 
 .work-meta{ font-size: 12px; }
+
+.work-detail-btn{
+  flex-shrink: 0;
+  padding: 8px 12px;
+  background: var(--sigehu-card-bg, #0f172a);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease;
+}
+.work-detail-btn:hover{ background: var(--accent); color: #071022; }
+.work-detail-btn:disabled{ opacity: .5; cursor: not-allowed; }
+.work-detail-btn:disabled:hover{ background: transparent; color: var(--accent); }
+.work-detail-btn--ghost{
+  border-color: var(--sigehu-border-divider, #1f2b44);
+  color: var(--text-secondary);
+}
+.work-detail-btn--ghost:hover{ background: transparent; border-color: var(--text-tertiary); color: var(--text-primary); }
+
+/* Barra de modo agrupar */
+.work-agrupar-bar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: var(--sigehu-active-bg, rgba(59,130,246,.08));
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.work-agrupar-bar__acciones{ display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Checkbox de selección de obra */
+.work-check{
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.work-check input{
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.btn-nueva-obra--ghost{
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.btn-nueva-obra--ghost:hover{ background: var(--accent); color: #071022; }
+
+/* Acordeón de trabajos */
+.work-accordion__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.work-accordion__toggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 6px 4px;
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+}
+.work-accordion__chevron{
+  transition: transform .15s ease;
+}
+.work-accordion__chevron--open{ transform: rotate(90deg); }
+.work-accordion__actions{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.badge-count{
+  background: var(--sigehu-card-bg, #0f172a);
+  color: var(--text-secondary);
+  border-color: var(--sigehu-border-divider, #1f2b44);
+}
 
 .empty{
   padding: 24px;
@@ -360,4 +503,5 @@ input::placeholder, textarea::placeholder{ color: var(--text-tertiary); }
   .btn-edit{ width: 100%; }
   .card-header{ flex-direction: column; align-items: flex-start; }
   .btn-nueva-obra{ width: 100%; justify-content: center; }
+  .work-actions{ width: 100%; flex-direction: column; }
 }

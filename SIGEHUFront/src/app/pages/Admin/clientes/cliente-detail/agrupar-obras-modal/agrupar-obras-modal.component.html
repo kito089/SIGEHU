@@ -1,0 +1,151 @@
+<div class="agrupar-modal__backdrop" (click)="onCancelar()">
+  <div
+    class="agrupar-modal__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="agrupar-obras-titulo"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="agrupar-modal__header">
+      <span class="agrupar-modal__icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M3 7h18M3 12h18M3 17h18"/>
+        </svg>
+      </span>
+      <div>
+        <h2 id="agrupar-obras-titulo" class="agrupar-modal__title">Agrupar obras</h2>
+        <p class="agrupar-modal__subtitle">
+          {{ obras.length }} obra{{ obras.length !== 1 ? 's' : '' }} seleccionada{{ obras.length !== 1 ? 's' : '' }}
+        </p>
+      </div>
+      <button type="button" class="agrupar-modal__close" (click)="onCancelar()" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </header>
+
+    <div class="agrupar-modal__lista">
+      @for (o of obras; track o.idObra) {
+        <div class="agrupar-modal__item">
+          <span class="agrupar-modal__item-nombre">{{ o.nombre }}</span>
+          @if (o.estadoObra) {
+            <span class="agrupar-modal__item-estado">{{ o.estadoObra }}</span>
+          }
+          @if (o.direccion) {
+            <span class="agrupar-modal__item-dir">{{ o.direccion }}</span>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Destino: nuevo trabajo / trabajo existente -->
+    <div class="agrupar-modal__destino">
+      <button
+        type="button"
+        class="agrupar-modal__tab"
+        [class.agrupar-modal__tab--active]="tipoDestino === 'nuevo'"
+        (click)="setDestino('nuevo')"
+      >Nuevo trabajo</button>
+      <button
+        type="button"
+        class="agrupar-modal__tab"
+        [class.agrupar-modal__tab--active]="tipoDestino === 'existente'"
+        (click)="setDestino('existente')"
+      >Trabajo existente</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onAgrupar()" novalidate>
+      @if (tipoDestino === 'nuevo') {
+        <div class="agrupar-modal__body">
+          <div class="form-field">
+            <label class="form-label" for="ag-nombre">Nombre del trabajo <span class="form-required">*</span></label>
+            <input
+              id="ag-nombre"
+              class="form-input"
+              type="text"
+              placeholder="Ej. Trabajo de herrería"
+              formControlName="nombre"
+              [class.form-input--error]="form.controls['nombre'].invalid && form.controls['nombre'].touched"
+            />
+            @if (form.controls['nombre'].invalid && form.controls['nombre'].touched) {
+              <span class="form-error">Ingresa el nombre del trabajo</span>
+            }
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="ag-descripcion">Descripción</label>
+            <textarea
+              id="ag-descripcion"
+              class="form-input agrupar-modal__textarea"
+              rows="2"
+              placeholder="Descripción general…"
+              formControlName="descripcion"
+            ></textarea>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="ag-direccion">Dirección del trabajo</label>
+            <input
+              id="ag-direccion"
+              class="form-input"
+              type="text"
+              placeholder="Calle, número, colonia, ciudad"
+              formControlName="direccion"
+            />
+          </div>
+        </div>
+      } @else {
+        <div class="agrupar-modal__body">
+          @if (cargando) {
+            <div class="agrupar-modal__loading">Cargando trabajos…</div>
+          } @else {
+            <div class="form-field">
+              <label class="form-label" for="ag-trabajo">Selecciona el trabajo <span class="form-required">*</span></label>
+              <select
+                id="ag-trabajo"
+                class="form-select"
+                formControlName="idTrabajo"
+                [class.form-select--error]="form.controls['idTrabajo'].invalid && form.controls['idTrabajo'].touched"
+              >
+                <option [ngValue]="null">— Selecciona un trabajo —</option>
+                @for (t of trabajos; track t.idTrabajo) {
+                  <option [ngValue]="t.idTrabajo">{{ t.nombre }}</option>
+                }
+              </select>
+              @if (form.controls['idTrabajo'].invalid && form.controls['idTrabajo'].touched) {
+                <span class="form-error">Selecciona un trabajo</span>
+              }
+            </div>
+
+            @if (!esDireccionUnica() && obras.length > 0) {
+              <div class="form-field">
+                <label class="agrupar-modal__check">
+                  <input
+                    type="checkbox"
+                    [checked]="usarDireccionUnificada"
+                    (change)="usarDireccionUnificada = $any($event.target).checked"
+                  />
+                  Usar dirección unificada para el trabajo
+                </label>
+                @if (usarDireccionUnificada) {
+                  <input
+                    class="form-input"
+                    type="text"
+                    placeholder="Dirección unificada"
+                    formControlName="direccion"
+                  />
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <div class="agrupar-modal__actions">
+        <button type="button" class="btn-cancelar" (click)="onCancelar()">Cancelar</button>
+        <button type="submit" class="btn-guardar" [disabled]="guardando">
+          {{ guardando ? 'Agrupando…' : 'Agrupar obras' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

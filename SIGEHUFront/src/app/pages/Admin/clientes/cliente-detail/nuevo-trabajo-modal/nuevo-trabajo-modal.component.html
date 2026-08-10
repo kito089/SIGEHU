@@ -1,0 +1,132 @@
+<div class="nt-modal__backdrop" (click)="pasoAgregarObra ? onObraCancelada() : onCancelar()">
+  <div
+    class="nt-modal__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="nuevo-trabajo-titulo"
+    (click)="$event.stopPropagation()"
+  >
+    @if (!pasoAgregarObra) {
+      <header class="nt-modal__header">
+        <span class="nt-modal__icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
+            <path d="M10 13h4M12 11v4"/>
+          </svg>
+        </span>
+        <div>
+          <h2 id="nuevo-trabajo-titulo" class="nt-modal__title">Nuevo Trabajo</h2>
+          <p class="nt-modal__subtitle">Crea un trabajo; después agregarás al menos una obra</p>
+        </div>
+        <button type="button" class="nt-modal__close" (click)="onCancelar()" aria-label="Cerrar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </header>
+
+      @if (cargando) {
+        <div class="nt-modal__loading">Cargando datos…</div>
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="onSiguiente()" novalidate>
+          <div class="nt-modal__body">
+            <div class="form-field">
+              <label class="form-label" for="nt-cliente">Cliente asociado <span class="form-required">*</span></label>
+              <select
+                id="nt-cliente"
+                class="form-select"
+                formControlName="idCliente"
+                [disabled]="true"
+              >
+                <option [ngValue]="idClienteInicial">{{ 'Cliente actual' }}</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="nt-nombre">Nombre del trabajo <span class="form-required">*</span></label>
+              <input
+                id="nt-nombre"
+                class="form-input"
+                type="text"
+                placeholder="Ej. Trabajo de herrería residencial"
+                formControlName="nombre"
+                [class.form-input--error]="form.controls['nombre'].invalid && form.controls['nombre'].touched"
+              />
+              @if (form.controls['nombre'].invalid && form.controls['nombre'].touched) {
+                <span class="form-error">Ingresa el nombre del trabajo</span>
+              }
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="nt-descripcion">Descripción</label>
+              <textarea
+                id="nt-descripcion"
+                class="form-input nt-modal__textarea"
+                rows="3"
+                placeholder="Descripción general del trabajo…"
+                formControlName="descripcion"
+              ></textarea>
+            </div>
+
+            <!-- Dirección: combobox con las direcciones del cliente + otra -->
+            <div class="form-field">
+              <label class="form-label" for="nt-direccion-opcion">Dirección <span class="form-required">*</span></label>
+              <select
+                id="nt-direccion-opcion"
+                class="form-select"
+                [value]="usarOtraDireccion ? '__otra__' : (form.get('direccion')?.value || '')"
+                (change)="onDireccionSelect($any($event.target).value)"
+              >
+                <option value="">— Selecciona una dirección —</option>
+                @for (d of direccionesCliente; track d.valor) {
+                  <option [value]="d.valor">{{ d.label }}</option>
+                }
+                <option value="__otra__">Otra dirección…</option>
+              </select>
+            </div>
+
+            @if (usarOtraDireccion) {
+              <div class="form-field">
+                <label class="form-label" for="nt-direccion">Dirección del trabajo</label>
+                <input
+                  id="nt-direccion"
+                  class="form-input"
+                  type="text"
+                  placeholder="Calle, número, colonia, ciudad"
+                  formControlName="direccion"
+                />
+              </div>
+            }
+          </div>
+
+          <div class="nt-modal__actions">
+            <button type="button" class="btn-cancelar" (click)="onCancelar()">Cancelar</button>
+            <button type="submit" class="btn-guardar">Siguiente →</button>
+          </div>
+        </form>
+      }
+    } @else {
+      <!-- Paso 2: Agregar la obra del trabajo -->
+      <header class="nt-modal__header">
+        <span class="nt-modal__icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><circle cx="12" cy="15" r="1"/><path d="M9 18h6"/>
+          </svg>
+        </span>
+        <div>
+          <h2 id="agregar-obra-titulo" class="nt-modal__title">Agregar la obra del trabajo</h2>
+          <p class="nt-modal__subtitle">El trabajo requiere al menos una obra</p>
+        </div>
+        <button type="button" class="nt-modal__close" (click)="onObraCancelada()" aria-label="Cancelar obra">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </header>
+
+      <app-nueva-obra-modal
+        [idClienteInicial]="idClienteInicial"
+        [direccionPrecargada]="direccionPrecargada()"
+        [ocultarCampoTrabajo]="true"
+        (creada)="onObraCreada($event)"
+        (cancelar)="onObraCancelada()">
+      </app-nueva-obra-modal>
+    }
+  </div>
+</div>

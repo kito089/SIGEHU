@@ -18,6 +18,7 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', loadComponent: () => import('./pages/Admin/dashboard/dashboard.component').then(m => m.DashboardComponent) },
       { path: 'obras', loadComponent: () => import('./pages/Admin/obras/obras.component').then(m => m.ObrasComponent) },
+      { path: 'obras/detalle/:id', loadComponent: () => import('./pages/Admin/obras/obra-detalle/obra-detalle.component').then(m => m.ObraDetalleComponent) },
       { path: 'obras/nueva', loadComponent: () => import('./pages/Admin/obras/obra-form/obra-form.component').then(m => m.ObraFormComponent) },
       { path: 'obras/editar/:id', loadComponent: () => import('./pages/Admin/obras/obra-form/obra-form.component').then(m => m.ObraFormComponent) },
       { path: 'trabajadores', loadComponent: () => import('./pages/Admin/trabajadores/trabajadores.component').then(m => m.TrabajadoresComponent) },

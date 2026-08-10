@@ -2503,26 +2503,55 @@ END^
 -- -----------------------------------------------------------------------------
 -- SP_INSERTAR_OBRA
 -- Crea una obra y la deja en estado "Solicitud recibida" (idEstadoObra = 1).
--- Acepta el trabajo (tipo de trabajo) asociado y la fecha de inicio.
+-- Acepta el trabajo (tipo de trabajo) asociado, la fecha de inicio y las
+-- medidas estimadas (ancho/alto/profundidad) del modal "Nueva Obra".
 -- -----------------------------------------------------------------------------
 CREATE OR ALTER PROCEDURE SP_INSERTAR_OBRA (
     pIdCliente INTEGER,
     pNombre    VARCHAR(100),
     pDireccion BLOB SUB_TYPE TEXT,
     pIdTrabajo INTEGER,
-    pFechaInicio TIMESTAMP
+    pFechaInicio TIMESTAMP,
+    pAncho     DECIMAL(10,2),
+    pAlto      DECIMAL(10,2),
+    pProfundidad DECIMAL(10,2)
 )
 RETURNS (
     oIdObra INTEGER
 )
 AS
 BEGIN
-    INSERT INTO Obras (Clientes_idCliente, Nombre, Direccion, TRABAJOS_IDTRABAJO, FechaInicio, EstadosObra_idEstadoObra)
-    VALUES (:pIdCliente, :pNombre, :pDireccion, :pIdTrabajo, :pFechaInicio, 1)
+    INSERT INTO Obras (Clientes_idCliente, Nombre, Direccion, TRABAJOS_IDTRABAJO, FechaInicio, Ancho, Alto, Profundidad, EstadosObra_idEstadoObra)
+    VALUES (:pIdCliente, :pNombre, :pDireccion, :pIdTrabajo, :pFechaInicio, :pAncho, :pAlto, :pProfundidad, 1)
     RETURNING idObra INTO :oIdObra;
 
     SUSPEND;
 END^
+
+-- -----------------------------------------------------------------------------
+-- SP_INSERTAR_TRABAJO
+-- Crea un trabajo (grupo de obras) asociado a un cliente y devuelve su id.
+-- -----------------------------------------------------------------------------
+CREATE OR ALTER PROCEDURE SP_INSERTAR_TRABAJO (
+    pIdCliente    INTEGER,
+    pNombre       VARCHAR(100),
+    pDescripcion  BLOB SUB_TYPE TEXT,
+    pDireccion    BLOB SUB_TYPE TEXT
+)
+RETURNS (
+    oIdTrabajo INTEGER
+)
+AS
+BEGIN
+    INSERT INTO TRABAJO (Clientes_idCliente, Nombre, Descripcion, Direccion)
+    VALUES (:pIdCliente, :pNombre, :pDescripcion, :pDireccion)
+    RETURNING idTrabajo INTO :oIdTrabajo;
+
+    SUSPEND;
+END^
+
+-- -----------------------------------------------------------------------------
+-- SP_AGRU
 
 -- -----------------------------------------------------------------------------
 -- SP_CAMBIAR_ESTADO_OBRA
