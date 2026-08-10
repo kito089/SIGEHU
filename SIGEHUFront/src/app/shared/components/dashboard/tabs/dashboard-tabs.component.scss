@@ -1,18 +1,10 @@
-.dashboard-tabs__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sigehu-space-4);
-  flex-wrap: wrap;
-  margin-bottom: var(--sigehu-space-6);
-  padding-bottom: var(--sigehu-space-3);
-  border-bottom: var(--sigehu-border-width) solid var(--sigehu-border-divider);
-}
-
 .dashboard-tabs {
   display: flex;
   align-items: center;
   gap: var(--sigehu-space-2);
+  margin-bottom: var(--sigehu-space-6);
+  padding-bottom: var(--sigehu-space-3);
+  border-bottom: var(--sigehu-border-width) solid var(--sigehu-border-divider);
 }
 
 .tab-btn {
@@ -53,74 +45,4 @@
 .tab-icon svg {
   width: 100%;
   height: 100%;
-}
-
-/* ── Control dinámico móvil (Kanban / Calendario) ─────────────────────────
-   El control vive a la derecha de las tabs. Oculto en desktop (≥1024px), la
-   apariencia desktop de app-dashboard-tabs queda idéntica a la anterior.
-   ──────────────────────────────────────────────────────────────────────── */
-.dashboard-tabs__control {
-  display: none;
-}
-
-@media (max-width: 1024px) {
-  .dashboard-tabs__row {
-    flex-wrap: nowrap;
-  }
-
-  .dashboard-tabs__control {
-    display: flex;
-    align-items: center;
-    gap: var(--sigehu-space-2);
-    min-width: 0;
-  }
-
-  /* Combobox de columnas (forma/estilo del proyecto) */
-  .dashboard-tabs__select {
-    max-width: 100%;
-    background: var(--sigehu-search-bg);
-    border: var(--sigehu-border-width) solid var(--sigehu-border-divider);
-    border-radius: var(--sigehu-radius-md);
-    color: var(--sigehu-text-primary);
-    font-family: inherit;
-    font-size: var(--sigehu-font-size-md);
-    font-weight: var(--sigehu-font-weight-medium);
-    padding: var(--sigehu-space-2) var(--sigehu-space-3);
-    cursor: pointer;
-  }
-
-  .dashboard-tabs__select option {
-    background: var(--sigehu-sidebar-bg);
-    color: var(--sigehu-text-primary);
-  }
-
-  /* Controles ‹ Hoy › del calendario (mismos estilos visuales que cal__btn) */
-  .dashboard-tabs__cal-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--sigehu-content-bg);
-    border: 1px solid var(--sigehu-border-divider);
-    color: var(--sigehu-text-secondary);
-    font-size: var(--sigehu-font-size-md);
-    font-weight: var(--sigehu-font-weight-semibold);
-    border-radius: var(--sigehu-radius-md);
-    padding: var(--sigehu-space-2) var(--sigehu-space-3);
-    cursor: pointer;
-    line-height: 1;
-    white-space: nowrap;
-    font-family: inherit;
-    transition: background-color 0.15s ease, color 0.15s ease;
-  }
-
-  .dashboard-tabs__cal-btn:hover {
-    background-color: var(--sigehu-active-bg);
-    color: var(--sigehu-text-primary);
-  }
-
-  .dashboard-tabs__cal-btn--hoy {
-    color: var(--sigehu-primary-btn-text);
-    background-color: var(--sigehu-primary-btn-bg);
-    border-color: var(--sigehu-primary-btn-bg);
-  }
 }

@@ -4,13 +4,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 export type DashboardTab = 'kanban' | 'calendar';
 
-export interface DashboardKanbanColumna {
-  id: string;
-  title: string;
-}
-
-export type DireccionCalendario = 'anterior' | 'hoy' | 'siguiente';
-
 @Component({
   selector: 'app-dashboard-tabs',
   standalone: true,
@@ -23,14 +16,6 @@ export class DashboardTabsComponent {
 
   activeTab = input.required<DashboardTab>();
   tabChange = output<DashboardTab>();
-
-  // —— Control dinámico móvil (visible solo <1024px) ——
-  // Con la pestaña Kanban activa se muestra un combobox con las columnas.
-  columnasKanban = input<DashboardKanbanColumna[]>([]);
-  columnaKanban = input<string>('');
-  columnaKanbanChange = output<string>();
-  // Con la pestaña Calendario activa se muestran los controles ‹ Hoy ›.
-  navCalendario = output<DireccionCalendario>();
 
   readonly tabs: { key: DashboardTab; label: string; icon: string }[] = [
     { key: 'kanban', label: 'Kanban', icon: 'kanban' },
@@ -55,10 +40,5 @@ export class DashboardTabsComponent {
 
   onTabClick(tab: DashboardTab): void {
     this.tabChange.emit(tab);
-  }
-
-  onColumnaKanbanChange(event: Event): void {
-    const valor = (event.target as HTMLSelectElement)?.value ?? '';
-    if (valor) this.columnaKanbanChange.emit(valor);
   }
 }

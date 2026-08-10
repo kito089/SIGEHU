@@ -1,4 +1,4 @@
-import { Component, signal, inject, viewChild } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -40,10 +40,6 @@ export class DashboardComponent {
   private router = inject(Router);
   private dashboard = inject(DashboardService);
   private reportes = inject(ReportesService);
-
-  // Calendario instanciado bajo una sola pestaña; se usa para reenviar la
-  // navegación móvil (‹ Hoy ›) sin duplicar la lógica del calendario.
-  private readonly calendar = viewChild<CalendarComponent>(CalendarComponent);
 
   // Estado UI
   activeTab = signal<DashboardTab>('kanban');
@@ -256,15 +252,6 @@ export class DashboardComponent {
   // ── Control móvil del Kanban ─────────────────────────────────────────────
   onColumnaKanbanChange(columnaId: string): void {
     if (columnaId) this.kanbanColumna.set(columnaId);
-  }
-
-  // ── Controles móviles del Calendario (reutilizan los métodos del calendar) ──
-  navegacionCalendario(direccion: 'anterior' | 'hoy' | 'siguiente'): void {
-    const cal = this.calendar();
-    if (!cal) return;
-    if (direccion === 'anterior') cal.irAnterior();
-    else if (direccion === 'siguiente') cal.irSiguiente();
-    else cal.irHoy();
   }
 
   // ── Compras pendientes ────────────────────────────────────────────────────

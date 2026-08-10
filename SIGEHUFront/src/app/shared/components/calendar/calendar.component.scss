@@ -293,15 +293,6 @@
   }
 }
 
-@media (max-width: 1024px) {
-  // En móvil, los controles ‹ Hoy › se ocultan aquí y se muestran en su
-  // lugar a la derecha de app-dashboard-tabs (mismas acciones irAnterior,
-  // irHoy, irSiguiente reutilizadas, sin duplicar la lógica del calendario).
-  .cal__nav {
-    display: none;
-  }
-}
-
 @media (max-width: 768px) {
   .cal {
     padding: var(--sigehu-space-3, 12px);
