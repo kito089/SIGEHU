@@ -4,6 +4,7 @@ import { NotificationsPanelComponent } from '../../notifications/notifications-p
 import { NotificationService } from '../../../../core/services/notification.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { SidebarIconRegistry } from '../sidebar/sidebar-icon-registry.service';
+import { LogoutButtonComponent } from '../../logout-button/logout-button.component';
 
 /* =========================================================================
    SIGEHU — Header móvil (reemplaza la Topbar en viewport móvil).
@@ -14,7 +15,7 @@ import { SidebarIconRegistry } from '../sidebar/sidebar-icon-registry.service';
 @Component({
   selector: 'app-mobile-header',
   standalone: true,
-  imports: [CommonModule, NotificationsPanelComponent],
+  imports: [CommonModule, NotificationsPanelComponent, LogoutButtonComponent],
   templateUrl: './mobile-header.component.html',
   styleUrl: './mobile-header.component.scss'
 })

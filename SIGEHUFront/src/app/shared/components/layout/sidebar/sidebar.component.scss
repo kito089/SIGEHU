@@ -214,12 +214,17 @@
 .sidebar-footer {
   padding: var(--sigehu-space-4);
   border-top: 1px solid var(--sigehu-border-divider);
+  display: flex;
+  align-items: center;
+  gap: var(--sigehu-space-2);
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: var(--sigehu-space-3);
+  flex: 1;
+  min-width: 0;
 }
 
 .user-avatar {
