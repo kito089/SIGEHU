@@ -1,5 +1,6 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ReportesService } from '../../../services/reportes.service';
@@ -106,6 +107,7 @@ function colorEstadoObra(orden: number): string {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     DonutChartComponent,
     BarChartComponent,
     LineChartComponent,

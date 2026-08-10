@@ -41,6 +41,33 @@
   color: var(--sigehu-text-tertiary, #64748B);
 }
 
+.reportes__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sigehu-space-3, 12px);
+}
+
+/* Selector móvil de categorías: oculto en Desktop/Web, visible en Mobile. */
+.reportes__select {
+  display: none;
+  background: var(--sigehu-surface-input, #131a2c);
+  border: 1px solid var(--sigehu-border-subtle, #232d47);
+  border-radius: var(--sigehu-radius-md, 8px);
+  padding: 10px 12px;
+  color: var(--sigehu-text-primary, #eef1f7);
+  font-size: var(--sigehu-font-size-base, 13px);
+  font-family: inherit;
+  font-weight: var(--sigehu-font-weight-medium, 500);
+  cursor: pointer;
+  min-width: 132px;
+  max-width: 190px;
+}
+
+.reportes__select:focus {
+  outline: none;
+  border-color: var(--sigehu-accent, #2f8fef);
+}
+
 .reportes__tabs {
   display: flex;
   gap: var(--sigehu-space-1, 4px);
@@ -180,8 +207,93 @@
   border-color: var(--sigehu-color-error, #ef4444);
 }
 
+/* ── Compras: tabla Desktop/Web + tarjetas Mobile ───────────────────────── */
+.reportes__table-wrap {
+  display: block;
+}
+
+.compra-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: var(--sigehu-space-3, 12px);
+}
+
+.compra-card {
+  background: var(--sigehu-card-bg, #0F172A);
+  border: 1px solid var(--sigehu-card-border, #334155);
+  border-radius: 12px;
+  padding: var(--sigehu-space-4, 16px);
+  min-width: 0;
+}
+
+.compra-card__title {
+  margin: 0 0 var(--sigehu-space-3, 12px);
+  font-size: var(--sigehu-font-size-md, 14px);
+  font-weight: var(--sigehu-font-weight-semibold, 600);
+  color: var(--sigehu-text-primary, #F8FAFC);
+}
+
+.compra-card__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sigehu-space-2, 8px) var(--sigehu-space-3, 12px);
+  margin: 0;
+  min-width: 0;
+}
+
+.compra-card__field {
+  min-width: 0;
+}
+
+.compra-card__field dt {
+  font-size: var(--sigehu-font-size-xs, 10px);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sigehu-text-tertiary, #64748B);
+  margin-bottom: 2px;
+}
+
+.compra-card__field dd {
+  margin: 0;
+  font-size: var(--sigehu-font-size-base, 12px);
+  color: var(--sigehu-text-primary, #F8FAFC);
+  word-break: break-word;
+}
+
 @media (max-width: 860px) {
   .reportes__grid {
     grid-template-columns: 1fr;
+  }
+
+  .reportes__header {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--sigehu-space-3, 12px);
+  }
+
+  .reportes__subtitle,
+  .reportes__hint {
+    display: none;
+  }
+
+  .reportes__tabs {
+    display: none;
+  }
+
+  .reportes__select {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .reportes__table-wrap {
+    display: none;
+  }
+
+  .compra-cards {
+    display: flex;
   }
 }
