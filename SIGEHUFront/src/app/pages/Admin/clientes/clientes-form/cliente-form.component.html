@@ -51,6 +51,15 @@
             </span>
           </div>
 
+          <div class="field">
+            <label for="personaDireccion">Dirección</label>
+            <input
+              id="personaDireccion"
+              type="text"
+              formControlName="direccion"
+              placeholder="Calle, número, colonia, ciudad">
+          </div>
+
           <div class="field-row">
             <div class="field">
               <label for="personaTelefono">Teléfono</label>
@@ -58,9 +67,13 @@
                 id="personaTelefono"
                 type="tel"
                 formControlName="telefono"
-                placeholder="10-15 dígitos">
+                inputmode="tel"
+                maxlength="15"
+                placeholder="+52 449 0000000"
+                title="Máximo 15 caracteres: solo '+', números y espacios"
+                (input)="onTelefonoInput($event)">
               <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-                Teléfono inválido (10-15 dígitos)
+                Teléfono inválido: usa "+", números y espacios (máx. 15 caracteres)
               </span>
               <span class="hint" *ngIf="!form.get('telefono')?.value && !form.get('correo')?.value">
                 Se requiere al menos un teléfono o un correo

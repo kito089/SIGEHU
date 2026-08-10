@@ -86,6 +86,17 @@
 
 .cl__input::placeholder { color: var(--sigehu-text-tertiary, #5c6580); }
 
+.cl__tel-error {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--sigehu-font-size-xs, 11px);
+  color: var(--sigehu-danger, #f4574f);
+}
+
+.cl__input.invalid {
+  border-color: var(--sigehu-danger, #f4574f);
+}
+
 .cl__remove {
   display: inline-flex;
   align-items: center;

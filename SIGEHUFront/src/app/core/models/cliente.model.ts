@@ -30,6 +30,7 @@ export interface DatosFiscalesEmpresa {
 export interface ClientePersona {
   tipo: 'persona';
   nombre: string;
+  direccion?: string;
   telefono?: string;
   correo?: string;
   observaciones?: string;
