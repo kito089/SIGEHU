@@ -17,12 +17,24 @@
 <!-- Tabs -->
 <app-dashboard-tabs
   [activeTab]="activeTab()"
-  [columnasKanban]="kanbanColumns()"
-  [columnaKanban]="kanbanColumna()"
   (tabChange)="onTabChange($event)"
-  (columnaKanbanChange)="onColumnaKanbanChange($event)"
-  (navCalendario)="navegacionCalendario($event)"
 ></app-dashboard-tabs>
+
+<!-- Selector de columna Kanban (solo móvil, debajo de las tabs) -->
+@if (activeTab() === 'kanban') {
+  <div class="dashboard-kanban-selector" aria-label="Columna del tablero Kanban">
+    <select
+      class="dashboard-kanban-selector__select"
+      [value]="kanbanColumna()"
+      (change)="onColumnaKanbanChange($any($event.target).value)"
+      aria-label="Columna del tablero Kanban"
+    >
+      @for (col of kanbanColumns(); track col.id) {
+        <option [value]="col.id">{{ col.title }}</option>
+      }
+    </select>
+  </div>
+}
 
 <!-- Tab Panels -->
 @switch (activeTab()) {
