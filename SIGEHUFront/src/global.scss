@@ -120,6 +120,7 @@ main.main-content > * .page-scroll {
    =========================================================================== */
 main.main-content .page-header {
   margin: 0 0 var(--sigehu-space-6, 24px);
+  text-align: left;
 }
 
 main.main-content .page-header h1 {
@@ -151,8 +152,9 @@ main.main-content .panel-toolbar {
 /* El buscador crece y empuja las acciones a la derecha (o se apila abajo en
    pantallas pequeñas). Cuando no hay buscador, las acciones quedan a la derecha. */
 main.main-content .panel-toolbar app-filter-bar {
-  flex: 1 1 240px;
+  flex: 1 1 360px;
   min-width: 0;
+  max-width: 620px;
 }
 
 /* Dentro de la fila, el componente de búsqueda no aporta su margen propio. */

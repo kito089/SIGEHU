@@ -322,6 +322,7 @@ CREATE TABLE Clientes (
     NombreCompleto VARCHAR(100) NOT NULL,
     RazonSocial VARCHAR(150),
     Direccion BLOB SUB_TYPE TEXT,
+    DireccionFiscal BLOB SUB_TYPE TEXT,
     RFC VARCHAR(13),
     RegimenesFiscales_idRegimenFiscal INTEGER,
     CodigoPostal VARCHAR(5),

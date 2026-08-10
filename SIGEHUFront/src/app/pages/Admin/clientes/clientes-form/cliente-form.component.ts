@@ -131,11 +131,13 @@ export class ClienteFormComponent implements OnInit {
       direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
       observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
       fiscal: this.fb.group({
+        datosFiscales: [false],
         rfc: ['', [Validators.pattern(RFC_PATTERN)]],
         razonSocial: ['', [Validators.maxLength(RAZON_SOCIAL_MAX)]],
         regimenFiscal: ['', []],
         usoCFDI: ['', []],
         codigoPostal: ['', [Validators.pattern(CODIGO_POSTAL_PATTERN)]],
+        direccionFiscal: ['', [Validators.maxLength(DIRECCION_MAX)]],
       }),
     });
 
@@ -258,7 +260,15 @@ export class ClienteFormComponent implements OnInit {
 
   private async guardar(): Promise<void> {
     const raw = this.form.getRawValue();
-    const fiscal = raw.fiscal;
+    // Si el checkbox "Datos Fiscales" está desactivado se envían los campos
+    // fiscales como nulos (el backend deriva TieneDatosFiscales de la RFC).
+    let fiscal = raw.fiscal;
+    if (!this.fiscalGroup.get('datosFiscales')?.value) {
+      fiscal = {
+        rfc: null, razonSocial: null, regimenFiscal: null,
+        usoCFDI: null, codigoPostal: null, direccionFiscal: null,
+      };
+    }
 
     if (this.tipo() === 'persona') {
       // Persona: el backend crea/actualiza el contacto principal a partir de
@@ -273,6 +283,7 @@ export class ClienteFormComponent implements OnInit {
         idUsoCFDI: fiscal.usoCFDI ? Number(fiscal.usoCFDI) : null,
         CodigoPostal: fiscal.codigoPostal || null,
         Direccion: null,
+        DireccionFiscal: fiscal.direccionFiscal || null,
         Telefono: raw.telefono ? String(raw.telefono).replace(/\D/g, '') : null,
         Correo: raw.correo || null,
         tipo: 'persona',
@@ -295,13 +306,17 @@ export class ClienteFormComponent implements OnInit {
       idUsoCFDI: fiscal.usoCFDI ? Number(fiscal.usoCFDI) : null,
       CodigoPostal: fiscal.codigoPostal || null,
       Direccion: raw.direccion || null,
+      DireccionFiscal: fiscal.direccionFiscal || null,
       tipo: 'empresa',
     };
 
     // Se envían también los idContactoCliente para que el backend pueda
     // distinguir un contacto editado (UPDATE) de uno nuevo (INSERT), y así
-    // el historial registra correctamente la operación.
-    const contactos = this.contactos().map(c => ({
+    // el historial registra correctamente la operación. Las filas que quedaron
+    // vacías (añadidas y sin datos) se descartan.
+    const contactos = this.contactos()
+      .filter(c => (c.nombreCompleto ?? '').trim() !== '' || (c.telefono ?? '').trim() !== '' || (c.correo ?? '').trim() !== '')
+      .map(c => ({
       idContactoCliente: c.id ?? null,
       NombreCompleto: c.nombreCompleto,
       Telefono: String(c.telefono || '').replace(/\D/g, ''),
@@ -335,6 +350,7 @@ export class ClienteFormComponent implements OnInit {
       regimenFiscal: raw.REGIMENFISCAL ?? raw.RegimenFiscal ?? raw.regimenFiscal ?? '',
       usoCFDI: raw.USOCFDI ?? raw.UsoCFDI ?? raw.usoCFDI ?? '',
       codigoPostal: raw.CODIGOPOSTAL ?? raw.codigoPostal ?? '',
+      direccionFiscal: raw.DIRECCIONFISCAL ?? raw.DireccionFiscal ?? raw.direccionFiscal ?? '',
       contactos: Array.isArray(raw.contactos) ? raw.contactos.map((c: any) => ({
         id: c.IDCONTACTOCLIENTE ?? c.idContactoCliente ?? c.id,
         nombreCompleto: c.NOMBRECOMPLETO ?? c.NombreCompleto ?? c.nombreCompleto ?? '',
@@ -356,11 +372,13 @@ export class ClienteFormComponent implements OnInit {
       direccion: data.direccion ?? '',
       observaciones: data.observaciones ?? '',
       fiscal: {
+        datosFiscales: !!(data.rfc || data.razonSocial || data.regimenFiscal || data.codigoPostal || data.direccionFiscal),
         rfc: data.rfc ?? '',
         razonSocial: data.razonSocial ?? '',
         regimenFiscal: data.idRegimenFiscal != null ? String(data.idRegimenFiscal) : '',
         usoCFDI: data.idUsoCFDI != null ? String(data.idUsoCFDI) : '',
         codigoPostal: data.codigoPostal ?? '',
+        direccionFiscal: data.direccionFiscal ?? '',
       },
     });
 
@@ -384,5 +402,6 @@ interface ClienteForm {
   regimenFiscal?: string;
   usoCFDI?: string;
   codigoPostal?: string;
+  direccionFiscal?: string;
   contactos?: Contacto[];
 }

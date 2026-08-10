@@ -41,7 +41,8 @@ type CampoEditable =
   | 'razonSocial'
   | 'regimenFiscal'
   | 'usoCFDI'
-  | 'codigoPostal';
+  | 'codigoPostal'
+  | 'direccionFiscal';
 
 interface OpcionCatalogo {
   value: string;
@@ -153,6 +154,7 @@ export class ClienteDetailComponent implements OnInit {
         regimenFiscal: ['', []],
         usoCFDI: ['', []],
         codigoPostal: ['', [Validators.pattern(CODIGO_POSTAL_PATTERN)]],
+        direccionFiscal: ['', [Validators.maxLength(DIRECCION_MAX)]],
       }),
     });
 
@@ -164,7 +166,7 @@ export class ClienteDetailComponent implements OnInit {
   }
 
   control(campo: CampoEditable): FormControl {
-    if (campo === 'rfc' || campo === 'razonSocial' || campo === 'regimenFiscal' || campo === 'usoCFDI' || campo === 'codigoPostal') {
+    if (campo === 'rfc' || campo === 'razonSocial' || campo === 'regimenFiscal' || campo === 'usoCFDI' || campo === 'codigoPostal' || campo === 'direccionFiscal') {
       return this.form.get(['fiscal', campo]) as FormControl;
     }
     return this.form.get(campo) as FormControl;
@@ -273,6 +275,7 @@ export class ClienteDetailComponent implements OnInit {
         regimenFiscal: raw.IDREGIMENFISCAL != null ? String(raw.IDREGIMENFISCAL ?? raw.idRegimenFiscal) : '',
         usoCFDI: raw.IDUSOCFDI != null ? String(raw.IDUSOCFDI ?? raw.idUsoCFDI) : '',
         codigoPostal: (raw.CODIGOPOSTAL ?? raw.codigoPostal ?? '') || '',
+        direccionFiscal: raw.DIRECCIONFISCAL ?? raw.DireccionFiscal ?? raw.direccionFiscal ?? '',
       },
     });
 
@@ -392,6 +395,7 @@ export class ClienteDetailComponent implements OnInit {
       idRegimenFiscal: fiscal.regimenFiscal ? Number(fiscal.regimenFiscal) : null,
       idUsoCFDI: fiscal.usoCFDI ? Number(fiscal.usoCFDI) : null,
       CodigoPostal: fiscal.codigoPostal || null,
+      DireccionFiscal: fiscal.direccionFiscal || null,
     };
 
     if (this.esPersona) {
