@@ -3,6 +3,7 @@ import config from '../../config.json' with { type: 'json' };
 
 const JWT_SECRET = config.jwtSecret;
 const JWT_EXPIRES_IN = '8h';
+const REFRESH_EXPIRES_IN = '30d';
 
 const FINANCIAL_ENDPOINTS = [
     'precio', 'monto', 'anticipo', 'pago', 'finanza', 'fiscal',
@@ -23,6 +24,13 @@ const WORKER_SAFE_FINANCIAL = [
 
 export function generateToken(payload) {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+// Refresh token de larga duración (30d). Mismo secret pero expiración distinta:
+// permite renovar el access token sin reenviar credenciales. Se invalida únicamente
+// cuando el usuario hace logout (borrado en cliente) o cuando expira naturalmente.
+export function generateRefreshToken(payload) {
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
 }
 
 export function verifyToken(req, res, next) {
@@ -90,6 +98,7 @@ export function blockFinancialForWorker(req, res, next) {
 
 export default {
     generateToken,
+    generateRefreshToken,
     verifyToken,
     requireRole,
     requireAdmin: () => requireRole('Propietario'),
