@@ -4,15 +4,21 @@ import { IonicModule } from '@ionic/angular';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
 import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
 
 interface ObraLevantamiento {
   ID: number;
+  IDOBRA?: number;
   NOMBRE: string;
+  NOMBREOBRA?: string;
   CLIENTE_NOMBRE?: string;
+  NOMBRECLIENTE?: string;
   DIRECCION?: string;
+  DIRECCIONOBRA?: string;
   TELEFONO?: string;
   ESTADO?: string;
+  ESTADOBRA?: string;
 }
 
 @Component({
@@ -26,10 +32,12 @@ export class LevantamientosComponent implements OnInit {
   private fb = inject(FormBuilder);
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private layout = inject(WorkerLayoutService);
 
   obras: ObraLevantamiento[] = [];
   selectedObra: ObraLevantamiento | null = null;
   loading = false;
+  error = false;
   guardando = false;
 
   selectedFile: File | null = null;
@@ -53,32 +61,38 @@ export class LevantamientosComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.layout.setPageTitle('Levantamiento');
     this.cargarObras();
   }
 
   cargarObras(): void {
     this.loading = true;
-    this.api.get<ObraLevantamiento[]>('/api/obras').subscribe({
+    this.error = false;
+    this.api.get<ObraLevantamiento[]>('/Obras').subscribe({
       next: (data) => {
         this.loading = false;
-        this.obras = data || [];
+        // Firebird devuelve claves en mayúsculas (IDOBRA, NOMBREOBRA...)
+        this.obras = (data || []).map(o => ({
+          ID: Number(o.IDOBRA ?? o.ID),
+          NOMBRE: o.NOMBREOBRA ?? o.NOMBRE ?? 'Obra sin nombre',
+          CLIENTE_NOMBRE: o.NOMBRECLIENTE ?? o.CLIENTE_NOMBRE,
+          DIRECCION: o.DIRECCIONOBRA ?? o.DIRECCION,
+          TELEFONO: o.TELEFONO,
+          ESTADO: o.ESTADOBRA ?? o.ESTADO
+        }));
         if (this.obras.length > 0) {
           this.seleccionarObra(this.obras[0]);
         }
       },
       error: () => {
         this.loading = false;
-        // Fallback local visual
-        this.selectedObra = {
-          ID: 1,
-          NOMBRE: this.informacionObra.obra,
-          CLIENTE_NOMBRE: this.informacionObra.cliente,
-          DIRECCION: this.informacionObra.ubicacion,
-          TELEFONO: this.informacionObra.telefono,
-          ESTADO: 'Levantamiento Pendiente'
-        };
+        this.error = true;
       }
     });
+  }
+
+  reintentar(): void {
+    this.cargarObras();
   }
 
   seleccionarObra(obra: ObraLevantamiento): void {
@@ -113,13 +127,13 @@ export class LevantamientosComponent implements OnInit {
     const obraId = this.selectedObra?.ID || 1;
 
     // Actualización estado & medidas (RF-12, RF-13)
-    this.api.put(`/api/obras/${obraId}`, body).subscribe({
+    this.api.put(`/Obras/${obraId}`, body).subscribe({
       next: () => {
         if (this.selectedFile) {
           const fd = new FormData();
           fd.append('foto', this.selectedFile);
           fd.append('tipo', 'Levantamiento');
-          this.api.uploadFile(`/api/obras/${obraId}/fotos`, fd).subscribe();
+          this.api.uploadFile(`/Obras/${obraId}/fotos`, fd).subscribe();
         }
         this.guardando = false;
         this.toast.success('Levantamiento guardado. Estado: Levantamiento Pendiente de Validación.');

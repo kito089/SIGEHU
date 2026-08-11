@@ -8,7 +8,14 @@
 
   <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
 
-  <div *ngIf="compras.length === 0 && !loading" class="empty-box">
+  <!-- Estado de error con reintento -->
+  <div *ngIf="error && !loading" class="state-box">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <p>No se pudieron cargar las órdenes de compra.</p>
+    <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
+  </div>
+
+  <div *ngIf="compras.length === 0 && !loading && !error" class="empty-box">
     <ion-icon name="cart-outline"></ion-icon>
     <p>No hay órdenes de compra pendientes para choferes.</p>
   </div>
