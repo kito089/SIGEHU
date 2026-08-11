@@ -5,6 +5,8 @@ const router = Router();
 
 // rutas => /Obras/
 router.get("/", controller.getAll);
+router.get("/estados", controller.getEstados);
+router.get("/detalle/:id", controller.getDetalle);
 router.get("/:id", controller.getById);
 router.post("/", controller.create);
 router.put("/:id", controller.update);

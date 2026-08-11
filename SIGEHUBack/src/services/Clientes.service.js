@@ -239,6 +239,12 @@ const createCliente = async ({
         throw new Error("Para una empresa se requiere al menos un contacto");
     }
 
+    // Regla: una Empresa requiere RFC (persona: opcional, pero si se ingresa
+    // debe cumplir el formato de 12-13 caracteres).
+    if (tipoNormalizado === 'empresa' && !RFC) {
+        throw new Error("Para una empresa el RFC es obligatorio");
+    }
+
     const db = await getConnection();
 
     const txInsert = await db.transaction();
@@ -289,6 +295,13 @@ const createCliente = async ({
                 }
                 if (c.Correo && !validateEmail(c.Correo)) {
                     throw new Error(`Correo invalido para contacto "${c.NombreCompleto}"`);
+                }
+                // Regla: cada contacto debe tener al menos telefono o correo.
+                const tieneDatos =
+                    String(c.NombreCompleto ?? '').trim() !== '' ||
+                    String(c.Observaciones ?? '').trim() !== '';
+                if (tieneDatos && !c.Telefono && !c.Correo) {
+                    throw new Error(`El contacto "${c.NombreCompleto || 'sin nombre'}" requiere al menos un telefono o un correo`);
                 }
                 await txInsert.execute(
                     `INSERT INTO ContactosClientes
@@ -351,9 +364,14 @@ const updateCliente = async (id, {
 
         await txRead.commit();
 
-        if (!rows || rows.length === 0) return null;
+        if (rows.length === 0) return null;
 
         anterior = rows[0];
+        anterior.tipoNormalizado = String(anterior.Tipo ?? 'persona').toLowerCase();
+        const tipoEfectivo = tipoNormalizado ?? anterior.tipoNormalizado;
+        if (tipoEfectivo === 'empresa' && !RFC) {
+            throw new Error("Para una empresa el RFC es obligatorio");
+        }
 
     } catch (err) {
         await txRead.rollback();
@@ -436,6 +454,14 @@ try {
                 if (c.Correo && !validateEmail(c.Correo)) {
                     await txUpdate.rollback();
                     throw new Error(`Correo invalido para contacto "${c.NombreCompleto}"`);
+                }
+                // Regla: cada contacto debe tener al menos telefono o correo.
+                const tieneDatos =
+                    String(c.NombreCompleto ?? '').trim() !== '' ||
+                    String(c.Observaciones ?? '').trim() !== '';
+                if (tieneDatos && !c.Telefono && !c.Correo) {
+                    await txUpdate.rollback();
+                    throw new Error(`El contacto "${c.NombreCompleto || 'sin nombre'}" requiere al menos un telefono o un correo`);
                 }
 
                 // 1) Coincidencia explícita por id (cuando el frontend la envía).

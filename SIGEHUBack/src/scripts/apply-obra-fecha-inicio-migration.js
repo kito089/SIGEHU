@@ -62,15 +62,18 @@ const SP_SQL = `CREATE OR ALTER PROCEDURE SP_INSERTAR_OBRA (
     pNombre    VARCHAR(100),
     pDireccion BLOB SUB_TYPE TEXT,
     pIdTrabajo INTEGER,
-    pFechaInicio TIMESTAMP
+    pFechaInicio TIMESTAMP,
+    pAncho     DECIMAL(10,2),
+    pAlto      DECIMAL(10,2),
+    pProfundidad DECIMAL(10,2)
 )
 RETURNS (
     oIdObra INTEGER
 )
 AS
 BEGIN
-    INSERT INTO Obras (Clientes_idCliente, Nombre, Direccion, TRABAJOS_IDTRABAJO, FechaInicio, EstadosObra_idEstadoObra)
-    VALUES (:pIdCliente, :pNombre, :pDireccion, :pIdTrabajo, :pFechaInicio, 1)
+    INSERT INTO Obras (Clientes_idCliente, Nombre, Direccion, TRABAJOS_IDTRABAJO, FechaInicio, Ancho, Alto, Profundidad, EstadosObra_idEstadoObra)
+    VALUES (:pIdCliente, :pNombre, :pDireccion, :pIdTrabajo, :pFechaInicio, :pAncho, :pAlto, :pProfundidad, 1)
     RETURNING idObra INTO :oIdObra;
 
     SUSPEND;

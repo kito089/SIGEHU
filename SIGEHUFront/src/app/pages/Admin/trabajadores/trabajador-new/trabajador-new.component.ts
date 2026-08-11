@@ -27,7 +27,8 @@ import {
      - GET    /Trabajadores/:id         → carga datos para edición
      - POST   /Trabajadores             → alta
      - PUT    /Trabajadores/:id         → edición
-     - POST   /Trabajadores/:id/imss    → subida del documento IMSS (multipart)
+     - POST   /Trabajadores/imss        → subida del documento IMSS (multipart,
+       solo devuelve la ruta; no escribe en BD: la ruta viaja en el INSERT/UPDATE)
    ========================================================================= */
 
 @Component({
@@ -225,23 +226,37 @@ export class TrabajadorNewComponent implements OnInit {
 
     this.guardando = true;
 
-    const payload: Record<string, unknown> = {
-      Usuario: raw.usuario,
-      Nombre: raw.nombre,
-      Telefono: telefono,
-      Correo: raw.correo || null,
-      Observaciones: raw.observaciones || null,
-      RutaDocumentoIMSS: this.rutaDocumentoExistente || null,
-    };
-
-    // En edición, si existía documento y ya no está visible → eliminarlo.
-    if (this.trabajadorId && !this.documentoSeleccionado && this.rutaDocumentoExistente === '') {
-      payload['RutaDocumentoIMSS'] = null;
-      payload['deleteImss'] = true;
-    }
+    // Opción C: la subida del documento ocurre ANTES de crear/actualizar el
+    // trabajador, y la ruta generada se envía junto con el INSERT/UPDATE para
+    // que el trigger de auditoría registre una sola cabecera. Si luego falta
+    // guardar el trabajador, se elimina el archivo recién subido (huérfano).
+    let rutaSubida: string | null = null;
+    let subioDocumento = false;
 
     try {
-      let id: number;
+      if (this.documentoSeleccionado) {
+        rutaSubida = await this.subirDocumento(this.documentoSeleccionado);
+        subioDocumento = true;
+      }
+
+      const payload: Record<string, unknown> = {
+        Usuario: raw.usuario,
+        Nombre: raw.nombre,
+        Telefono: telefono,
+        Correo: raw.correo || null,
+        Observaciones: raw.observaciones || null,
+        // Ruta recién subida; si no hay documento nuevo se conserva la
+        // existente (o null en alta sin documento).
+        RutaDocumentoIMSS: rutaSubida ?? (this.rutaDocumentoExistente || null),
+      };
+
+      // En edición, si existía documento y ya no está visible ni se subió uno
+      // nuevo → eliminarlo de la BD (el UPDATE único lo pone en NULL).
+      if (this.trabajadorId && !this.documentoSeleccionado && this.rutaDocumentoExistente === '') {
+        payload['RutaDocumentoIMSS'] = null;
+        payload['deleteImss'] = true;
+      }
+
       if (this.trabajadorId) {
         // El tipo de usuario es inmutable: se conserva el valor actual del registro.
         payload['Tipo'] = this.tipoUsuarioActual ?? 2; // TiposUsuarios: 1 = Propietario, 2 = Trabajador
@@ -250,16 +265,13 @@ export class TrabajadorNewComponent implements OnInit {
           payload['Contra'] = String(raw.contra).trim();
         }
         await firstValueFrom(this.api.put('/Trabajadores/' + this.trabajadorId, payload));
-        id = this.trabajadorId;
       } else {
         payload['Contra'] = (raw.contra ?? '').trim() || this.contraPorDefecto();
         payload['Tipo'] = 2; // TiposUsuarios: 1 = Propietario, 2 = Trabajador
-        const created: any = await firstValueFrom(this.api.post('/Trabajadores', payload));
-        id = Number(created?.idTrabajador ?? 0);
+        await firstValueFrom(this.api.post('/Trabajadores', payload));
       }
 
-      if (this.documentoSeleccionado) {
-        await this.subirDocumento(id, this.documentoSeleccionado);
+      if (subioDocumento) {
         this.quitarDocumento();
       }
 
@@ -267,6 +279,18 @@ export class TrabajadorNewComponent implements OnInit {
       this.refreshService.notificarCambio();
       this.router.navigate(['/admin/trabajadores']);
     } catch (err) {
+      // Limpieza segura: el archivo ya se subió pero falló el guardado del
+      // trabajador, así que se elimina para no dejar archivos huérfanos.
+      if (subioDocumento && rutaSubida) {
+        try {
+          await firstValueFrom(
+            this.api.delete('/Trabajadores/imss?ruta=' + encodeURIComponent(rutaSubida))
+          );
+        } catch {
+          // El interceptor ya notifica; la limpieza es best-effort.
+        }
+      }
+
       // El interceptor ya notifica los errores HTTP con el mensaje del backend.
       // Solo mostramos el fallback genérico cuando el backend no envió un mensaje útil.
       const mensajeBackend = (err as any)?.error?.error;
@@ -279,10 +303,18 @@ export class TrabajadorNewComponent implements OnInit {
     }
   }
 
-  private async subirDocumento(id: number, file: File): Promise<void> {
+  // Sube el documento IMSS y devuelve la ruta relativa generada por el backend
+  // (uploads/imss/...). El endpoint NO escribe en la BD: la ruta se persiste en
+  // el INSERT/UPDATE del trabajador para contar con una sola auditoría.
+  private async subirDocumento(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('imss', file, file.name);
-    await firstValueFrom(this.api.uploadFile('/Trabajadores/' + id + '/imss', formData));
+    const res: any = await firstValueFrom(this.api.uploadFile('/Trabajadores/imss', formData));
+    const ruta = res?.ruta ?? '';
+    if (!ruta) {
+      throw new Error('No se obtuvo la ruta del documento IMSS');
+    }
+    return ruta;
   }
 
   cancelar(): void {

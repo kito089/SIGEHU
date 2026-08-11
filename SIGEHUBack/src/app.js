@@ -17,6 +17,7 @@ import NotasObras from './routes/NotasObras.route.js';
 import ObrasMateriales from './routes/ObrasMateriales.route.js'
 import ObrasTrabajadores from './routes/ObrasTrabajadores.route.js'
 import ObrasKits from './routes/ObrasKits.route.js'
+import TrabajosRoutes from './routes/Trabajos.route.js';
 import GarantiasRoutes from './routes/Garantias.route.js';
 import FotosGarantias from './routes/FotosGarantias.route.js';
 import NotasGarantias from './routes/NotasGarantias.route.js';
@@ -154,6 +155,7 @@ app.use('/Garantias', NotasGarantias);
 app.use('/Garantias', GarantiasTrabajadores);
 app.use('/Obras', ObrasTrabajadores);
 app.use('/Obras', ObrasKits);
+app.use('/Obras', TrabajosRoutes);
 app.use('/Clientes', ClientesContactosRoutes);
 
 app.use('/Dashboard', DashboardRoutes);

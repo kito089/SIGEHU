@@ -124,66 +124,9 @@ const getObrasByTrabajador = async (idTrabajador) => {
 };
 
 // ─── UPDATE ruta documento IMSS ───────────────────────────────────────────────
-const updateRutaImss = async (id, rutaImss, idTrabajadorCtx = 1) => {
-    const db = await getConnection();
-
-    const transaction = await db.transaction();
-
-    try {
-        const prev = await transaction.query(
-            "SELECT RutaDocumentoIMSS FROM Trabajadores WHERE idTrabajador = ?",
-            [id]
-        );
-        const rutaAnterior = prev[0]?.RUTADOCUMENTOIMSS ?? prev[0]?.rutaDocumentoIMSS ?? null;
-
-        await transaction.execute(
-            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
-            [String(idTrabajadorCtx)]
-        );
-        await transaction.execute(
-            "EXECUTE PROCEDURE SP_ACTUALIZAR_RUTA_IMSS (?, ?)",
-            [id, rutaImss]
-        );
-        await transaction.commit();
-
-        // El trigger TR_Auditorias_Trabajadores_AU ya registró la cabecera
-        // (Accion=UPDATE, LAST_AUDIT_ID). Se añade el detalle por campo para que
-        // el historial distinga agregado/modificado/eliminado del documento IMSS.
-        try {
-            const txAudit = await db.transaction();
-            let idAudit = null;
-            try {
-                const rows = await txAudit.query(
-                    `SELECT RDB$GET_CONTEXT('USER_SESSION', 'LAST_AUDIT_ID') AS ID FROM RDB$DATABASE`
-                );
-                idAudit = rows[0]?.ID ?? null;
-                await txAudit.commit();
-            } catch (err) {
-                await txAudit.rollback();
-                throw err;
-            }
-            if (idAudit) {
-                await audit.createAuditoriaDetalle({
-                    pIdAuditoria: idAudit,
-                    pCampo: "RutaDocumentoIMSS",
-                    pValorAnterior: rutaAnterior ?? "",
-                    pValorNuevo: rutaImss,
-                });
-            }
-        } catch (errAudit) {
-            console.error("Error al registrar el detalle IMSS en auditoría:", errAudit.message);
-        }
-
-        if (rutaAnterior && rutaAnterior !== rutaImss) {
-            eliminarArchivoImss(rutaAnterior);
-        }
-    } catch (err) {
-        await transaction.rollback();
-        throw err;
-    }
-
-    return true;
-};
+// (Retirado en la Opción C: la ruta se persiste únicamente dentro del mismo
+// INSERT/UPDATE del trabajador para que el trigger genere una sola auditoría.
+// El endpoint de subida solo guarda el archivo y devuelve la ruta relativa.)
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 const createTrabajador = async ({ Usuario, Contra, Nombre, Telefono, Tipo, Correo, Observaciones, RutaDocumentoIMSS, idTrabajadorCtx = 1 }) => {
@@ -243,6 +186,12 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, C
 
     const rutaAnterior = anterior.RUTADOCUMENTOIMSS ?? anterior.rutaDocumentoImss ?? null;
 
+    // Opción C: la ruta IMSS se resuelve ANTES del UPDATE para que un único
+    // statement actualice el documento (junto a nombre/teléfono/etc.). Así el
+    // trigger TR_Auditorias_Trabajadores_AU genera una sola auditoría y sus
+    // detalles (agregado/modificado/eliminado) quedan en esa misma cabecera.
+    const rutaImssFinal = deleteImss ? null : (RutaDocumentoIMSS ?? rutaAnterior);
+
     // TIPOUSUARIO es inmutable (RF-27): 1=Propietario no cambia a 2=Trabajador y viceversa.
     // Se fuerza el valor actual del registro ignorando cualquier intento de cambio.
     const tipoInmutable = anterior.TIPOSUSUARIOS_IDTIPOUSUARIO ?? anterior.TiposUsuarios_idTipoUsuario ?? Tipo;
@@ -263,26 +212,20 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, C
                  Contra = COALESCE(?, Contra),
                  NombreCompleto = ?,
                  Telefono = ?,
-                 RutaDocumentoIMSS = COALESCE(?, RutaDocumentoIMSS),
+                 RutaDocumentoIMSS = ?,
                  TiposUsuarios_idTipoUsuario = ?,
                  Correo = ?,
                  Observaciones = ?
              WHERE IdTrabajador  = ?`,
-            [Usuario, Contra ?? null, Nombre, Telefono ?? null, RutaDocumentoIMSS ?? null, tipoInmutable, Correo ?? null, obsBuffer, id]
+            [Usuario, Contra ?? null, Nombre, Telefono ?? null, rutaImssFinal, tipoInmutable, Correo ?? null, obsBuffer, id]
         );
-
-        if (deleteImss) {
-            await txUpdate.execute(
-                "UPDATE Trabajadores SET RutaDocumentoIMSS = NULL WHERE IdTrabajador = ?",
-                [id]
-            );
-        }
 
         await txUpdate.commit();
 
-        if (deleteImss && rutaAnterior) {
-            eliminarArchivoImss(rutaAnterior);
-        } else if (RutaDocumentoIMSS && rutaAnterior && rutaAnterior !== RutaDocumentoIMSS) {
+        // Eliminar el archivo anterior SOLO cuando la ruta cambió (reemplazo o
+        // eliminación del documento). En reemplazo se borra el viejo; en la
+        // creación no hay ruta anterior.
+        if (rutaAnterior && rutaAnterior !== rutaImssFinal) {
             eliminarArchivoImss(rutaAnterior);
         }
 
@@ -310,9 +253,9 @@ const updateTrabajador = async (id, { Usuario, Contra, Nombre, Telefono, Tipo, C
         await txAudit.rollback();
         throw err;
     } 
-    // El UPDATE general conserva la ruta IMSS (COALESCE) salvo que `deleteImss`
-    // la vuelva NULL, o que se envíe una ruta nueva explícitamente.
-    const rutaNueva = deleteImss ? null : (RutaDocumentoIMSS ?? rutaAnterior);
+    // El UPDATE general ya escribió la ruta final (rutaImssFinal): la misma
+    // resolución que se compara contra el valor anterior para los detalles.
+    const rutaNueva = rutaImssFinal;
 
     const comparacion = [
         { campo: 'NombreUsuario', anterior: anterior.NOMBREUSUARIO, nuevo: Usuario },
@@ -412,9 +355,9 @@ export default {
     getTrabajadorByUsuario,
     getObrasByTrabajador,
     checkUsername,
-    updateRutaImss,
     createTrabajador,
     updateTrabajador,
     deleteTrabajador,
     cambiarActivo,
+    eliminarArchivoImss,
 };

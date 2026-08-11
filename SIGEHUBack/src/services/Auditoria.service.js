@@ -1,4 +1,7 @@
 import { getConnection } from "../config/db.js";
+import fs from "node:fs";
+import path from "node:path";
+import { getDataRoot } from "../config/paths.js";
 
 // ─── AUDITORIA ───────────────────────────────────────────────────────────────
 const createAuditoria = async ({ pIdTrabajador, pTabla, pAccion, pDescripcion, pRegistroAfectado }) => {
@@ -122,10 +125,29 @@ const getAuditorias = async ({ dia = null, limit = 500 }) => {
 };
 
 // ─── DETALLES DE UNA AUDITORÍA (AuditoriasDetalles) ──────────────────────────
+// Para el campo RutaDocumentoIMSS se incluye el flag `existeDocumento`: true
+// solo si el archivo está físicamente presente en uploads/imss. El frontend usa
+// ese flag para mostrar el botón "Ver documento" y así evitar enlaces a
+// archivos eliminados. Nunca se exponen rutas físicas del servidor.
+function archivoImssExiste(rutaRelativa) {
+    if (!rutaRelativa || !String(rutaRelativa).startsWith("uploads/imss/")) {
+        return false;
+    }
+    const dataRoot = getDataRoot();
+    const uploadsRoot = path.join(dataRoot, "uploads");
+    const ruta = path.join(dataRoot, String(rutaRelativa));
+    if (!ruta.startsWith(uploadsRoot)) return false;
+    try {
+        return fs.existsSync(ruta);
+    } catch {
+        return false;
+    }
+}
+
 const getAuditoriaDetalles = async (idAuditoria) => {
     const db = await getConnection();
 
-    return await db.query(
+    const rows = await db.query(
         `SELECT idAuditoriaDetalle AS IDAUDITORIADETALLE,
                 Campo AS CAMPO, ValorAnterior AS VALORANTERIOR, ValorNuevo AS VALORNUEVO
          FROM AuditoriasDetalles
@@ -133,6 +155,16 @@ const getAuditoriaDetalles = async (idAuditoria) => {
          ORDER BY idAuditoriaDetalle`,
         [idAuditoria]
     );
+
+    return rows.map(r => ({
+        IDAUDITORIADETALLE: r.IDAUDITORIADETALLE,
+        CAMPO: r.CAMPO,
+        VALORANTERIOR: r.VALORANTERIOR,
+        VALORNUEVO: r.VALORNUEVO,
+        EXISTEDOCUMENTO: r.CAMPO === "RutaDocumentoIMSS"
+            ? archivoImssExiste(r.VALORNUEVO)
+            : null,
+    }));
 };
 
 export default {

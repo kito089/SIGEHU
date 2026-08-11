@@ -72,7 +72,7 @@
                 <label>Teléfono</label>
                 <div class="field-control">
                   @if (estaEditando('telefono')) {
-                    <input type="tel" [formControl]="control('telefono')" maxlength="15" inputmode="tel" (input)="onTelefonoInput($event)" />
+                    <input type="tel" [formControl]="control('telefono')" maxlength="14" inputmode="tel" (input)="onTelefonoInput($event)" />
                   } @else {
                     <p class="field-value">{{ valor('telefono') || '—' }}</p>
                   }
@@ -155,7 +155,7 @@
           </div>
         </section>
 
-        @if (contactos().length > 0) {
+        @if (!esPersona && contactos().length > 0) {
           <section class="card">
             <h2>Contactos</h2>
             <div class="contact-list">
@@ -174,7 +174,7 @@
           </section>
         }
 
-        @if (!esPersona) {
+        @if (tieneDatosFiscales()) {
           <section class="card">
             <h2>Información fiscal</h2>
 
@@ -356,10 +356,72 @@
         <section class="card">
           <div class="card-header">
             <h2>Obras y trabajos de {{ esPersona ? 'este cliente' : 'esta empresa' }}</h2>
-            <button type="button" class="btn-nueva-obra" (click)="abrirNuevaObra()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Nueva Obra
-            </button>
+            <div class="work-actions">
+              @if (!modoAgrupar()) {
+                <button
+                  type="button"
+                  class="btn-nueva-obra btn-nueva-obra--ghost"
+                  (click)="activarModoAgrupar()"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+                  Agrupar
+                </button>
+              }
+              <button type="button" class="btn-nueva-obra" (click)="abrirNuevoTrabajo()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M10 13h4M12 11v4"/></svg>
+                Nuevo Trabajo
+              </button>
+              <button type="button" class="btn-nueva-obra" (click)="abrirNuevaObra()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nueva Obra
+              </button>
+            </div>
+          </div>
+
+          @if (modoAgrupar()) {
+            <div class="work-agrupar-bar">
+              <span>
+                {{ obrasSeleccionadas().size }} obra{{ obrasSeleccionadas().size !== 1 ? 's' : '' }} seleccionada{{ obrasSeleccionadas().size !== 1 ? 's' : '' }}
+              </span>
+              <div class="work-agrupar-bar__acciones">
+                <button
+                  type="button"
+                  class="work-detail-btn"
+                  [disabled]="obrasSeleccionadas().size === 0"
+                  (click)="abrirAgruparObras()"
+                >Agrupar seleccionadas</button>
+                <button type="button" class="work-detail-btn work-detail-btn--ghost" (click)="salirModoAgrupar()">Cancelar</button>
+              </div>
+            </div>
+          }
+
+          <!-- Filtros por estado y tipo -->
+          <div class="work-filters">
+            <label class="work-filter">
+              <span class="work-filter__label">Estado</span>
+              <select
+                class="work-filter__select"
+                [value]="filtroEstado()"
+                (change)="setFiltroEstado($any($event.target).value)"
+              >
+                <option value="todos">Todos los estados</option>
+                @for (e of estadosObraCatalogo; track e.id) {
+                  <option [value]="e.nombre">{{ e.nombre }}</option>
+                }
+              </select>
+            </label>
+            <label class="work-filter">
+              <span class="work-filter__label">Tipo</span>
+              <select
+                class="work-filter__select"
+                [value]="filtroTipo()"
+                (change)="setFiltroTipo($any($event.target).value)"
+              >
+                <option value="todos">Todos</option>
+                <option value="independiente">Solo obras independientes</option>
+                <option value="trabajo">Solo obras en trabajos</option>
+              </select>
+            </label>
           </div>
 
           @if (!tieneObras()) {
@@ -369,45 +431,93 @@
           } @else {
             <div class="work-tree">
 
-              @if (obrasIndependientes().length > 0) {
+              @if (obrasIndependientesFiltradas().length > 0) {
                 <div class="work-group">
                   <h3 class="group-title">Obras independientes</h3>
-                  @for (o of obrasIndependientes(); track o.idObra) {
-                    <button type="button" class="work-item" (click)="abrirObra(o)">
-                      <span class="work-name">{{ o.nombre }}</span>
-                      @if (o.estadoObra) {
-                        <span class="badge badge-estado">{{ o.estadoObra }}</span>
+                  @for (o of obrasIndependientesFiltradas(); track o.idObra) {
+                    <div class="work-row">
+                      @if (modoAgrupar()) {
+                        <label class="work-check">
+                          <input
+                            type="checkbox"
+                            [checked]="estaSeleccionada(o.idObra)"
+                            (change)="toggleObraSeleccionada(o.idObra)"
+                            aria-label="Seleccionar {{ o.nombre }}"
+                          />
+                        </label>
                       }
-                      @if (o.direccion) {
-                        <span class="muted work-meta">{{ o.direccion }}</span>
-                      }
-                    </button>
+                      <button type="button" class="work-item work-item--row" (click)="abrirObra(o)">
+                        <span class="work-name">{{ o.nombre }}</span>
+                        @if (o.estadoObra) {
+                          <span class="badge badge-estado">{{ o.estadoObra }}</span>
+                        }
+                        @if (o.direccion) {
+                          <span class="muted work-meta">{{ o.direccion }}</span>
+                        }
+                      </button>
+                      <button type="button" class="work-detail-btn" (click)="abrirObra(o)">
+                        Ver Detalles
+                      </button>
+                    </div>
                   }
                 </div>
               }
 
-              @for (t of trabajos(); track t.idTrabajo) {
-                <div class="work-group">
-                  <h3 class="group-title">{{ t.nombre }}</h3>
-                  @if (t.descripcion) {
-                    <p class="muted group-desc">{{ t.descripcion }}</p>
-                  }
-                  @if (t.obras.length > 0) {
+              @for (t of trabajosFiltrados(); track t.idTrabajo) {
+                <div class="work-group work-accordion">
+                  <div class="work-accordion__header">
+                    <button
+                      type="button"
+                      class="work-accordion__toggle"
+                      (click)="toggleTrabajo(t.idTrabajo)"
+                      [attr.aria-expanded]="estaExpandido(t.idTrabajo)"
+                    >
+                      <svg
+                        class="work-accordion__chevron"
+                        [class.work-accordion__chevron--open]="estaExpandido(t.idTrabajo)"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                      ><polyline points="9 18 15 12 9 6"/></svg>
+                      <span class="group-title">{{ t.nombre }}</span>
+                      <span class="badge badge-count">{{ t.obras.length }}</span>
+                    </button>
+                    <div class="work-accordion__actions">
+                      @if (t.descripcion) {
+                        <span class="muted group-desc">{{ t.descripcion }}</span>
+                      }
+                      <button type="button" class="work-detail-btn" (click)="agregarObraATrabajo(t.idTrabajo, t.nombre)">
+                        Agregar Obra
+                      </button>
+                    </div>
+                  </div>
+
+                  @if (estaExpandido(t.idTrabajo)) {
                     <div class="work-children">
                       @for (o of t.obras; track o.idObra) {
-                        <button type="button" class="work-item" (click)="abrirObra(o)">
-                          <span class="work-name">{{ o.nombre }}</span>
-                          @if (o.estadoObra) {
-                            <span class="badge badge-estado">{{ o.estadoObra }}</span>
-                          }
-                          @if (o.direccion) {
-                            <span class="muted work-meta">{{ o.direccion }}</span>
-                          }
-                        </button>
+                        <div class="work-row">
+                          <button type="button" class="work-item work-item--row" (click)="abrirObra(o)">
+                            <span class="work-name">{{ o.nombre }}</span>
+                            @if (o.estadoObra) {
+                              <span class="badge badge-estado">{{ o.estadoObra }}</span>
+                            }
+                            @if (o.direccion) {
+                              <span class="muted work-meta">{{ o.direccion }}</span>
+                            }
+                          </button>
+                          <button type="button" class="work-detail-btn" (click)="abrirObra(o)">
+                            Ver Detalles
+                          </button>
+                        </div>
+                      }
+                      @if (t.obras.length === 0) {
+                        <p class="muted group-desc">Sin obras asociadas.</p>
                       }
                     </div>
-                  } @else {
-                    <p class="muted group-desc">Sin obras asociadas.</p>
                   }
                 </div>
               }
@@ -422,8 +532,27 @@
   @if (mostrarNuevaObra()) {
     <app-nueva-obra-modal
       [idClienteInicial]="clienteId"
+      [idTrabajoInicial]="obraEnTrabajoSeleccionado?.id ?? null"
+      [ocultarCampoTrabajo]="obraEnTrabajoSeleccionado !== null"
       (creada)="onNuevaObraCreada()"
       (cancelar)="cerrarNuevaObra()">
     </app-nueva-obra-modal>
+  }
+
+  @if (mostrarNuevoTrabajo()) {
+    <app-nuevo-trabajo-modal
+      [idClienteInicial]="clienteId"
+      (creado)="onNuevoTrabajoCreado()"
+      (cancelar)="cerrarNuevoTrabajo()">
+    </app-nuevo-trabajo-modal>
+  }
+
+  @if (mostrarAgruparObras()) {
+    <app-agrupar-obras-modal
+      [idCliente]="clienteId"
+      [obras]="obrasSeleccionadasLista()"
+      (agrupadas)="onObrasAgrupadas()"
+      (cancelar)="cerrarAgruparObras()">
+    </app-agrupar-obras-modal>
   }
 </div>
