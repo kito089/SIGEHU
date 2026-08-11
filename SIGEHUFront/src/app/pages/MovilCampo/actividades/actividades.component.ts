@@ -5,7 +5,7 @@ import { IonicModule } from '@ionic/angular';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 /* =========================================================================
    SIGEHU — Actividades pendientes (punto de entrada móvil del trabajador).
@@ -13,12 +13,13 @@ import { WorkerHeaderComponent } from '../../../shared/components/worker-header/
    Consolida en una sola lista las tareas activas del trabajador, ordenadas
    por fecha límite (la más próxima primero):
      - Obras en etapa Levantamiento, Fabricación o Instalación (VW_OBRAS_TRABAJADOR)
+     - Compras asignadas al chofer (VW/Compras por trabajador)
      - Garantías activas asignadas al trabajador (VW_GARANTIAS_CON_OBRA)
 
    Tocar una actividad navega a la sección correspondiente del campo.
    ========================================================================= */
 
-type TipoActividad = 'levantamiento' | 'fabricacion' | 'instalacion' | 'garantia';
+type TipoActividad = 'levantamiento' | 'fabricacion' | 'instalacion' | 'compra' | 'garantia';
 
 interface Actividad {
   tipo: TipoActividad;
@@ -31,6 +32,8 @@ interface Actividad {
   fechaTs: number;
   asignacionTs: number;
   ruta: string;
+  numeroDirecciones?: number;
+  numeroMateriales?: number;
 }
 
 interface ObraRow {
@@ -42,6 +45,16 @@ interface ObraRow {
   FECHAASIGNACION?: string | Date;
   NOMBRECLIENTE?: string;
   TRABAJADORES_IDTRABAJADOR?: number;
+}
+
+interface CompraRow {
+  ID: number;
+  PROVEEDOR_NOMBRE?: string;
+  FECHA_ORDEN?: string | Date;
+  ESTADO?: string;
+  NUMERO_DIRECCIONES?: number;
+  NUMERO_MATERIALES?: number;
+  MATERIALES?: unknown[];
 }
 
 interface GarantiaRow {
@@ -57,7 +70,7 @@ interface GarantiaRow {
 @Component({
   selector: 'app-actividades',
   standalone: true,
-  imports: [CommonModule, IonicModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent],
   templateUrl: './actividades.component.html',
   styleUrls: ['./actividades.component.scss'],
 })
@@ -93,6 +106,14 @@ export class ActividadesComponent implements OnInit {
 
     this.api.get<GarantiaRow[]>('/Garantias').subscribe({
       next: (garantias) => this.combinarGarantias(garantias || [], trabajadorId),
+      error: () => {
+        this.error = true;
+        this.loading = false;
+      }
+    });
+
+    this.api.get<CompraRow[]>('/Compras').subscribe({
+      next: (compras) => this.combinarCompras(compras || []),
       error: () => {
         this.error = true;
         this.loading = false;
@@ -162,12 +183,31 @@ export class ActividadesComponent implements OnInit {
     this.finalizarCarga();
   }
 
-  /** Concluye la carga una vez ambas fuentes resolvieron. */
-  private pendientes = 2;
+  private combinarCompras(compras: CompraRow[]): void {
+    for (const c of compras) {
+      const fecha = this.toTs(c.FECHA_ORDEN);
+      this.actividades.push({
+        tipo: 'compra',
+        id: c.ID,
+        titulo: c.PROVEEDOR_NOMBRE || `Orden de compra ${c.ID}`,
+        estado: c.ESTADO || 'Pendiente de Surtir',
+        fechaLimite: this.formatFecha(c.FECHA_ORDEN),
+        fechaTs: fecha,
+        asignacionTs: fecha,
+        ruta: '/movil/compras',
+        numeroDirecciones: c.NUMERO_DIRECCIONES ?? (c.MATERIALES?.length ? 1 : 0),
+        numeroMateriales: c.NUMERO_MATERIALES ?? c.MATERIALES?.length ?? 0
+      });
+    }
+    this.finalizarCarga();
+  }
+
+  /** Concluye la carga una vez las tres fuentes resolvieron. */
+  private pendientes = 3;
   private finalizarCarga(): void {
     this.pendientes -= 1;
     if (this.pendientes <= 0) {
-      this.pendientes = 2;
+      this.pendientes = 3;
       this.loading = false;
       this.ordenar();
     }
@@ -209,6 +249,7 @@ export class ActividadesComponent implements OnInit {
       case 'levantamiento': return 'resize-outline';
       case 'fabricacion': return 'construct-outline';
       case 'instalacion': return 'navigate-outline';
+      case 'compra': return 'cart-outline';
       case 'garantia': return 'shield-checkmark-outline';
     }
   }
@@ -218,6 +259,7 @@ export class ActividadesComponent implements OnInit {
       case 'levantamiento': return 'warning';
       case 'fabricacion': return 'primary';
       case 'instalacion': return 'purple';
+      case 'compra': return 'tertiary';
       case 'garantia': return 'danger';
     }
   }
@@ -227,8 +269,22 @@ export class ActividadesComponent implements OnInit {
       case 'levantamiento': return 'Levantamiento';
       case 'fabricacion': return 'Fabricación';
       case 'instalacion': return 'Instalación';
+      case 'compra': return 'Compra';
       case 'garantia': return 'Garantía';
     }
+  }
+
+  /** Clase de color del Tag de estado según DISEÑO_UI.md. */
+  claseEstado(estado: string): string {
+    const e = (estado || '').toLowerCase();
+    if (e.includes('solicitud')) return 'estado-solicitud';
+    if (e.includes('surtid')) return 'estado-finalizado';
+    if (e.includes('levantamiento')) return 'estado-levantamiento';
+    if (e.includes('fabrica')) return 'estado-fabricacion';
+    if (e.includes('instalaci')) return 'estado-instalacion';
+    if (e.includes('garantia')) return 'estado-garantia';
+    if (e.includes('finaliza')) return 'estado-finalizado';
+    return 'estado-otro';
   }
 
   abrir(actividad: Actividad): void {

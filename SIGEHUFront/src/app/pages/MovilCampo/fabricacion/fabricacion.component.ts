@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface MaterialObra {
   ID?: number;
@@ -37,7 +37,7 @@ interface ObraFabricacion {
 @Component({
   selector: 'app-fabricacion-campo',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
   templateUrl: './fabricacion.component.html',
   styleUrls: ['./fabricacion.component.scss']
 })

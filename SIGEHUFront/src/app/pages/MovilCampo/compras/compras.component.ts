@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface MaterialCompra {
   MATERIAL_NOMBRE: string;
@@ -28,7 +28,7 @@ interface OrdenCompraChofer {
 @Component({
   selector: 'app-compras-campo',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
   templateUrl: './compras.component.html',
   styleUrls: ['./compras.component.scss']
 })

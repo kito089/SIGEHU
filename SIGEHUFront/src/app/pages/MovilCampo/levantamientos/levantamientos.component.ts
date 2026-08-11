@@ -5,7 +5,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface ObraLevantamiento {
   ID: number;
@@ -24,7 +24,7 @@ interface ObraLevantamiento {
 @Component({
   selector: 'app-levantamientos',
   standalone: true,
-  imports: [CommonModule, IonicModule, ReactiveFormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, ReactiveFormsModule, MobileHeaderComponent],
   templateUrl: './levantamientos.component.html',
   styleUrls: ['./levantamientos.component.scss'],
 })

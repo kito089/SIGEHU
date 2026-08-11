@@ -374,7 +374,7 @@ const getComprasChoferList = async (idTrabajador) => {
     for (const c of compras ?? []) {
         const idCompra = c.IDCOMPRA ?? c.idCompra;
         const detalles = await db.query(
-            `SELECT p.Nombre AS NombreProveedor, p.Direccion AS DireccionProveedor,
+            `SELECT p.idProveedor, p.Nombre AS NombreProveedor, p.Direccion AS DireccionProveedor,
                     p.Telefono AS TelefonoProveedor,
                     m.Nombre AS NombreMaterial, m.UnidadMedida,
                     dc.Cantidad, dc.Medida
@@ -394,6 +394,10 @@ const getComprasChoferList = async (idTrabajador) => {
             UNIDAD: d.MEDIDA ?? d.UNIDADMEDIDA ?? null
         }));
 
+        // Nº de direcciones reales = proveedores distintos en la compra (cada
+        // proveedor aporta la dirección donde se surte el material).
+        const direcciones = new Set((detalles ?? []).map(d => d.IDPROVEEDOR ?? d.idProveedor));
+
         const proveedor = (detalles ?? [])[0] ?? {};
 
         resultados.push({
@@ -403,7 +407,9 @@ const getComprasChoferList = async (idTrabajador) => {
             PROVEEDOR_TELEFONO: proveedor.TELEFONOPROVEDOR ?? null,
             FECHA_ORDEN: normalizeDate(c.FECHACOMPRA ?? c.FechaCompra ?? null),
             ESTADO: c.RECIBIDA ? 'Surtida en Proveedor' : 'Pendiente de Surtir',
-            MATERIALES: materiales
+            MATERIALES: materiales,
+            NUMERO_DIRECCIONES: direcciones.size,
+            NUMERO_MATERIALES: materiales.length
         });
     }
 

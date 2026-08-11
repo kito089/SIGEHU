@@ -7,7 +7,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../services/auth.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
 import { PermisosService } from '../../../core/services/permisos.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface TicketGarantia {
   ID: string | number;
@@ -34,7 +34,7 @@ interface TicketGarantia {
 @Component({
   selector: 'app-garantias-campo',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
   templateUrl: './garantias.component.html',
   styleUrls: ['./garantias.component.scss'],
 })

@@ -1,4 +1,4 @@
-<app-worker-header></app-worker-header>
+<app-mobile-header [showNewWork]="false"></app-mobile-header>
 
 <ion-content class="ion-padding sigehu-content">
 
@@ -33,7 +33,15 @@
         <span class="activity-badge">{{ labelTipo(a.tipo) }}</span>
         <h3>{{ a.titulo }}</h3>
         <p class="activity-cliente" *ngIf="a.cliente">{{ a.cliente }}</p>
-        <span class="activity-estado">{{ a.estado }}</span>
+        <span class="activity-estado {{ claseEstado(a.estado) }}">{{ a.estado }}</span>
+        @if (a.tipo === 'compra') {
+          <span class="activity-meta">
+            <ion-icon name="location-outline"></ion-icon>
+            {{ a.numeroDirecciones ?? 0 }} {{ a.numeroDirecciones === 1 ? 'dirección' : 'direcciones' }} ·
+            <ion-icon name="cube-outline"></ion-icon>
+            {{ a.numeroMateriales ?? 0 }} {{ a.numeroMateriales === 1 ? 'material' : 'materiales' }}
+          </span>
+        }
       </div>
 
       <div class="activity-fecha">
