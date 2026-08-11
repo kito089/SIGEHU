@@ -446,6 +446,8 @@ CREATE TABLE FotosObras (
     EstadosObra_idEstadoObra INTEGER NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
     RutaArchivo VARCHAR(300) NOT NULL,
+    ContentType VARCHAR(50),
+    Foto BLOB SUB_TYPE BINARY,
     FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (idFotoObra),
     CONSTRAINT fk_Fotos_Obras1

@@ -438,13 +438,6 @@ export class ClienteDetailComponent implements OnInit {
       return;
     }
 
-    // Empresa: el RFC es obligatorio y no se puede guardar ningún campo
-    // mientras no esté registrado.
-    if (!this.esPersona && !String(this.valor('rfc')).trim()) {
-      this.toast.warning('La empresa requiere RFC antes de guardar cualquier campo.');
-      return;
-    }
-
     // Persona: exige al menos un teléfono o un correo (misma regla del alta).
     if (this.esPersona && (campo === 'telefono' || campo === 'correo')) {
       const tel = String(this.valor('telefono')).trim();

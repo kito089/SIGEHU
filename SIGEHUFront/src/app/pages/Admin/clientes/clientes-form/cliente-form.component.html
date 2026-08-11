@@ -143,24 +143,22 @@
           </div>
         }
 
-        <!-- Datos fiscales: para persona activables con checkbox; para
-             empresa son obligatorios (RFC requerido) y siempre visibles. -->
+        <!-- Datos fiscales: activables con checkbox (same switch en Persona
+             y Empresa). -->
         <div class="fiscal-block" [formGroup]="fiscalGroup">
-          @if (tipo() === 'persona') {
-            <label class="fiscal-toggle" for="datosFiscales">
-              <input id="datosFiscales" type="checkbox" formControlName="datosFiscales">
-              <span class="fiscal-toggle__label">Datos Fiscales</span>
-              <span class="fiscal-toggle__hint">Capturar información de facturación SAT (RFC, régimen, CFDI…)</span>
-            </label>
-          }
+          <label class="fiscal-toggle" for="datosFiscales">
+            <input id="datosFiscales" type="checkbox" formControlName="datosFiscales" (change)="onDatosFiscalesChange()">
+            <span class="fiscal-toggle__label">Datos Fiscales</span>
+            <span class="fiscal-toggle__hint">Capturar información de facturación SAT (RFC, régimen, CFDI…)</span>
+          </label>
 
-          @if (tipo() === 'empresa' || fiscalGroup.get('datosFiscales')?.value) {
+          @if (fiscalGroup.get('datosFiscales')?.value) {
             <div class="field-row">
               <div class="field">
-                <label for="rfc" [class.required-label]="tipo() === 'empresa'">RFC</label>
+                <label for="rfc" [class.required-label]="tipo() === 'empresa' && fiscalGroup.get('datosFiscales')?.value">RFC</label>
                 <input id="rfc" type="text" formControlName="rfc" maxlength="13" placeholder="Ej. UTCA850101AB1">
                 <span class="field-error" *ngIf="form.get('fiscal')?.get('rfc')?.touched && form.get('fiscal')?.get('rfc')?.invalid">
-                  {{ form.get('fiscal')?.get('rfc')?.hasError('required') ? 'El RFC es obligatorio para la empresa (12-13 caracteres)' : 'RFC inválido (12-13 caracteres)' }}
+                  {{ form.get('fiscal')?.get('rfc')?.hasError('required') ? 'El RFC es obligatorio para la empresa cuando se activan los datos fiscales (12-13 caracteres)' : 'RFC inválido (12-13 caracteres)' }}
                 </span>
               </div>
               <div class="field">

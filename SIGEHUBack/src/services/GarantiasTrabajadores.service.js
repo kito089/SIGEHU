@@ -1,17 +1,23 @@
 import { getConnection } from "../config/db.js";
 
 // ─── CREATE: asignar trabajador a Garantia ───────────────────────────────────────
+// El INSERT usa executeReturning porque query() abre un cursor, inválido para
+// INSERT...RETURNING ("Cannot open cursor for non-SELECT statement").
 const asignarTrabajador = async ({ idGarantia, idTrabajador }) => {
     const db = await getConnection();
 
-    const rows = await db.query(
+    const rows = await db.executeReturning(
         `INSERT INTO Garantias_has_Trabajadores (Garantias_idGarantia, Trabajadores_idTrabajador)
          VALUES (?, ?)
          RETURNING idDetalleAsignacion`,
         [idGarantia, idTrabajador]
     );
 
-    return rows[0]?.IDDETALLEASIGNACION;
+    let raw = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
+    if (raw != null && typeof raw === 'object') {
+        raw = raw.IDDETALLEASIGNACION;
+    }
+    return raw;
 };
 
 // ─── GET trabajadores asignados a una Garantia ───────────────────────────────────

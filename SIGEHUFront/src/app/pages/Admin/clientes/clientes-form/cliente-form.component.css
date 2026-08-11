@@ -164,7 +164,7 @@
 }
 .field-row .field{ margin-bottom: 0; }
 .field{ min-width: 0; }
-.field input, .field textarea, .field select{ min-width: 0; }
+.field input, .field textarea, .field select{ min-width: 0; max-width: 100%; }
 
 .field-row-between{
   display: flex;
@@ -202,6 +202,13 @@ input:focus, textarea:focus, select:focus{ border-color: var(--accent); }
 input::placeholder, textarea::placeholder{ color: var(--text-tertiary); }
 
 select{ cursor: pointer; }
+
+/* Teléfono y Correo: ancho fijo y estable para que el formulario no cambie al escribir. */
+input[type="tel"],
+input[type="email"] {
+  width: 100%;
+  box-sizing: border-box;
+}
 
 .field-error{
   display: block;
@@ -337,9 +344,11 @@ select{ cursor: pointer; }
   .contacto-row{ grid-template-columns: 1fr; }
 }
 
-/* Ancho del formulario Agregar/Editar Cliente ampliado para que ningún
-   placeholder ni etiqueta de catálogo aparezca recortado. Se acota al
-   subtree de este componente (no afecta a otros módulos). */
+/* Ancho del formulario Agregar/Editar Cliente: fijo e idéntico para Persona y
+   Empresa, para que el layout no cambie al escribir, mostrar errores, alternar
+   Datos Fiscales o agregar contactos. Se acota al subtree de este componente
+   (no afecta a otros módulos). */
 :host ::ng-deep .entity-form {
   max-width: 1140px;
+  width: 100%;
 }
