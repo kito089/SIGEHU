@@ -385,21 +385,20 @@ export class NotificationService {
     }, delay);
   }
 
-  /** 401 en el stream: intenta renovar el token y reanuda; si no, cierra sesión. */
+  /** 401 en el stream: intenta renovar el token (single-flight de AuthService)
+   *  y reanuda; si no, cierra sesión una sola vez. */
   private async handleAuthFailure(): Promise<void> {
     this.stop();
     try {
-      const prev = this.auth.getToken();
-      if (prev) {
-        const res = await firstValueFrom(this.api.post<{ token: string }>('/Auth/refresh', { token: prev }));
-        if (res?.token) {
-          this.auth.refreshSession(res.token);
+      if (this.auth.getRefreshToken()) {
+        const newToken = await firstValueFrom(this.auth.refreshToken());
+        if (newToken) {
           this.start();
           return;
         }
       }
     } catch {
-      // Token expirado/inválido o red inalcanzable: se cierra la sesión.
+      // Refresh token expirado/inválido o red inalcanzable: logout único.
     }
     this.auth.logout();
   }

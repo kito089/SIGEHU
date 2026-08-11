@@ -39,14 +39,20 @@ export class AppComponent implements OnInit {
 
   /**
    * Sincronización de notificaciones por CUENTA (SSE multidispositivo).
-   * - Sesión ya iniciada al arrancar → arranca inmediatamente.
+   * - Al arrancar con sesión guardada: si el access token expiró, intenta
+   *   renovarlo transparentemente (refresh token); si no hay sesión válida,
+   *   se hace logout único (sin toasts múltiples).
    * - Navegación a /login (logout o sesión expirada) → detiene el SSE.
    * - Cualquier otra ruta autenticada → arranca (idempotente).
    * Cada sesión de usuario abre su propia conexión anclada a su JWT.
    */
   private wireNotificationSync(): void {
+    // Al arrancar: restaura/renueva la sesión antes de abrir el SSE para no
+    // disparar peticiones (y notificaciones) con un access token ya expirado.
     if (this.auth.isLoggedIn()) {
-      this.notifications.start();
+      this.auth.restoreSession().subscribe((ok) => {
+        if (ok) this.notifications.start();
+      });
     }
 
     this.router.events

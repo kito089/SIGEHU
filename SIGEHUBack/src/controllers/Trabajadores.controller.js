@@ -275,8 +275,16 @@ const login = async (req, res) => {
             rol: trabajador.TIPOUSUARIO ?? trabajador.TipoUsuario ?? 'Trabajador'
         });
 
+        const refreshToken = jwt.generateRefreshToken({
+            idTrabajador: trabajador.IDTRABAJADOR,
+            usuario: trabajador.NOMBREUSUARIO,
+            nombre: trabajador.NOMBRECOMPLETO,
+            rol: trabajador.TIPOUSUARIO ?? trabajador.TipoUsuario ?? 'Trabajador'
+        });
+
         res.json({
             token,
+            refreshToken,
             trabajador: {
                 idTrabajador: trabajador.IDTRABAJADOR,
                 usuario: trabajador.NOMBREUSUARIO,
