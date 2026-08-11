@@ -1,13 +1,58 @@
 import { getConnection } from "../config/db.js";
 import audit from "./Auditoria.service.js";
 
+// ─── Resolución de estado de obra por nombre (app móvil) ─────────────────
+// La app móvil envía nombres amigables de etapa ("X Pendiente de Validación")
+// que NO existen en el catálogo EstadosObra (solo 7 estados oficiales). Se
+// mapean a la siguiente etapa oficial según la máquina de estados del SRS.
+const MAPA_ESTADOS_OBRA = {
+    'solicitud recibida': 1,
+    'levantamiento pendiente': 2,
+    'en fabricacion': 3,
+    'instalacion programada': 4,
+    'instalado': 5,
+    'garantia': 6,
+    'finalizado': 7,
+    // Etapas "Pendiente de Validación" del flujo de doble validación →
+    // siguiente estado oficial que el Propietario aprobaría.
+    'levantamiento pendiente de validacion': 3,
+    'fabricacion pendiente de validacion': 4,
+    'instalacion pendiente de validacion': 5
+};
+
+const normalizarEstado = (nombre) =>
+    String(nombre || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+
+const resolverEstadoObra = (nombre) =>
+    MAPA_ESTADOS_OBRA[normalizarEstado(nombre)] ?? null;
+
+// Aplica la máquina de estados paso a paso vía SP_CAMBIAR_ESTADO_OBRA desde el
+// estado actual hasta el destino. Cada paso es validado por el SP.
+const transicionarProgresivo = async (tx, idObra, estadoActual, destino) => {
+    for (let paso = estadoActual + 1; paso <= destino; paso++) {
+        const rows = await tx.query(
+            'SELECT * FROM SP_CAMBIAR_ESTADO_OBRA (?, ?)',
+            [idObra, paso]
+        );
+        const res = rows?.[0];
+        if (res && Number(res.OEXITO) === 0) {
+            return { ok: false, mensaje: res.OMENSAJE || 'Transición de estado no permitida' };
+        }
+    }
+    return { ok: true };
+};
+
 // ─── GET todos los Obras ───────────────────────────────────────────────
 const getObras = async (rol = null, idTrabajador = null, search = null) => {
     const db = await getConnection();
 
     try {
         if (rol === 'Trabajador' && idTrabajador) {
-            let sql = 'SELECT * FROM VW_OBRAS_TRABAJADOR WHERE IdTrabajador = ?';
+            let sql = 'SELECT * FROM VW_OBRAS_TRABAJADOR WHERE Trabajadores_idTrabajador = ?';
             const params = [idTrabajador];
 
             if (search && search.trim() !== '') {
@@ -266,6 +311,96 @@ const deleteObra = async (id, idTrabajadorCtx = 1) => {
     return true;
 };
 
+// ─── UPDATE de etapa desde la app móvil (doble validación) ──────────────────
+// El trabajador marca una etapa como "Pendiente de Validación" y aporta medidas
+// y/o una nota. En una sola transacción:
+//   1) Avanza el estado oficial vía SP_CAMBIAR_ESTADO_OBRA (máquina de estados).
+//   2) Actualiza las medidas que haya enviado.
+//   3) Registra la nota de avance en NotasObras (con el estado resultante).
+const completarEtapa = async (id, {
+    estado, Nombre, Direccion, Ancho, Alto, Profundidad, nota, idTrabajadorCtx = 1
+}) => {
+    const db = await getConnection();
+    const tx = await db.transaction();
+
+    try {
+        // 0. Leer la obra y su estado actual
+        const obras = await tx.query(
+            `SELECT o.EstadosObra_idEstadoObra AS EstadoActual
+             FROM Obras o WHERE o.idObra = ? AND o.Activo = TRUE`,
+            [id]
+        );
+
+        if (!obras || obras.length === 0) {
+            await tx.rollback();
+            return null;
+        }
+
+        const estadoActual = obras[0].ESTADOACTUAL ?? obras[0].EstadoActual;
+
+        // 1. Resolver y aplicar transición de estado si viene `estado`
+        if (estado) {
+            const idEstadoDestino = resolverEstadoObra(estado);
+            if (idEstadoDestino == null) {
+                await tx.rollback();
+                return { error: `Estado "${estado}" no reconocido` };
+            }
+
+            await tx.execute(
+                "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+                [String(idTrabajadorCtx)]
+            );
+
+            const transicion = await transicionarProgresivo(
+                tx, id, Number(estadoActual) || 0, idEstadoDestino
+            );
+
+            if (!transicion.ok) {
+                await tx.rollback();
+                return { error: transicion.mensaje };
+            }
+        }
+
+        // 2. Actualizar medidas/campos opcionales (solo los que lleguen)
+        const campos = [];
+        const valores = [];
+        const agregar = (columna, valor) => {
+            if (valor != null && String(valor).trim() !== '') {
+                campos.push(columna);
+                valores.push(valor);
+            }
+        };
+
+        agregar('Nombre', Nombre);
+        agregar('Direccion', Direccion != null ? Buffer.from(String(Direccion), "utf8") : null);
+        agregar('Ancho', Ancho);
+        agregar('Alto', Alto);
+        agregar('Profundidad', Profundidad);
+
+        if (campos.length > 0) {
+            await tx.execute(
+                `UPDATE Obras SET ${campos.map(c => `${c} = ?`).join(', ')} WHERE idObra = ?`,
+                [...valores, id]
+            );
+        }
+
+        // 3. Registrar la nota de avance con el estado resultante
+        if (nota && String(nota).trim() !== '') {
+            await tx.execute(
+                `INSERT INTO NotasObras (Obras_idObra, EstadosObra_idEstadoObra, Trabajadores_idTrabajador, Nota)
+                 VALUES (?, ?, ?, ?)`,
+                [id, (resolverEstadoObra(estado) ?? Number(estadoActual)) || 1, idTrabajadorCtx, String(nota)]
+            );
+        }
+
+        await tx.commit();
+        return { ok: true };
+    } catch (err) {
+        await tx.rollback();
+        throw err;
+    }
+};
+
 // ─── UPDATE (Cambiar de Estado) ────────────────────────────────────────────────────────────
 const cambiarEstado = async (idObra, idEstado, idTrabajadorCtx = 1) => {
     const db = await getConnection();
@@ -313,5 +448,7 @@ export default {
     updateObra,
     deleteObra,
     cambiarEstado,
+    completarEtapa,
+    resolverEstadoObra,
     getEstados
 };

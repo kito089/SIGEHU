@@ -11,10 +11,12 @@ router.get('/:id/obras', ctrl.findObras)
 router.get('/:id', ctrl.findById);
 
 router.post('/', ctrl.create);
+router.post('/imss', uploadDocumentoImss.single('imss'), ctrl.uploadImss);
 router.post('/:id/imss', uploadDocumentoImss.single('imss'), ctrl.uploadImss);
 router.post('/login', ctrl.login);
 router.put('/:id', ctrl.update);
 router.patch('/:id/activo', ctrl.cambiarActivo);
+router.delete('/imss', ctrl.eliminarImss);
 router.delete('/:id', ctrl.remove);
 
 export default router;

@@ -32,6 +32,29 @@
   }
 }
 
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  color: #94a3b8;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  ion-icon {
+    font-size: 2.2rem;
+    color: #64748b;
+  }
+  p {
+    font-size: 0.9rem;
+    margin: 0;
+  }
+}
+
 .obra-selector {
   margin-bottom: 16px;
   display: flex;

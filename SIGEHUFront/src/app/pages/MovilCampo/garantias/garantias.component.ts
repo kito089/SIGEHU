@@ -4,32 +4,50 @@ import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { AuthService } from '../../../services/auth.service';
+import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
+import { PermisosService } from '../../../core/services/permisos.service';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface TicketGarantia {
   ID: string | number;
+  IDGARANTIA?: string | number;
+  ID_OBRA?: number;
+  OBRA_ID?: number;
   OBRA_NOMBRE?: string;
+  NOMBREOBRA?: string;
   DESCRIPCION: string;
+  DESCRIPCIONRESOLUCION?: string;
   ESTADO: string;
+  ESTADOGARANTIA?: string;
   CLIENTE_NOMBRE?: string;
+  NOMBRECLIENTE?: string;
   DIRECCION?: string;
+  DIRECCIONOBRA?: string;
   TELEFONO?: string;
+  TELEFONOCLIENTE?: string;
+  IDTRABAJADOR?: number;
+  idTrabajador?: number;
   ACCION_CORRECTIVA?: string;
 }
 
 @Component({
   selector: 'app-garantias-campo',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
   templateUrl: './garantias.component.html',
   styleUrls: ['./garantias.component.scss'],
 })
 export class GarantiasCampoComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private auth = inject(AuthService);
+  private layout = inject(WorkerLayoutService);
+  private permisos = inject(PermisosService);
 
   tickets: TicketGarantia[] = [];
   loading = false;
+  error = false;
   guardando = false;
 
   // Formulario para nuevo reporte (RF-24)
@@ -38,54 +56,62 @@ export class GarantiasCampoComponent implements OnInit {
   selectedFile: File | null = null;
 
   ngOnInit(): void {
+    this.layout.setPageTitle('Garantías');
     this.cargarGarantias();
   }
 
   cargarGarantias(): void {
     this.loading = true;
-    this.api.get<TicketGarantia[]>('/api/garantias').subscribe({
+    this.error = false;
+    const user = this.auth.getUser();
+    this.api.get<TicketGarantia[]>('/Garantias').subscribe({
       next: (data) => {
         this.loading = false;
+        const filas = data || [];
+        // Solo garantías del trabajador autenticado (Firebird: IDTRABAJADOR).
+        const filtradas = user
+          ? filas.filter(g => (g.IDTRABAJADOR ?? g.idTrabajador) === user.idTrabajador)
+          : filas;
         // Solo datos operativos (RF-25: solo problema, dirección, teléfono)
-        this.tickets = (data || []).map(g => ({
-          ID: g.ID,
-          OBRA_NOMBRE: g.OBRA_NOMBRE || 'Obra Instalada',
+        this.tickets = filtradas.map(g => ({
+          ID: g.IDGARANTIA ?? g.ID ?? g.IDGARANTIA,
+          OBRA_NOMBRE: g.NOMBREOBRA ?? g.OBRA_NOMBRE ?? 'Obra Instalada',
           DESCRIPCION: g.DESCRIPCION,
-          ESTADO: g.ESTADO || 'Reportada',
-          DIRECCION: g.DIRECCION || 'Dirección de entrega',
-          TELEFONO: g.TELEFONO || 'Sin teléfono',
-          ACCION_CORRECTIVA: g.ACCION_CORRECTIVA
+          ESTADO: g.ESTADOGARANTIA ?? g.ESTADO ?? 'Reportada',
+          DIRECCION: g.DIRECCIONOBRA ?? g.DIRECCION ?? 'Dirección de entrega',
+          TELEFONO: g.TELEFONOCLIENTE ?? g.TELEFONO ?? 'Sin teléfono',
+          ACCION_CORRECTIVA: g.DESCRIPCIONRESOLUCION ?? g.ACCION_CORRECTIVA
         }));
-        if (this.tickets.length === 0) {
-          this.usarFallbackLocal();
+        if (this.tickets.length > 0) {
+          this.cargarPermisosGarantia(this.tickets[0]);
         }
       },
       error: () => {
         this.loading = false;
-        this.usarFallbackLocal();
+        this.error = true;
       }
     });
   }
 
-  usarFallbackLocal(): void {
-    this.tickets = [
-      {
-        ID: 'GAR-008',
-        OBRA_NOMBRE: 'Portón Corredizo Residencial',
-        DESCRIPCION: 'Falla en ajuste de chapa principal y tope de riel inferior.',
-        ESTADO: 'En atención',
-        DIRECCION: 'Av. de la Cruz #405, Col. Rey Xolotl',
-        TELEFONO: '449 123 4567'
-      },
-      {
-        ID: 'GAR-005',
-        OBRA_NOMBRE: 'Protecciones de Ventana Frontal',
-        DESCRIPCION: 'Revisión de punto de soldadura en anclaje superior.',
-        ESTADO: 'Reportada',
-        DIRECCION: 'Calle Zaragoza #102, Centro',
-        TELEFONO: '449 987 6543'
-      }
-    ];
+  reintentar(): void {
+    this.cargarGarantias();
+  }
+
+  private cargarPermisosGarantia(ticket: TicketGarantia): void {
+    // Los permisos se resuelven por obra; usamos el ID de obra si está presente.
+    const user = this.auth.getUser();
+    const obraId = Number(ticket.ID_OBRA ?? ticket.OBRA_ID ?? 0);
+    if (user && obraId > 0) {
+      this.permisos.cargarPermisos(obraId, user.idTrabajador);
+    }
+  }
+
+  get puedeVerTelefono(): boolean {
+    return this.permisos.puedeVerCampo(this.tickets[0]?.ID_OBRA, 'telefono_cliente');
+  }
+
+  get puedeVerDireccion(): boolean {
+    return this.permisos.puedeVerCampo(this.tickets[0]?.ID_OBRA, 'direccion_instalacion');
   }
 
   onFileChange(event: Event): void {
@@ -109,7 +135,7 @@ export class GarantiasCampoComponent implements OnInit {
     };
 
     // RF-24 Apertura de garantía
-    this.api.post('/api/garantias', body).subscribe({
+    this.api.post('/Garantias', body).subscribe({
       next: (res: any) => {
         this.guardando = false;
         this.toast.success('Reporte de garantía registrado exitosamente.');
@@ -135,7 +161,7 @@ export class GarantiasCampoComponent implements OnInit {
   cambiarSubEstado(ticket: TicketGarantia, nuevoEstado: string): void {
     ticket.ESTADO = nuevoEstado;
     this.toast.info(`Reporte ${ticket.ID} actualizado a: ${nuevoEstado}`);
-    this.api.put(`/api/garantias/${ticket.ID}`, { estado: nuevoEstado, accion: ticket.ACCION_CORRECTIVA }).subscribe({
+    this.api.put(`/Garantias/${ticket.ID}`, { estado: nuevoEstado, accion: ticket.ACCION_CORRECTIVA }).subscribe({
       next: () => {},
       error: () => {}
     });
@@ -148,7 +174,7 @@ export class GarantiasCampoComponent implements OnInit {
     }
     ticket.ESTADO = 'Resuelta';
     this.toast.success(`Garantía ${ticket.ID} resuelta (RF-26).`);
-    this.api.put(`/api/garantias/${ticket.ID}`, { estado: 'Resuelta', accion: ticket.ACCION_CORRECTIVA }).subscribe({
+    this.api.put(`/Garantias/${ticket.ID}`, { estado: 'Resuelta', accion: ticket.ACCION_CORRECTIVA }).subscribe({
       next: () => {},
       error: () => {}
     });

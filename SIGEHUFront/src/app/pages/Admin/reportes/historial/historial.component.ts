@@ -6,8 +6,8 @@ import { DataTableComponent, DataTableColumn } from '../../../../shared/componen
 import { DetailModalComponent } from '../../../../shared/components/detail-modal/detail-modal.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { DocumentViewerComponent } from '../../../../shared/components/document-viewer/document-viewer.component';
 import { AuditoriaService, AuditoriaRegistro, AuditoriaDetalle } from '../../../../services/auditoria.service';
-import { EnvService } from '../../../../services/env.service';
 
 /* =========================================================================
    SIGEHU — Historial completo de auditorías (RF-33).
@@ -28,19 +28,22 @@ import { EnvService } from '../../../../services/env.service';
     DetailModalComponent,
     EmptyStateComponent,
     SkeletonComponent,
+    DocumentViewerComponent,
   ],
   templateUrl: './historial.component.html',
   styleUrl: './historial.component.scss',
 })
 export class HistorialComponent implements OnInit {
   private auditoria = inject(AuditoriaService);
-  private env = inject(EnvService);
 
   historial: AuditoriaRegistro[] = [];
   cargando = false;
   busqueda = '';
   filtroDia = '';
   error = false;
+
+  // Visor del documento IMSS asociado a un cambio de auditoría.
+  documentoViewer: { source: string | Blob | null; filename: string; title: string } | null = null;
 
   columnas: DataTableColumn[] = [
     { key: 'id', label: 'ID', width: '70px' },
@@ -247,15 +250,25 @@ export class HistorialComponent implements OnInit {
     }
   }
 
-  // Reutiliza el mecanismo del módulo Trabajadores: la BD guarda solo la ruta
-  // relativa (uploads/imss/...) y el visor se construye con el base URL.
+  // Reutiliza el visor del módulo Trabajadores: la BD guarda solo la ruta
+  // relativa (uploads/imss/...) y el visor la descarga autenticada, detecta el
+  // tipo MIME y la muestra internamente (zoom de imagen / previsualización de
+  // PDF), con manejo de errores y opción de abrir con la aplicación externa.
   abrirDocumentoImss(ruta: string | null): void {
     if (!ruta) return;
-    if (/^(blob:|https?:|data:)/i.test(ruta)) {
-      window.open(ruta, '_blank');
-      return;
-    }
-    const base = (this.env.getBaseUrl() || '').replace(/\/+$/, '');
-    window.open(base + '/' + ruta.replace(/^\/+/, ''), '_blank');
+    this.documentoViewer = {
+      source: ruta,
+      filename: extractFilenameFromPath(ruta),
+      title: 'Documento IMSS',
+    };
   }
+
+  cerrarDocumentoViewer(): void {
+    this.documentoViewer = null;
+  }
+}
+
+function extractFilenameFromPath(ruta: string): string {
+  const parts = ruta.split(/[\\/]/).filter(Boolean);
+  return parts[parts.length - 1] || 'documento';
 }

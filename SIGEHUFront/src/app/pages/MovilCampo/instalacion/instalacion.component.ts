@@ -4,14 +4,17 @@ import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { AuthService } from '../../../services/auth.service';
+import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
+import { PermisosService } from '../../../core/services/permisos.service';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface ItemChecklist {
   nombre: string;
   verificado: boolean;
 }
 
-interface ObraRuta {
+interface ObraInstalacion {
   ID: number;
   NOMBRE: string;
   CLIENTE_NOMBRE?: string;
@@ -19,22 +22,27 @@ interface ObraRuta {
   DIRECCION?: string;
   ESTADO?: string;
   KIT_NOMBRE?: string;
+  FECHA_LIMITE?: string;
 }
 
 @Component({
-  selector: 'app-ruta',
+  selector: 'app-instalacion',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
-  templateUrl: './ruta.component.html',
-  styleUrls: ['./ruta.component.scss'],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
+  templateUrl: './instalacion.component.html',
+  styleUrls: ['./instalacion.component.scss'],
 })
-export class RutaComponent implements OnInit {
+export class InstalacionComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private auth = inject(AuthService);
+  private layout = inject(WorkerLayoutService);
+  private permisos = inject(PermisosService);
 
-  obrasRuta: ObraRuta[] = [];
-  selectedObra: ObraRuta | null = null;
+  obrasInstalacion: ObraInstalacion[] = [];
+  selectedObra: ObraInstalacion | null = null;
   loading = false;
+  error = false;
   confirmando = false;
 
   selectedFile: File | null = null;
@@ -56,51 +64,55 @@ export class RutaComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.cargarRuta();
+    this.layout.setPageTitle('Instalación');
+    this.cargarInstalaciones();
   }
 
-  cargarRuta(): void {
+  cargarInstalaciones(): void {
     this.loading = true;
-    this.api.get<ObraRuta[]>('/api/obras').subscribe({
+    this.error = false;
+    this.api.get<ObraInstalacion[]>('/Obras').subscribe({
       next: (data) => {
         this.loading = false;
-        this.obrasRuta = (data || []).filter(o =>
+        this.obrasInstalacion = (data || []).filter(o =>
           o.ESTADO?.toLowerCase().includes('instalaci') ||
           o.ESTADO?.toLowerCase().includes('fabricado') ||
           o.ESTADO?.toLowerCase().includes('ruta')
         );
-        if (this.obrasRuta.length > 0) {
-          this.seleccionarObra(this.obrasRuta[0]);
-        } else {
-          this.usarFallbackLocal();
+        if (this.obrasInstalacion.length > 0) {
+          this.seleccionarObra(this.obrasInstalacion[0]);
         }
       },
       error: () => {
         this.loading = false;
-        this.usarFallbackLocal();
+        this.error = true;
       }
     });
   }
 
-  usarFallbackLocal(): void {
-    this.selectedObra = {
-      ID: 201,
-      NOMBRE: 'Portón Corredizo e Instalación en Sitio',
-      CLIENTE_NOMBRE: 'María Elena Gómez',
-      TELEFONO: '449-123-4567',
-      DIRECCION: 'Av. de la Cruz #405, Col. Rey Xolotl',
-      ESTADO: 'Instalación Programada',
-      KIT_NOMBRE: 'Kit Estándar de Montaje y Soldadura'
-    };
+  reintentar(): void {
+    this.cargarInstalaciones();
   }
 
-  seleccionarObra(obra: ObraRuta): void {
+  seleccionarObra(obra: ObraInstalacion): void {
     this.selectedObra = obra;
     this.entrega = {
       cliente: obra.CLIENTE_NOMBRE || 'Cliente asignado',
       telefono: obra.TELEFONO || 'Sin teléfono',
       direccion: obra.DIRECCION || 'Dirección de obra'
     };
+    const user = this.auth.getUser();
+    if (user && obra.ID) {
+      this.permisos.cargarPermisos(obra.ID, user.idTrabajador);
+    }
+  }
+
+  get puedeVerTelefono(): boolean {
+    return this.permisos.puedeVerCampo(this.selectedObra?.ID, 'telefono_cliente');
+  }
+
+  get puedeVerDireccion(): boolean {
+    return this.permisos.puedeVerCampo(this.selectedObra?.ID, 'direccion_instalacion');
   }
 
   get porcentajeVerificado(): number {
@@ -131,13 +143,13 @@ export class RutaComponent implements OnInit {
     };
 
     // Doble validación de Instalación (RF-20)
-    this.api.put(`/api/obras/${obraId}`, payload).subscribe({
+    this.api.put(`/Obras/${obraId}`, payload).subscribe({
       next: () => {
         if (this.selectedFile) {
           const fd = new FormData();
           fd.append('foto', this.selectedFile);
           fd.append('tipo', 'Instalacion');
-          this.api.uploadFile(`/api/obras/${obraId}/fotos`, fd).subscribe();
+          this.api.uploadFile(`/Obras/${obraId}/fotos`, fd).subscribe();
         }
         this.confirmando = false;
         this.toast.success('Instalación entregada. Queda en Instalación Pendiente de Validación.');

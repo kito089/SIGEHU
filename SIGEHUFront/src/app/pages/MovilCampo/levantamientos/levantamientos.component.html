@@ -1,10 +1,25 @@
-<app-worker-header></app-worker-header>
+<app-mobile-header [showNewWork]="false"></app-mobile-header>
 
 <ion-content class="ion-padding sigehu-content">
 
   <div class="mobile-header">
     <h2>Levantamiento de Medidas</h2>
     <p class="subtitle">Captura de dimensiones reales y especificaciones en sitio (RF-11, RF-12)</p>
+  </div>
+
+  <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
+
+  <!-- Estado de error con reintento -->
+  <div *ngIf="error && !loading" class="state-box">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <p>No se pudieron cargar tus obras de levantamiento.</p>
+    <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
+  </div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="!loading && !error && obras.length === 0" class="state-box">
+    <ion-icon name="resize-outline"></ion-icon>
+    <p>No tienes obras pendientes de levantamiento.</p>
   </div>
 
   <!-- Selector de Obra asignada si existen varias -->

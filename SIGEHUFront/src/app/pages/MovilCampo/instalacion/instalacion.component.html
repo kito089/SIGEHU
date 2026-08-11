@@ -1,13 +1,36 @@
-<app-worker-header></app-worker-header>
+<app-mobile-header [showNewWork]="false"></app-mobile-header>
 
 <ion-content class="ion-padding sigehu-content">
 
   <div class="mobile-header">
-    <h2>Ruta de Instalación & Kits</h2>
-    <p class="subtitle">Verificación de kit para ruta y entrega en domicilio (RF-19, RF-20, RF-23)</p>
+    <h2>Instalación de Kits en Domicilio</h2>
+    <p class="subtitle">Verificación de kit para instalación y entrega en domicilio (RF-19, RF-20, RF-23)</p>
   </div>
 
   <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
+
+  <!-- Estado de error con reintento -->
+  <div *ngIf="error && !loading" class="state-box">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <p>No se pudieron cargar las obras asignadas para instalación.</p>
+    <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
+  </div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="!loading && !error && obrasInstalacion.length === 0" class="state-box">
+    <ion-icon name="navigate-outline"></ion-icon>
+    <p>No tienes obras programadas para instalación en este momento.</p>
+  </div>
+
+  <!-- Selector de obra asignada -->
+  <div *ngIf="obrasInstalacion.length > 1" class="obra-selector">
+    <ion-label>Seleccionar Instalación:</ion-label>
+    <ion-select [value]="selectedObra?.ID" (ionChange)="seleccionarObra($any($event.detail.value))" interface="popover">
+      <ion-select-option *ngFor="let o of obrasInstalacion" [value]="o.ID">
+        {{ o.NOMBRE }} ({{ o.ESTADO }})
+      </ion-select-option>
+    </ion-select>
+  </div>
 
   <!-- Datos de Entrega / Cliente (RF-19) -->
   <ion-card class="sigehu-card" *ngIf="selectedObra">
@@ -23,11 +46,11 @@
         <span class="info-label">Cliente</span>
         <strong class="info-val">{{ entrega.cliente }}</strong>
       </div>
-      <div class="info-row">
+      <div class="info-row" *ngIf="puedeVerTelefono">
         <span class="info-label">Teléfono</span>
         <strong class="info-val">{{ entrega.telefono }}</strong>
       </div>
-      <div class="info-row">
+      <div class="info-row" *ngIf="puedeVerDireccion">
         <span class="info-label">Dirección</span>
         <strong class="info-val">{{ entrega.direccion }}</strong>
       </div>
@@ -35,7 +58,7 @@
   </ion-card>
 
   <!-- Checklist de Kit para Salida a Campo (RF-23) -->
-  <ion-card class="sigehu-card">
+  <ion-card class="sigehu-card" *ngIf="selectedObra">
     <ion-card-header>
       <div class="card-top">
         <ion-card-title>Checklist del Kit de Instalación</ion-card-title>
@@ -43,7 +66,7 @@
           {{ porcentajeVerificado }}% verificado
         </ion-badge>
       </div>
-      <ion-card-subtitle>Verifica tus herramientas e insumos antes de salir a la ruta</ion-card-subtitle>
+      <ion-card-subtitle>Verifica tus herramientas e insumos antes de salir a la instalación</ion-card-subtitle>
     </ion-card-header>
 
     <ion-card-content class="ion-no-padding">
@@ -64,7 +87,7 @@
   </ion-card>
 
   <!-- Entrega de Obra e Evidencia (RF-20) -->
-  <ion-card class="sigehu-card validation-card">
+  <ion-card class="sigehu-card validation-card" *ngIf="selectedObra">
     <ion-card-header>
       <ion-card-title>Confirmación de Instalación Entregada</ion-card-title>
       <ion-card-subtitle>Sube fotografía final en domicilio del cliente</ion-card-subtitle>

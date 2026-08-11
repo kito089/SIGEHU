@@ -1,4 +1,4 @@
-<app-worker-header></app-worker-header>
+<app-mobile-header [showNewWork]="false"></app-mobile-header>
 
 <ion-content class="ion-padding sigehu-content">
   <!-- Selector de obras en taller -->
@@ -9,7 +9,14 @@
 
   <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
 
-  <div *ngIf="obras.length === 0 && !loading" class="empty-box">
+  <!-- Estado de error con reintento -->
+  <div *ngIf="error && !loading" class="state-box">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <p>No se pudieron cargar tus obras de fabricación.</p>
+    <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
+  </div>
+
+  <div *ngIf="obras.length === 0 && !loading && !error" class="empty-box">
     <ion-icon name="construct-outline"></ion-icon>
     <p>No tienes obras asignadas en proceso de fabricación.</p>
   </div>

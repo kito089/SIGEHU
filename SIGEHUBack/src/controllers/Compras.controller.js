@@ -25,7 +25,8 @@ const validarFechaCompra = (valor) => {
 const getAll = async (req, res) => {
     try {
         if (req.user?.rol === 'Trabajador') {
-            return res.status(403).json({ error: 'Solo Propietario puede ver listado de compras' });
+            const compras = await service.getComprasChoferList(req.user?.idTrabajador);
+            return res.json(compras);
         }
         const compras = await service.getCompras(req.user?.idTrabajador);
         res.json(compras);
@@ -84,6 +85,29 @@ const update = async (req, res) => {
     try {
         if (!req.body || Object.keys(req.body).length === 0) {
             return res.status(400).json({ error: 'El cuerpo de la solicitud esta vacio' });
+        }
+
+        // Flujo móvil (chofer): la app manda PUT /Compras/:id { estado: 'Surtida' }
+        // para marcar la orden como surtida en proveedor. Se valida que el chofer
+        // autenticado sea el asignado (misma lógica que marcarRecibida).
+        if (req.user?.rol === 'Trabajador' && req.body?.estado) {
+            const resultado = await service.marcarRecibida(
+                req.params.id,
+                req.user?.idTrabajador,
+                req.user?.rol
+            );
+
+            if (resultado.error === 'not_found') {
+                return res.status(404).json({ error: 'Compra no encontrada' });
+            }
+            if (resultado.error === 'forbidden') {
+                return res.status(403).json({ error: 'Solo el chofer asignado puede actualizar esta compra' });
+            }
+            if (resultado.error === 'already') {
+                return res.status(400).json({ error: 'La compra ya fue marcada como surtida' });
+            }
+
+            return res.json({ message: 'Compra marcada como surtida en proveedor' });
         }
 
         const { idTrabajador, Notas, detalles } = req.body;

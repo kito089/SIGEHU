@@ -4,7 +4,8 @@ import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface MaterialObra {
   ID?: number;
@@ -15,11 +16,16 @@ interface MaterialObra {
 
 interface ObraFabricacion {
   ID: number;
+  IDOBRA?: number;
   NOMBRE: string;
+  NOMBREOBRA?: string;
   CLIENTE_NOMBRE?: string;
+  NOMBRECLIENTE?: string;
   UBICACION?: string;
+  DIRECCIONOBRA?: string;
   TELEFONO?: string;
   ESTADO: string;
+  ESTADOBRA?: string;
   ESPECIFICACIONES?: string;
   MODELO_DISENO?: string;
   MEDIDAS_ALTO?: number;
@@ -31,33 +37,46 @@ interface ObraFabricacion {
 @Component({
   selector: 'app-fabricacion-campo',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
   templateUrl: './fabricacion.component.html',
   styleUrls: ['./fabricacion.component.scss']
 })
 export class FabricacionComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private layout = inject(WorkerLayoutService);
 
   obras: ObraFabricacion[] = [];
   selectedObra: ObraFabricacion | null = null;
   loading = false;
+  error = false;
   guardando = false;
 
   notaAvance = '';
   selectedFile: File | null = null;
 
   ngOnInit(): void {
+    this.layout.setPageTitle('Fabricación');
     this.cargarObrasFabricacion();
   }
 
   cargarObrasFabricacion(): void {
     this.loading = true;
-    this.api.get<ObraFabricacion[]>('/api/obras').subscribe({
+    this.error = false;
+    this.api.get<ObraFabricacion[]>('/Obras').subscribe({
       next: (data) => {
         this.loading = false;
+        // Firebird devuelve claves en mayúsculas (IDOBRA, NOMBREOBRA...)
+        const normalizadas = (data || []).map(o => ({
+          ...o,
+          ID: Number(o.IDOBRA ?? o.ID),
+          NOMBRE: o.NOMBREOBRA ?? o.NOMBRE ?? 'Obra sin nombre',
+          CLIENTE_NOMBRE: o.NOMBRECLIENTE ?? o.CLIENTE_NOMBRE,
+          UBICACION: o.DIRECCIONOBRA ?? o.UBICACION,
+          ESTADO: o.ESTADOBRA ?? o.ESTADO
+        }));
         // Filtrar obras en etapa de Fabricación o Pendiente de Validación
-        this.obras = (data || []).filter(o => 
+        this.obras = normalizadas.filter(o =>
           o.ESTADO?.toLowerCase().includes('fabrica') ||
           o.ESTADO?.toLowerCase().includes('solicitud') ||
           o.ESTADO?.toLowerCase().includes('levantamiento')
@@ -68,31 +87,13 @@ export class FabricacionComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
-        // Fallback local visual de demostración
-        this.obras = [
-          {
-            ID: 101,
-            NOMBRE: 'Portón Principal Corredizo - Residencial',
-            CLIENTE_NOMBRE: 'Carlos Mendoza',
-            UBICACION: 'Av. Las Palmas #230',
-            TELEFONO: '449 200 4050',
-            ESTADO: 'En Fabricación',
-            ESPECIFICACIONES: 'PTR de 2x2 pulg en marco, lámina acanalada calibre 18, pintura anticorrosiva negra.',
-            MODELO_DISENO: 'Modelo Residencial Ejecutivo V-02',
-            MEDIDAS_ALTO: 2.50,
-            MEDIDAS_ANCHO: 4.20,
-            MEDIDAS_PROFUNDIDAD: 0.15,
-            MATERIALES: [
-              { MATERIAL: 'PTR 2"x2" Calibre 14', CANTIDAD: 6, UNIDAD: 'Tramo 6m' },
-              { MATERIAL: 'Lámina Lisa Calibre 18', CANTIDAD: 4, UNIDAD: 'Hoja' },
-              { MATERIAL: 'Ruedas de balero 4"', CANTIDAD: 2, UNIDAD: 'Pieza' },
-              { MATERIAL: 'Primer Anticorrosivo Gris', CANTIDAD: 1, UNIDAD: 'Galón' }
-            ]
-          }
-        ];
-        this.selectedObra = this.obras[0];
+        this.error = true;
       }
     });
+  }
+
+  reintentar(): void {
+    this.cargarObrasFabricacion();
   }
 
   seleccionarObra(obra: ObraFabricacion): void {
@@ -103,7 +104,7 @@ export class FabricacionComponent implements OnInit {
   }
 
   cargarDetalleMateriales(obraId: number): void {
-    this.api.get<MaterialObra[]>(`/api/obras/${obraId}/materiales`).subscribe({
+    this.api.get<MaterialObra[]>(`/Obras/${obraId}/materiales`).subscribe({
       next: (mats) => {
         if (this.selectedObra && mats && mats.length > 0) {
           this.selectedObra.MATERIALES = mats;
@@ -130,13 +131,13 @@ export class FabricacionComponent implements OnInit {
     };
 
     // Actualizar estado de la obra (RF-17 Doble validación)
-    this.api.put(`/api/obras/${this.selectedObra.ID}`, payload).subscribe({
+    this.api.put(`/Obras/${this.selectedObra.ID}`, payload).subscribe({
       next: () => {
         if (this.selectedFile && this.selectedObra) {
           const fd = new FormData();
           fd.append('foto', this.selectedFile);
           fd.append('tipo', 'Fabricacion');
-          this.api.uploadFile(`/api/obras/${this.selectedObra.ID}/fotos`, fd).subscribe();
+          this.api.uploadFile(`/Obras/${this.selectedObra.ID}/fotos`, fd).subscribe();
         }
         this.guardando = false;
         this.toast.success('Fabricación terminada. Enviada a validación del Propietario.');

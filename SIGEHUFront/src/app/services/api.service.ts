@@ -1,6 +1,5 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { EnvService } from './env.service';
@@ -11,7 +10,6 @@ import { EnvService } from './env.service';
 export class ApiService {
   private http = inject(HttpClient);
   private env = inject(EnvService);
-  private router = inject(Router);
 
   private baseUrl: string;
 
@@ -87,13 +85,9 @@ export class ApiService {
   }
 
   private handleError(error: HttpErrorResponse): Observable<never> {
-    if (error.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      this.router.navigate(['/login']);
-    }
+    // El 401 (sesión expirada/invalidada) lo gestiona el authInterceptor
+    // (refresh reactivo o logout único central en AuthService). Aquí no se
+    // toca el almacenamiento ni se navega para no competir con ese flujo.
     if (error.status === 403) {
       console.error('Acceso denegado - rol insuficiente');
     }
