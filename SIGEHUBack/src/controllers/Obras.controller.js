@@ -86,7 +86,40 @@ const update = async (req, res) => {
             return res.status(400).json({ error: "El cuerpo de la solicitud está vacío" });
         }
 
-        const { Nombre, Direccion, Ancho, Alto, Profundidad } = req.body;
+        const { Nombre, Direccion, Ancho, Alto, Profundidad, estado, nota, observaciones } = req.body;
+
+        // El formulario de levantamientos envía medidas en minúscula y la nota
+        // como `observaciones`; fabricación/instalación envían `nota`.
+        const ancho = Ancho ?? req.body.ancho ?? null;
+        const alto = Alto ?? req.body.alto ?? null;
+        const profundidad = Profundidad ?? req.body.profundidad ?? null;
+        const notaAvance = nota ?? observaciones ?? null;
+
+        // Flujo móvil (doble validación): el trabajador marca una etapa como
+        // "Pendiente de Validación" y opcionalmente aporta medidas + nota.
+        // Nombre es opcional en ese flujo (el backend no debe exigirlo).
+        if (estado) {
+            const resultado = await service.completarEtapa(req.params.id, {
+                estado,
+                Nombre: Nombre ?? null,
+                Direccion: Direccion ?? null,
+                Ancho: ancho,
+                Alto: alto,
+                Profundidad: profundidad,
+                nota: notaAvance,
+                idTrabajadorCtx: req.user?.idTrabajador
+            });
+
+            if (resultado === null) {
+                return res.status(404).json({ error: "Obra no encontrada" });
+            }
+
+            if (resultado.error) {
+                return res.status(400).json({ error: resultado.error });
+            }
+
+            return res.json({ message: "Obra actualizada" });
+        }
 
         const datos = { Nombre };
         const faltantes = Object.entries(datos)
@@ -102,9 +135,9 @@ const update = async (req, res) => {
         const actualizado = await service.updateObra(req.params.id, {
             Nombre,
             Direccion,
-            Ancho,
-            Alto,
-            Profundidad,
+            Ancho: ancho,
+            Alto: alto,
+            Profundidad: profundidad,
             idTrabajadorCtx: req.user?.idTrabajador
         });
 
@@ -138,20 +171,29 @@ const remove = async (req, res) => {
 // PATCH /obras/:id/estado
 const cambiarEstado = async (req, res) => {
     try {
-        const { idEstado } = req.body;
+        const { idEstado, estado } = req.body;
 
-        if (!idEstado) {
-            return res.status(400).json({ error: "idEstado es requerido" });
+        let destino = idEstado;
+        if (!destino && estado) {
+            destino = service.resolverEstadoObra(estado);
+        }
+
+        if (!destino) {
+            return res.status(400).json({ error: "idEstado (o estado por nombre) es requerido" });
         }
 
         const resultado = await service.cambiarEstado(
             req.params.id,
-            idEstado,
+            destino,
             req.user?.idTrabajador
         );
 
         if (!resultado) {
             return res.status(404).json({ error: "Obra no encontrada" });
+        }
+
+        if (Number(resultado.OEXITO) === 0) {
+            return res.status(400).json({ error: resultado.OMENSAJE || "Transición no permitida" });
         }
 
         res.json({ message: "Estado actualizado", resultado });

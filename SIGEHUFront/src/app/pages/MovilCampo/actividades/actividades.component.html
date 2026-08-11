@@ -1,0 +1,45 @@
+<app-worker-header></app-worker-header>
+
+<ion-content class="ion-padding sigehu-content">
+
+  <div class="mobile-header">
+    <h2>Actividades pendientes</h2>
+    <p class="subtitle">Tus tareas activas en campo, ordenadas por fecha límite</p>
+  </div>
+
+  <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
+
+  <!-- Estado de error con reintento -->
+  <div *ngIf="error && !loading" class="state-box">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <p>No se pudieron cargar tus actividades.</p>
+    <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
+  </div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="!loading && !error && actividades.length === 0" class="state-box">
+    <ion-icon name="checkmark-done-circle-outline"></ion-icon>
+    <p>No tienes actividades pendientes. ¡Todo al día!</p>
+  </div>
+
+  <!-- Lista de actividades -->
+  <div *ngIf="!loading && !error" class="activity-list">
+    <div *ngFor="let a of actividades" class="activity-card" (click)="abrir(a)">
+      <div class="activity-icon" [class]="'tipo-' + a.tipo">
+        <ion-icon [name]="iconoTipo(a.tipo)"></ion-icon>
+      </div>
+
+      <div class="activity-body">
+        <span class="activity-badge">{{ labelTipo(a.tipo) }}</span>
+        <h3>{{ a.titulo }}</h3>
+        <p class="activity-cliente" *ngIf="a.cliente">{{ a.cliente }}</p>
+        <span class="activity-estado">{{ a.estado }}</span>
+      </div>
+
+      <div class="activity-fecha">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <span>{{ a.fechaLimite }}</span>
+      </div>
+    </div>
+  </div>
+</ion-content>

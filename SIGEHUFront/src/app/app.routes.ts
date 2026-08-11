@@ -53,15 +53,17 @@ export const routes: Routes = [
     path: 'movil',
     canActivate: [WorkerGuard],
     children: [
+      { path: 'actividades', loadComponent: () => import('./pages/MovilCampo/actividades/actividades.component').then(m => m.ActividadesComponent) },
       { path: 'levantamientos', loadComponent: () => import('./pages/MovilCampo/levantamientos/levantamientos.component').then(m => m.LevantamientosComponent) },
       { path: 'fabricacion', loadComponent: () => import('./pages/MovilCampo/fabricacion/fabricacion.component').then(m => m.FabricacionComponent) },
       { path: 'compras', loadComponent: () => import('./pages/MovilCampo/compras/compras.component').then(m => m.ComprasComponent) },
-      { path: 'ruta', loadComponent: () => import('./pages/MovilCampo/ruta/ruta.component').then(m => m.RutaComponent) },
+      { path: 'instalacion', loadComponent: () => import('./pages/MovilCampo/instalacion/instalacion.component').then(m => m.InstalacionComponent) },
       { path: 'garantias', loadComponent: () => import('./pages/MovilCampo/garantias/garantias.component').then(m => m.GarantiasCampoComponent) },
-      { path: '', redirectTo: 'levantamientos', pathMatch: 'full' }
+      { path: 'ruta', redirectTo: 'instalacion', pathMatch: 'full' },
+      { path: '', redirectTo: 'actividades', pathMatch: 'full' }
     ]
   },
-  { path: 'worker', redirectTo: 'movil/levantamientos', pathMatch: 'full' },
+  { path: 'worker', redirectTo: 'movil/actividades', pathMatch: 'full' },
 
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }

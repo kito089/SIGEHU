@@ -1,5 +1,18 @@
 import service from "../services/Garantias.service.js";
 
+// Mapa de estados de garantía por nombre amigable → idEstadoGarantia.
+// El catálogo EstadosGarantia solo tiene: Reportada=1, En atencion=2, Resuelta=3.
+const ESTADOS_GARANTIA = {
+    'reportada': 1,
+    'en atencion': 2,
+    'en atención': 2,
+    'resuelta': 3
+};
+
+const normalizar = (texto) => String(texto || '').toLowerCase().trim();
+
+const resolverEstadoGarantia = (nombre) => ESTADOS_GARANTIA[normalizar(nombre)] ?? null;
+
 // GET /Garantias
 const getAll = async (req, res) => {
     try {
@@ -30,23 +43,30 @@ const create = async (req, res) => {
             return res.status(400).json({ error: "El cuerpo de la solicitud está vacío" });
         }
 
-        const { idObra, descripcion, idTrabajador } = req.body;
+        const { idObra, obra, descripcion, estado } = req.body;
 
-        const datos = { idObra };
-        const faltantes = Object.entries(datos)
-            .filter(([_, valor]) => valor == null || valor === '')
-            .map(([clave]) => clave);
+        // La app móvil envía `obra` como texto ("OB-0014 · Portón..."); el
+        // backend también acepta `idObra` directo (formulario Web).
+        let idObraResuelto = idObra;
+        if (!idObraResuelto && obra) {
+            const m = /OB-(\d+)/i.exec(String(obra));
+            if (m) {
+                idObraResuelto = Number(m[1]);
+            }
+        }
 
-        if (faltantes.length > 0) {
+        if (!idObraResuelto) {
             return res.status(400).json({
-                error: `Faltan campos requeridos: ${faltantes.join(', ')}`
+                error: "Faltan campos requeridos: idObra (u obra)"
             });
         }
 
         const nuevoId = await service.createGarantia({
-            idObra,
+            idObra: idObraResuelto,
             descripcion: descripcion ?? null,
-            idTrabajador: idTrabajador ?? 1
+            idTrabajador: req.body.idTrabajador ?? req.user?.idTrabajador ?? 1,
+            estado: estado ?? null,
+            idTrabajadorCtx: req.user?.idTrabajador
         });
 
         res.status(201).json({ message: "Garantia creada", idGarantia: nuevoId });
@@ -63,24 +83,27 @@ const update = async (req, res) => {
             return res.status(400).json({ error: "El cuerpo de la solicitud está vacío" });
         }
 
-        const { descripcion, idEstado, resolucion, idTrabajadorCtx } = req.body;
+        const { descripcion, idEstado, resolucion, accion, estado } = req.body;
 
-        const datos = { idEstado };
-        const faltantes = Object.entries(datos)
-            .filter(([_, valor]) => valor == null || valor === '')
-            .map(([clave]) => clave);
+        // La app móvil envía `estado` por nombre ("En atencion", "Resuelta") y
+        // la acción correctiva en `accion`. El formulario Web envía idEstado.
+        let idEstadoFinal = idEstado;
+        if (!idEstadoFinal && estado) {
+            idEstadoFinal = resolverEstadoGarantia(estado);
+        }
+        const resolucionFinal = resolucion ?? accion ?? null;
 
-        if (faltantes.length > 0) {
+        if (!idEstadoFinal) {
             return res.status(400).json({
-                error: `Faltan campos requeridos: ${faltantes.join(', ')}`
+                error: "idEstado (o estado por nombre) es requerido"
             });
         }
 
         const actualizado = await service.updateGarantia(req.params.id, {
             descripcion: descripcion ?? null,
-            idEstado,
-            resolucion: resolucion ?? null,
-            idTrabajadorCtx: idTrabajadorCtx ?? 1
+            idEstado: idEstadoFinal,
+            resolucion: resolucionFinal,
+            idTrabajadorCtx: req.body.idTrabajadorCtx ?? req.user?.idTrabajador ?? 1
         });
 
         if (!actualizado) {

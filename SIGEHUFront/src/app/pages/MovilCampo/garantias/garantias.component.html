@@ -9,8 +9,21 @@
 
   <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
 
+  <!-- Estado de error con reintento -->
+  <div *ngIf="error && !loading" class="state-box">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <p>No se pudieron cargar tus garantías asignadas.</p>
+    <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
+  </div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="!loading && !error && tickets.length === 0" class="state-box">
+    <ion-icon name="shield-checkmark-outline"></ion-icon>
+    <p>No tienes tickets de garantía activos.</p>
+  </div>
+
   <!-- Registro de Nuevo Reporte de Garantía (RF-24) -->
-  <ion-card class="sigehu-card">
+  <ion-card class="sigehu-card" *ngIf="!error">
     <ion-card-header>
       <ion-card-title>Abrir Reporte de Garantía</ion-card-title>
       <ion-card-subtitle>Reportar reporte de obra instalada</ion-card-subtitle>
@@ -69,11 +82,11 @@
           <span class="info-label">Descripción Falla</span>
           <strong class="info-val desc-val">{{ t.DESCRIPCION }}</strong>
         </div>
-        <div class="info-row">
+        <div class="info-row" *ngIf="puedeVerDireccion">
           <span class="info-label">Dirección</span>
           <strong class="info-val">{{ t.DIRECCION }}</strong>
         </div>
-        <div class="info-row">
+        <div class="info-row" *ngIf="puedeVerTelefono">
           <span class="info-label">Teléfono</span>
           <strong class="info-val">{{ t.TELEFONO }}</strong>
         </div>

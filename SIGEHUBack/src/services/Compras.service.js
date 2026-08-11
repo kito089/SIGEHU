@@ -356,6 +356,60 @@ const idAudit = auditRows?.[0]?.ID ?? null;
     return true;
 };
 
+// Lista de compras para el chofer (rol Trabajador). Sin datos financieros:
+// la tabla Compras no tiene columnas de precio/monto. Devuelve el shape que
+// consume la página móvil /movil/compras (claves en MAYÚSCULAS como Firebird).
+const getComprasChoferList = async (idTrabajador) => {
+    const db = await getConnection();
+
+    const compras = await db.query(
+        `SELECT c.idCompra, c.FechaCompra, c.Recibida
+         FROM Compras c
+         WHERE c.Activo = TRUE AND c.Trabajadores_idTrabajador = ?
+         ORDER BY c.FechaCompra DESC`,
+        [idTrabajador]
+    );
+
+    const resultados = [];
+    for (const c of compras ?? []) {
+        const idCompra = c.IDCOMPRA ?? c.idCompra;
+        const detalles = await db.query(
+            `SELECT p.Nombre AS NombreProveedor, p.Direccion AS DireccionProveedor,
+                    p.Telefono AS TelefonoProveedor,
+                    m.Nombre AS NombreMaterial, m.UnidadMedida,
+                    dc.Cantidad, dc.Medida
+             FROM DetallesCompras dc
+             JOIN Proveedores_has_Materiales ph
+                 ON ph.Proveedores_idProveedor = dc.Proveedores_has_Materiales_Proveedores_idProveedor
+                AND ph.Materiales_idMaterial = dc.Proveedores_has_Materiales_Materiales_idMaterial
+             JOIN Materiales m ON m.idMaterial = ph.Materiales_idMaterial
+             JOIN Proveedores p ON p.idProveedor = ph.Proveedores_idProveedor
+             WHERE dc.Compras_idCompra = ?`,
+            [idCompra]
+        );
+
+        const materiales = (detalles ?? []).map(d => ({
+            MATERIAL_NOMBRE: d.NOMBREMATERIAL,
+            CANTIDAD: d.CANTIDAD,
+            UNIDAD: d.MEDIDA ?? d.UNIDADMEDIDA ?? null
+        }));
+
+        const proveedor = (detalles ?? [])[0] ?? {};
+
+        resultados.push({
+            ID: Number(idCompra),
+            PROVEEDOR_NOMBRE: proveedor.NOMBREPROVEEDOR ?? null,
+            PROVEEDOR_DIRECCION: proveedor.DIRECCIONPROVEDOR ?? null,
+            PROVEEDOR_TELEFONO: proveedor.TELEFONOPROVEDOR ?? null,
+            FECHA_ORDEN: normalizeDate(c.FECHACOMPRA ?? c.FechaCompra ?? null),
+            ESTADO: c.RECIBIDA ? 'Surtida en Proveedor' : 'Pendiente de Surtir',
+            MATERIALES: materiales
+        });
+    }
+
+    return resultados;
+};
+
 const getCompraChofer = async (idCompra) => {
     const db = await getConnection();
 
@@ -526,6 +580,7 @@ export default {
     getCompraById,
     createCompra,
     updateCompra,
+    getComprasChoferList,
     getCompraChofer,
     getComprasPendientes,
     esChoferAsignado,
