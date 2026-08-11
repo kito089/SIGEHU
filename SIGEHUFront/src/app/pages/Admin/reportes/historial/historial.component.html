@@ -159,4 +159,13 @@
     </app-detail-modal>
   }
 
+  @if (documentoViewer) {
+    <app-document-viewer
+      [source]="documentoViewer.source"
+      [filename]="documentoViewer.filename"
+      [title]="documentoViewer.title"
+      (closed)="cerrarDocumentoViewer()"
+    />
+  }
+
 </div>

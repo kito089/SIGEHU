@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, shell } = require('electron');
 const { spawn } = require('child_process');
 const log = require('./log.js');
 
@@ -33,11 +33,66 @@ if (configPath) {
 // IPC del renderer (Angular):
 //   - `sigehu:log`            → el renderer envía las entradas del LogService.
 //   - `sigehu:get-log-file`   → el renderer consulta la ruta absoluta del log.
+//   - `sigehu:open-path`      → el renderer pide abrir un Blob como archivo
+//                               temporal usando la aplicación predeterminada
+//                               del sistema (shell.openPath). El renderer envía
+//                               `{ filename, base64Data, mimeType }`; el
+//                               proceso main sanitiza el nombre, escribe el
+//                               archivo bajo `<userData>/sigehu-docs/` y pide
+//                               al SO que lo abra. El renderer no recibe rutas
+//                               reales, no puede leer archivos arbitrarios y
+//                               no puede atravesar directorios.
 // =============================================================================
 ipcMain.on('sigehu:log', (event, payload) => {
     log.fromRenderer(event, payload);
 });
 ipcMain.handle('sigehu:get-log-file', () => log.getLogFile() || null);
+
+ipcMain.handle('sigehu:open-path', async (_event, payload) => {
+    try {
+        if (!payload || typeof payload !== 'object') {
+            return { ok: false, error: 'Payload inválido' };
+        }
+        const filename = sanitizeName(String(payload.filename || 'documento'));
+        const base64 = String(payload.base64Data || '');
+        if (!base64) {
+            return { ok: false, error: 'Sin contenido que escribir' };
+        }
+
+        const dir = path.join(app.getPath('userData'), 'sigehu-docs');
+        fs.mkdirSync(dir, { recursive: true });
+        const target = path.join(dir, filename);
+        // Validación anti-traversal: el archivo absoluto debe quedar dentro del
+        // directorio designado. `path.join` ya normaliza `..`, pero comprobamos
+        // por si el nombre sanitizado still/maneja rutas extrañas.
+        if (!target.startsWith(dir + path.sep)) {
+            log.write('WARN', 'SYS', 'sigehu:open-path ruta rechazada: ' + filename);
+            return { ok: false, error: 'Ruta no permitida' };
+        }
+
+        fs.writeFileSync(target, Buffer.from(base64, 'base64'));
+        const err = await shell.openPath(target);
+        if (err) {
+            log.write('WARN', 'SYS', 'shell.openPath reportó error: ' + err + ' para ' + target);
+            // Aun con error, el archivo ya existe; el usuario puede abrirlo
+            // manualmente. Devolvemos el mensaje para que la UI pueda informar.
+            return { ok: false, error: err };
+        }
+        log.write('INFO', 'SYS', 'Documento abierto externamente: ' + target);
+        return { ok: true };
+    } catch (e) {
+        log.write('ERROR', 'SYS', 'sigehu:open-path falló: ' + (e && e.message));
+        return { ok: false, error: (e && e.message) || 'Error desconocido' };
+    }
+});
+
+function sanitizeName(name) {
+    // Permite letras, números, punto, guion y guion bajo. Elimina cualquier
+    // separador de ruta y recorta a 120 caracteres.
+    const base = String(name || 'documento').replace(/[\\/]+/g, '_');
+    const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120);
+    return cleaned || 'documento';
+}
 
 let backend;
 let quitting = false;

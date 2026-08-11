@@ -9,6 +9,7 @@ import { EnvService } from '../../../../services/env.service';
 import { TrabajadoresRefreshService } from '../../../../services/trabajadores-refresh.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { EntityFormComponent } from '../../../../shared/components/entity-form/entity-form.component';
+import { DocumentViewerComponent } from '../../../../shared/components/document-viewer/document-viewer.component';
 import {
   TELEFONO_REACTIVO_PATTERN,
   filtrarTelefonoInput,
@@ -32,7 +33,7 @@ import {
 @Component({
   selector: 'app-trabajador-new',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IonicModule, EntityFormComponent],
+  imports: [CommonModule, ReactiveFormsModule, IonicModule, EntityFormComponent, DocumentViewerComponent],
   templateUrl: './trabajador-new.component.html',
   styleUrls: ['./trabajador-new.component.css'],
 })
@@ -61,7 +62,9 @@ export class TrabajadorNewComponent implements OnInit {
   // Toggle mostrar/ocultar contraseña.
   mostrarContrasena = false;
 
-  private previewUrl: string | null = null;
+  // Visor interno (reemplaza window.open).
+  documentoViewer: { source: string | Blob | null; filename: string; title: string } | null = null;
+
   private tipoUsuarioActual: number | null = null;
 
   constructor() {
@@ -164,39 +167,38 @@ export class TrabajadorNewComponent implements OnInit {
   }
 
   quitarDocumento(): void {
-    if (this.previewUrl) {
-      URL.revokeObjectURL(this.previewUrl);
-      this.previewUrl = null;
-    }
     if (this.documentoSeleccionado) {
       this.documentoSeleccionado = null;
     } else if (this.documentoExistenteVisible) {
       this.documentoExistenteVisible = false;
       this.rutaDocumentoExistente = '';
     }
+    this.documentoViewer = null;
   }
 
   previsualizarDocumento(): void {
     // 1. Documento recién seleccionado (blob local).
     if (this.documentoSeleccionado) {
-      if (this.previewUrl) {
-        window.open(this.previewUrl, '_blank');
-        return;
-      }
-      this.previewUrl = URL.createObjectURL(this.documentoSeleccionado);
-      window.open(this.previewUrl, '_blank');
+      this.documentoViewer = {
+        source: this.documentoSeleccionado,
+        filename: this.documentoSeleccionado.name,
+        title: 'Documento IMSS',
+      };
       return;
     }
 
     // 2. Documento existente (ruta relativa en BD: uploads/imss/...).
     if (this.rutaDocumentoExistente) {
-      if (/^(blob:|https?:|data:)/i.test(this.rutaDocumentoExistente)) {
-        window.open(this.rutaDocumentoExistente, '_blank');
-        return;
-      }
-      const base = (this.env.getBaseUrl() || '').replace(/\/+$/, '');
-      window.open(base + '/' + this.rutaDocumentoExistente.replace(/^\/+/, ''), '_blank');
+      this.documentoViewer = {
+        source: this.rutaDocumentoExistente,
+        filename: this.nombreArchivoExistente(),
+        title: 'Documento IMSS',
+      };
     }
+  }
+
+  cerrarDocumentoViewer(): void {
+    this.documentoViewer = null;
   }
 
   nombreArchivoExistente(): string {
