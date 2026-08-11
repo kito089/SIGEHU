@@ -30,6 +30,7 @@ export interface AuditoriaDetalle {
   campo: string;
   valorAnterior: string | null;
   valorNuevo: string | null;
+  existeDocumento?: boolean | null;
 }
 
 const parseFecha = (v: unknown): Date => {
@@ -52,6 +53,7 @@ const mapDetalle = (raw: Record<string, unknown>): AuditoriaDetalle => ({
   campo: String(raw['CAMPO'] ?? raw['Campo'] ?? raw['campo'] ?? ''),
   valorAnterior: raw['VALORANTERIOR'] != null ? String(raw['VALORANTERIOR']) : null,
   valorNuevo: raw['VALORNUEVO'] != null ? String(raw['VALORNUEVO']) : null,
+  existeDocumento: raw['EXISTEDOCUMENTO'] != null ? Boolean(raw['EXISTEDOCUMENTO']) : null,
 });
 
 @Injectable({ providedIn: 'root' })

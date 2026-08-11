@@ -9,6 +9,13 @@
  *   - window.sigehuLog.write(entry)   → envía una entrada de log al proceso main.
  *   - window.sigehuLog.getLogFile()   → Promise con la ruta absoluta del log.
  *   - window.sigehuDesktop.isElectron → detección fiable independiente del userAgent.
+ *   - window.sigehuDesktop.platform   → 'win32' | 'darwin' | 'linux'.
+ *   - window.sigehuDesktop.openPath(name, base64, mime)
+ *         Pide al proceso principal escribir `base64` en un archivo temporal
+ *         bajo `app.getPath('temp')/sigehu-docs/<name>` y abrirlo con la
+ *         aplicación predeterminada del SO vía `shell.openPath`. El proceso
+ *         main valida el nombre y restringe la escritura a ese directorio; el
+ *         renderer jamás recibe rutas reales ni accede al fs.
  */
 
 'use strict';
@@ -27,4 +34,6 @@ contextBridge.exposeInMainWorld('sigehuLog', {
 contextBridge.exposeInMainWorld('sigehuDesktop', {
   isElectron: true,
   platform: process.platform,
+  openPath: (filename, base64Data, mimeType) =>
+    ipcRenderer.invoke('sigehu:open-path', { filename, base64Data, mimeType }),
 });

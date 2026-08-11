@@ -7,6 +7,8 @@ import { ApiService } from '../../../../services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { NuevaObraModalComponent } from './nueva-obra-modal/nueva-obra-modal.component';
+import { NuevoTrabajoModalComponent } from './nuevo-trabajo-modal/nuevo-trabajo-modal.component';
+import { AgruparObrasModalComponent } from './agrupar-obras-modal/agrupar-obras-modal.component';
 import type { ClienteTipo, Contacto } from '../../../../core/models/cliente.model';
 import {
   RFC_PATTERN,
@@ -74,7 +76,7 @@ interface TrabajoDetalle {
 @Component({
   selector: 'app-cliente-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SkeletonComponent, NuevaObraModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, SkeletonComponent, NuevaObraModalComponent, NuevoTrabajoModalComponent, AgruparObrasModalComponent],
   templateUrl: './cliente-detail.component.html',
   styleUrl: './cliente-detail.component.scss',
 })
@@ -106,6 +108,46 @@ export class ClienteDetailComponent implements OnInit {
   // Trabajos / Obras (pestaña 2)
   trabajos = signal<TrabajoDetalle[]>([]);
   obrasIndependientes = signal<ObraDetalle[]>([]);
+
+  // Fase 5 — Selección de obras independientes para agrupar.
+  modoAgrupar = signal(false);
+  obrasSeleccionadas = signal<Set<number>>(new Set());
+  obrasSeleccionadasLista = computed(() =>
+    this.obrasIndependientes()
+      .filter((o) => this.obrasSeleccionadas().has(o.idObra))
+      .map((o) => ({
+        idObra: o.idObra,
+        nombre: o.nombre,
+        direccion: o.direccion,
+        estadoObra: o.estadoObra,
+      }))
+  );
+  mostrarAgruparObras = signal(false);
+
+  // Acordeón: ids de trabajos expandidos.
+  expandidos = signal<Set<number>>(new Set());
+
+  // Filtros de la pestaña.
+  filtroEstado = signal<string>('todos');
+  filtroTipo = signal<string>('todos');
+
+  // Catálogo de estados para el filtro.
+  estadosObraCatalogo: { id: number; nombre: string }[] = [];
+
+  // Vista filtrada según filtroEstado / filtroTipo.
+  obrasIndependientesFiltradas = computed(() =>
+    this.aplicarFiltroEstado(this.obrasIndependientes())
+  );
+  trabajosFiltrados = computed(() =>
+    this.trabajos()
+      .map((t) => ({ ...t, obras: this.aplicarFiltroEstado(t.obras) }))
+      .filter((t) => this.filtroTipo() === 'todos' || t.obras.length > 0)
+  );
+  tieneObras = computed(() => {
+    const independientes = this.obrasIndependientesFiltradas();
+    const trabajosVisibles = this.trabajosFiltrados();
+    return independientes.length > 0 || trabajosVisibles.some((t) => t.obras.length > 0);
+  });
 
   // Catálogos fiscales para el combo searchable de régimen / uso CFDI.
   regimenesFiscales: OpcionCatalogo[] = [];
@@ -147,17 +189,24 @@ export class ClienteDetailComponent implements OnInit {
     return this.esPersona ? 'Persona' : 'Empresa';
   }
 
+  // Datos fiscales del cliente (RFC y relación SAT). Se muestran si hay
+  // al menos un valor guardado, en personas y empresas.
+  tieneDatosFiscales(): boolean {
+    return ['rfc', 'razonSocial', 'regimenFiscal', 'usoCFDI', 'codigoPostal', 'direccionFiscal']
+      .some((campo) => String(this.valor(campo as CampoEditable) ?? '').trim() !== '');
+  }
+
   // --- Construcción del formulario (misma estructura que cliente-form) ----
 
   private buildForm(): FormGroup {
     const group = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(NOMBRE_MAX)]],
-      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN), Validators.maxLength(15)]],
+      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN), Validators.maxLength(14)]],
       correo: ['', [Validators.email, Validators.maxLength(EMAIL_MAX)]],
       direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
       observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
       fiscal: this.fb.group({
-        rfc: ['', [Validators.pattern(RFC_PATTERN)]],
+        rfc: ['', [Validators.minLength(12), Validators.maxLength(13), Validators.pattern(RFC_PATTERN)]],
         razonSocial: ['', [Validators.maxLength(RAZON_SOCIAL_MAX)]],
         regimenFiscal: ['', []],
         usoCFDI: ['', []],
@@ -314,6 +363,21 @@ export class ClienteDetailComponent implements OnInit {
   private async cargarTrabajos(): Promise<void> {
     const raw: any = await firstValueFrom(this.api.get('/Clientes/' + this.clienteId + '/trabajos'));
 
+    // Catálogo de estados (para el filtro), si no está cargado aún.
+    if (this.estadosObraCatalogo.length === 0) {
+      try {
+        const estados: any[] = await firstValueFrom(this.api.get<any[]>('/Obras/estados'));
+        this.estadosObraCatalogo = (estados || [])
+          .map((e) => ({
+            id: Number(e.IDESTADOOBRA ?? e.idEstadoObra),
+            nombre: String(e.NOMBRE ?? e.Nombre ?? e.nombre ?? ''),
+          }))
+          .filter((e) => e.id && e.nombre);
+      } catch {
+        this.estadosObraCatalogo = [];
+      }
+    }
+
     const mapObra = (o: any): ObraDetalle => ({
       idObra: Number(o.IDOBRA ?? o.idObra),
       nombre: o.NOMBRE ?? o.Nombre ?? o.nombre ?? '',
@@ -353,7 +417,7 @@ export class ClienteDetailComponent implements OnInit {
       case 'required': return 'Este campo es obligatorio.';
       case 'email': return 'Correo electrónico inválido.';
       case 'pattern':
-        return campo === 'telefono' ? 'Teléfono inválido: usa "+", números y espacios (máx. 15 caracteres).'
+        return campo === 'telefono' ? 'Teléfono inválido: usa "+52" y el número (máx. 14 caracteres incluyendo espacios).'
           : campo === 'rfc' ? 'RFC inválido (12-13 caracteres).'
           : campo === 'codigoPostal' ? 'Código postal de 5 dígitos.'
           : 'Formato inválido.';
@@ -371,6 +435,13 @@ export class ClienteDetailComponent implements OnInit {
     // por lo que no modifican su estado; solo se valida el campo editable).
     if (c.invalid) {
       this.toast.warning(this.mensajeError(campo));
+      return;
+    }
+
+    // Empresa: el RFC es obligatorio y no se puede guardar ningún campo
+    // mientras no esté registrado.
+    if (!this.esPersona && !String(this.valor('rfc')).trim()) {
+      this.toast.warning('La empresa requiere RFC antes de guardar cualquier campo.');
       return;
     }
 
@@ -440,11 +511,87 @@ export class ClienteDetailComponent implements OnInit {
 
   // --- Pestaña Trabajos / Obras ---------------------------------------------
 
-  tieneObras(): boolean {
-    return this.obrasIndependientes().length > 0 || this.trabajos().some((t) => t.obras.length > 0);
+  // Fase 4 — Acordeón: expande/colapsa un trabajo.
+  toggleTrabajo(id: number): void {
+    this.expandidos.update((set) => {
+      const next = new Set(set);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  estaExpandido(id: number): boolean {
+    return this.expandidos().has(id);
+  }
+
+  // Fase 6 — Filtros: por estado y por tipo (independiente | en trabajo).
+  setFiltroEstado(valor: string): void {
+    this.filtroEstado.set(valor);
+  }
+
+  setFiltroTipo(valor: string): void {
+    this.filtroTipo.set(valor);
+  }
+
+  private aplicarFiltroEstado(obras: ObraDetalle[]): ObraDetalle[] {
+    if (this.filtroEstado() === 'todos') return obras;
+    return obras.filter((o) => o.estadoObra === this.filtroEstado());
+  }
+
+  // Agregar obra ligada a un trabajo (acordeón → botón "Agregar Obra").
+  obraEnTrabajoSeleccionado: { id: number; nombre: string } | null = null;
+  agregarObraATrabajo(idTrabajo: number, nombreTrabajo: string): void {
+    this.obraEnTrabajoSeleccionado = { id: idTrabajo, nombre: nombreTrabajo };
+    this.mostrarNuevaObra.set(true);
+  }
+
+  // Fase 5 — Selección de obras para agrupar.
+  activarModoAgrupar(): void {
+    this.modoAgrupar.set(true);
+  }
+
+  salirModoAgrupar(): void {
+    this.modoAgrupar.set(false);
+    this.obrasSeleccionadas.set(new Set());
+  }
+
+  toggleObraSeleccionada(idObra: number): void {
+    this.obrasSeleccionadas.update((set) => {
+      const next = new Set(set);
+      if (next.has(idObra)) {
+        next.delete(idObra);
+      } else {
+        next.add(idObra);
+      }
+      return next;
+    });
+  }
+
+  estaSeleccionada(idObra: number): boolean {
+    return this.obrasSeleccionadas().has(idObra);
+  }
+
+  abrirAgruparObras(): void {
+    if (this.obrasSeleccionadas().size === 0) return;
+    this.mostrarAgruparObras.set(true);
+  }
+
+  cerrarAgruparObras(): void {
+    this.mostrarAgruparObras.set(false);
+  }
+
+  async onObrasAgrupadas(): Promise<void> {
+    this.mostrarAgruparObras.set(false);
+    this.salirModoAgrupar();
+    await this.cargarTrabajos();
   }
 
   abrirNuevaObra(): void {
+    this.obraEnTrabajoSeleccionado = null;
     this.mostrarNuevaObra.set(true);
   }
 
@@ -457,8 +604,26 @@ export class ClienteDetailComponent implements OnInit {
     await this.cargarTrabajos();
   }
 
+  // Modal "Nuevo Trabajo" desde la pestaña Trabajos y Obras.
+  mostrarNuevoTrabajo = signal(false);
+
+  abrirNuevoTrabajo(): void {
+    this.mostrarNuevoTrabajo.set(true);
+  }
+
+  cerrarNuevoTrabajo(): void {
+    this.mostrarNuevoTrabajo.set(false);
+  }
+
+  async onNuevoTrabajoCreado(): Promise<void> {
+    this.mostrarNuevoTrabajo.set(false);
+    await this.cargarTrabajos();
+  }
+
   abrirObra(obra: ObraDetalle): void {
-    this.router.navigate(['/admin/obras/editar', obra.idObra]);
+    this.router.navigate(['/admin/obras/detalle', obra.idObra], {
+      state: { clienteId: this.clienteId },
+    });
   }
 
   regresar(): void {

@@ -66,8 +66,17 @@ const getObraById = async (id) => {
     return error;
 };
 
+// ─── GET Detalle de obra (vista VW_DETALLE_OBRA) ────────────────────────
+// Devuelve la obra con cliente y datos de contacto en un solo objeto, sin
+// alterar el shape de getObraById (que se usa en el form de edición).
+const getDetalleObra = async (id) => {
+    const db = await getConnection();
+    const rows = await db.query("SELECT * FROM VW_DETALLE_OBRA WHERE idObra = ?", [id]);
+    return rows[0] ?? null;
+};
+
 // ─── INSERT ───────────────────────────────────────────────────────────────────
-const createObra = async ({ idCliente, Nombre, Direccion, idTrabajo = null, FechaInicio = null, idTrabajadorCtx = 1 }) => {
+const createObra = async ({ idCliente, Nombre, Direccion, idTrabajo = null, FechaInicio = null, Ancho = null, Alto = null, Profundidad = null, idTrabajadorCtx = 1 }) => {
     const db = await getConnection();
 
     // ── 1. Validar que el cliente existe y está activo ────────────────────────
@@ -106,8 +115,9 @@ const createObra = async ({ idCliente, Nombre, Direccion, idTrabajo = null, Fech
         const direccionDb = Direccion != null ? Buffer.from(String(Direccion), "utf8") : null;
 
         const rows = await txInsert.query(
-            `SELECT * FROM SP_INSERTAR_OBRA (?, ?, ?, ?, ?)`,
-            [idCliente, Nombre, direccionDb, idTrabajo ?? null, fechaInicioDb]
+            `SELECT * FROM SP_INSERTAR_OBRA (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [idCliente, Nombre, direccionDb, idTrabajo ?? null, fechaInicioDb,
+             Ancho ?? null, Alto ?? null, Profundidad ?? null]
         );
 
         nuevoId = rows[0]?.OIDOBRA; // ajustar nombre del parámetro RETURNS según tu SP
@@ -285,11 +295,23 @@ const cambiarEstado = async (idObra, idEstado, idTrabajadorCtx = 1) => {
     return result;
 };
 
+// ─── GET catálogo de estados de obra ────────────────────────────────────
+const getEstados = async () => {
+    const db = await getConnection();
+    return await db.query(
+        `SELECT IDESTADOOBRA AS idEstadoObra, NOMBRE AS nombre
+         FROM EstadosObra
+         ORDER BY idEstadoObra`
+    );
+};
+
 export default {
     getObras,
     getObraById,
+    getDetalleObra,
     createObra,
     updateObra,
     deleteObra,
-    cambiarEstado
+    cambiarEstado,
+    getEstados
 };

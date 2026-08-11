@@ -125,6 +125,10 @@ export class ObrasComponent implements OnInit {
     this.router.navigate(['/admin/obras/editar', obra.idObra]);
   }
 
+  verDetalle(obra: Obra): void {
+    this.router.navigate(['/admin/obras/detalle', obra.idObra]);
+  }
+
   verObra(obra: Obra): void {
     this.selectedObra = obra;
   }

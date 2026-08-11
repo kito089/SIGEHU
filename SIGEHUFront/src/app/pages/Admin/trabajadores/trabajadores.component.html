@@ -146,3 +146,13 @@
     </ng-template>
   </div>
 </app-detail-modal>
+
+<!-- Visor de documento IMSS (modal interno multiplataforma) -->
+@if (documentoViewer) {
+  <app-document-viewer
+    [source]="documentoViewer.source"
+    [filename]="documentoViewer.filename"
+    [title]="documentoViewer.title"
+    (closed)="cerrarDocumentoViewer()"
+  />
+}

@@ -68,12 +68,12 @@
                 type="tel"
                 formControlName="telefono"
                 inputmode="tel"
-                maxlength="15"
-                placeholder="+52 449 0000000"
-                title="Máximo 15 caracteres: solo '+', números y espacios"
+                maxlength="14"
+                placeholder="+52 449 000000"
+                title="Máximo 14 caracteres incluyendo espacios: +52 y el número"
                 (input)="onTelefonoInput($event)">
               <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-                Teléfono inválido: usa "+", números y espacios (máx. 15 caracteres)
+                Teléfono inválido: usa "+52" y el número (máx. 14 caracteres incluyendo espacios)
               </span>
               <span class="hint" *ngIf="!form.get('telefono')?.value && !form.get('correo')?.value">
                 Se requiere al menos un teléfono o un correo
@@ -143,21 +143,24 @@
           </div>
         }
 
-        <!-- Datos fiscales: activables con checkbox -->
+        <!-- Datos fiscales: para persona activables con checkbox; para
+             empresa son obligatorios (RFC requerido) y siempre visibles. -->
         <div class="fiscal-block" [formGroup]="fiscalGroup">
-          <label class="fiscal-toggle" for="datosFiscales">
-            <input id="datosFiscales" type="checkbox" formControlName="datosFiscales">
-            <span class="fiscal-toggle__label">Datos Fiscales</span>
-            <span class="fiscal-toggle__hint">Capturar información de facturación SAT (RFC, régimen, CFDI…)</span>
-          </label>
+          @if (tipo() === 'persona') {
+            <label class="fiscal-toggle" for="datosFiscales">
+              <input id="datosFiscales" type="checkbox" formControlName="datosFiscales">
+              <span class="fiscal-toggle__label">Datos Fiscales</span>
+              <span class="fiscal-toggle__hint">Capturar información de facturación SAT (RFC, régimen, CFDI…)</span>
+            </label>
+          }
 
-          @if (fiscalGroup.get('datosFiscales')?.value) {
+          @if (tipo() === 'empresa' || fiscalGroup.get('datosFiscales')?.value) {
             <div class="field-row">
               <div class="field">
-                <label for="rfc">RFC</label>
-                <input id="rfc" type="text" formControlName="rfc" placeholder="Ej. UTCA850101AB1">
+                <label for="rfc" [class.required-label]="tipo() === 'empresa'">RFC</label>
+                <input id="rfc" type="text" formControlName="rfc" maxlength="13" placeholder="Ej. UTCA850101AB1">
                 <span class="field-error" *ngIf="form.get('fiscal')?.get('rfc')?.touched && form.get('fiscal')?.get('rfc')?.invalid">
-                  RFC inválido (12-13 caracteres)
+                  {{ form.get('fiscal')?.get('rfc')?.hasError('required') ? 'El RFC es obligatorio para la empresa (12-13 caracteres)' : 'RFC inválido (12-13 caracteres)' }}
                 </span>
               </div>
               <div class="field">

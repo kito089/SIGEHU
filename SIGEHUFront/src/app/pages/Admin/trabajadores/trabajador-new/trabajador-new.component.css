@@ -31,6 +31,17 @@
   padding: 40px 20px;
 }
 
+/* app-entity-form es el único hijo flex de .page. Sin `min-width: 0` su
+   tamaño mínimo es `auto`, es decir, el ancho del contenido más "imposible de
+   romper" del formulario: el nombre del documento IMSS (white-space: nowrap).
+   Con un nombre largo el formulario no podía reducir su ancho al del viewport
+   móvil y se desbordaba. `min-width: 0` permite que se comprima y que la
+   cadena interna (doc-tag → doc-name con ellipsis) trunque el nombre. En
+   Desktop (ancho suficiente) la regla es inocua: no altera el tamaño actual. */
+app-entity-form{
+  min-width: 0;
+}
+
 .form-card{
   width: 100%;
   max-width: 560px;

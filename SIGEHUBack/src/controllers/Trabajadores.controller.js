@@ -200,8 +200,10 @@ const checkUsername = async (req, res) => {
     }
 };
 
-// POST /Trabajadores/:id/imss
-// Sube el documento IMSS (PDF/JPG/PNG) y guarda su ruta relativa en BD.
+// POST /Trabajadores/:id/imss  (y POST /Trabajadores/imss)
+// Sube el documento IMSS (PDF/JPG/PNG) y devuelve la ruta relativa generada.
+// NO escribe en BD ni genera auditoría: la ruta se persiste en el mismo
+// INSERT/UPDATE del trabajador (Opción C) para producir una sola auditoría.
 const uploadImss = async (req, res) => {
     try {
         if (!req.file) {
@@ -210,13 +212,25 @@ const uploadImss = async (req, res) => {
 
         const rutaRelativa = `uploads/imss/${req.file.filename}`;
 
-        await service.updateRutaImss(
-            req.params.id,
-            rutaRelativa,
-            req.user?.idTrabajador ?? 1
-        );
-
         res.status(201).json({ message: 'Documento IMSS guardado', ruta: rutaRelativa });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+// DELETE /Trabajadores/imss?ruta=uploads/imss/...
+// Limpieza de archivos huérfanos: si la subida tuvo éxito pero falló la
+// creación/actualización del trabajador, el frontend elimina el archivo
+// recién subido. Solo permite rutas dentro de uploads/imss/.
+const eliminarImss = async (req, res) => {
+    try {
+        const ruta = req.query?.ruta ?? req.body?.ruta ?? null;
+        if (!ruta || !String(ruta).startsWith('uploads/imss/')) {
+            return res.status(400).json({ error: 'Ruta de documento IMSS inválida' });
+        }
+
+        service.eliminarArchivoImss(String(ruta));
+        res.json({ message: 'Documento IMSS eliminado' });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -320,5 +334,6 @@ export default {
     remove,
     cambiarActivo,
     uploadImss,
+    eliminarImss,
     login
 };

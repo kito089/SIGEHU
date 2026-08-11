@@ -1,0 +1,222 @@
+<div class="detalle-obra-page">
+  <button type="button" class="btn-volver" (click)="regresar()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+    Volver
+  </button>
+
+  @if (cargando()) {
+    <div class="detalle-obra__loading">Cargando detalle de la obra…</div>
+  } @else if (error()) {
+    <div class="detalle-obra__error">{{ error() }}</div>
+  } @else {
+    @if (obra(); as ob) {
+      <header class="detalle-obra__header">
+        <div class="detalle-obra__header-texto">
+          <h1>{{ ob.NOMBREOBRA ?? ob.nombre ?? '' }}</h1>
+          <p class="detalle-obra__cliente">
+            {{ ob.NOMBRECLIENTE ?? '' }}
+            @if (ob.TELEFONOCLIENTE) {
+              <span class="detalle-obra__separador">·</span>
+              <a [href]="'tel:' + ob.TELEFONOCLIENTE">{{ ob.TELEFONOCLIENTE }}</a>
+            }
+            @if (ob.CORREOCLIENTE) {
+              <span class="detalle-obra__separador">·</span>
+              <a [href]="'mailto:' + ob.CORREOCLIENTE">{{ ob.CORREOCLIENTE }}</a>
+            }
+          </p>
+          <div class="detalle-obra__estado">
+            <span class="badge badge-estado">{{ ob.ESTADOBRA ?? ob.estadoObra ?? 'Sin estado' }}</span>
+          </div>
+        </div>
+        <div class="detalle-obra__medidas">
+          <div class="medida">
+            <span class="medida__valor">{{ formatoMedida(ob.ANCHO) }}</span>
+            <span class="medida__label">Ancho</span>
+          </div>
+          <div class="medida">
+            <span class="medida__valor">{{ formatoMedida(ob.ALTO) }}</span>
+            <span class="medida__label">Alto</span>
+          </div>
+          <div class="medida">
+            <span class="medida__valor">{{ formatoMedida(ob.PROFUNDIDAD) }}</span>
+            <span class="medida__label">Prof.</span>
+          </div>
+        </div>
+      </header>
+
+      <nav class="detalle-obra__tabs">
+        <button
+          type="button"
+          class="detalle-obra__tab"
+          [class.detalle-obra__tab--active]="tab() === 'general'"
+          (click)="setTab('general')"
+        >General</button>
+        <button
+          type="button"
+          class="detalle-obra__tab"
+          [class.detalle-obra__tab--active]="tab() === 'historial'"
+          (click)="setTab('historial')"
+        >Fotos y notas <span class="tab-count">{{ fotos().length + notas().length }}</span></button>
+        <button
+          type="button"
+          class="detalle-obra__tab"
+          [class.detalle-obra__tab--active]="tab() === 'trabajadores'"
+          (click)="setTab('trabajadores')"
+        >Trabajadores <span class="tab-count">{{ trabajadores().length }}</span></button>
+        @if (!esTrabajador()) {
+          <button
+            type="button"
+            class="detalle-obra__tab"
+            [class.detalle-obra__tab--active]="tab() === 'pagos'"
+            (click)="setTab('pagos')"
+          >Pagos <span class="tab-count">{{ pagos().length }}</span></button>
+        }
+      </nav>
+
+      <!-- ═════════ PESTAÑA GENERAL ═════════ -->
+      @if (tab() === 'general') {
+        <div class="detalle-obra__tabbody">
+          <section class="detalle-obra__card">
+            <h2 class="detalle-obra__card-title">Información general</h2>
+            <dl class="detalle-obra__dl">
+              <div class="detalle-obra__dl-item">
+                <dt>Cliente</dt>
+                <dd>{{ ob.NOMBRECLIENTE ?? '—' }}</dd>
+              </div>
+              <div class="detalle-obra__dl-item">
+                <dt>Dirección de la obra</dt>
+                <dd>{{ ob.DIRECCIONOBRA ?? '—' }}</dd>
+              </div>
+              <div class="detalle-obra__dl-item">
+                <dt>Dirección del cliente</dt>
+                <dd>{{ ob.DIRECCIONCLIENTE ?? '—' }}</dd>
+              </div>
+              <div class="detalle-obra__dl-item">
+                <dt>RFC</dt>
+                <dd>{{ ob.RFC ?? '—' }}</dd>
+              </div>
+              <div class="detalle-obra__dl-item">
+                <dt>Creada</dt>
+                <dd>{{ formatearFecha(ob.FECHACREACION) }}</dd>
+              </div>
+              <div class="detalle-obra__dl-item">
+                <dt>Última actualización</dt>
+                <dd>{{ formatearFecha(ob.FECHAULTIMAACTUALIZACION) }}</dd>
+              </div>
+              <div class="detalle-obra__dl-item">
+                <dt>Medidas</dt>
+                <dd>
+                  {{ formatoMedida(ob.ANCHO) }} × {{ formatoMedida(ob.ALTO) }}
+                  @if (ob.PROFUNDIDAD !== null && ob.PROFUNDIDAD !== undefined) {
+                    × {{ formatoMedida(ob.PROFUNDIDAD) }}
+                  }
+                </dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+      }
+
+      <!-- ═════════ PESTAÑA FOTOS Y NOTAS ═════════ -->
+      @if (tab() === 'historial') {
+        <div class="detalle-obra__tabbody">
+          <section class="detalle-obra__card">
+            <h2 class="detalle-obra__card-title">Fotos</h2>
+            @if (fotos().length === 0) {
+              <p class="muted">No hay fotografías registradas.</p>
+            } @else {
+              <div class="detalle-obra__fotos">
+                @for (f of fotos(); track f.id) {
+                  <figure class="detalle-obra__foto">
+                    <img [src]="urlFoto(f.ruta)" alt="Foto de la obra" loading="lazy" />
+                    <figcaption>{{ nombreEstado(f.idEstadoObra) }}</figcaption>
+                  </figure>
+                }
+              </div>
+            }
+          </section>
+
+          <section class="detalle-obra__card">
+            <h2 class="detalle-obra__card-title">Notas</h2>
+            @if (notas().length === 0) {
+              <p class="muted">No hay notas registradas.</p>
+            } @else {
+              <ul class="detalle-obra__notas">
+                @for (n of notas(); track n.id) {
+                  <li class="detalle-obra__nota">
+                    <span class="badge badge-estado-nota">{{ nombreEstado(n.idEstadoObra) }}</span>
+                    <p class="detalle-obra__nota-texto">{{ n.nota }}</p>
+                    <time class="detalle-obra__nota-fecha">{{ formatearFecha(n.fecha) }}</time>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+        </div>
+      }
+
+      <!-- ═════════ PESTAÑA TRABAJADORES ═════════ -->
+      @if (tab() === 'trabajadores') {
+        <div class="detalle-obra__tabbody">
+          <section class="detalle-obra__card">
+            <h2 class="detalle-obra__card-title">Trabajadores asignados por etapa</h2>
+            @if (trabajadores().length === 0) {
+              <p class="muted">No hay trabajadores asignados.</p>
+            } @else {
+              <div class="detalle-obra__tablares">
+                @for (t of trabajadores(); track t.idDetalleAsignacion) {
+                  <div class="detalle-obra__tablar">
+                    <span class="detalle-obra__tablar-nombre">{{ t.nombre }}</span>
+                    <span class="badge badge-estado">{{ t.estadoObra || nombreEstado(t.idEstadoObra) }}</span>
+                    @if (t.telefono) {
+                      <a class="tablar-tel" [href]="'tel:' + t.telefono">{{ t.telefono }}</a>
+                    }
+                    <time class="muted">{{ formatearFecha(t.fechaAsignacion) }}</time>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        </div>
+      }
+
+      <!-- ═════════ PESTAÑA PAGOS ═════════ -->
+      @if (tab() === 'pagos' && !esTrabajador()) {
+        <div class="detalle-obra__tabbody">
+          <section class="detalle-obra__card">
+            <div class="detalle-obra__card-header-row">
+              <h2 class="detalle-obra__card-title">Pagos registrados</h2>
+              <span class="total-pagos">Total: {{ formatearMonto(totalPagos()) }}</span>
+            </div>
+            @if (pagos().length === 0) {
+              <p class="muted">No hay pagos registrados.</p>
+            } @else {
+              <ul class="detalle-obra__pagos">
+                @for (p of pagos(); track p.id) {
+                  <li class="detalle-obra__pago">
+                    <span class="detalle-obra__pago-monto">{{ formatearMonto(p.monto) }}</span>
+                    <div class="detalle-obra__pago-info">
+                      <span class="badge badge-estado">{{ p.estadoObra || '—' }}</span>
+                      @if (p.tipoPago) {
+                        <span class="pago-tag">{{ p.tipoPago }}</span>
+                      }
+                      @if (p.formaPago) {
+                        <span class="pago-tag">{{ p.formaPago }}</span>
+                      }
+                    </div>
+                    <div class="detalle-obra__pago-meta">
+                      @if (p.trabajador) {
+                        <span>Registrado por {{ p.trabajador }}</span>
+                      }
+                      <time class="muted">{{ formatearFecha(p.fecha) }}</time>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+        </div>
+      }
+    }
+  }
+</div>

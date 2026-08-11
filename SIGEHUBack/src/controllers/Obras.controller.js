@@ -27,6 +27,19 @@ const getById = async (req, res) => {
     }
 };
 
+// GET /obras/detalle/:id (ruta especifica antes de /:id)
+const getDetalle = async (req, res) => {
+    try {
+        const obra = await service.getDetalleObra(req.params.id);
+        if (!obra) {
+            return res.status(404).json({ error: "Obra no encontrada" });
+        }
+        res.json(obra);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 // POST /obras
 const create = async (req, res) => {
     try {
@@ -34,7 +47,7 @@ const create = async (req, res) => {
             return res.status(400).json({ error: "El cuerpo de la solicitud está vacío" });
         }
 
-        const { idCliente, Nombre, Direccion, idTrabajo, FechaInicio } = req.body;
+        const { idCliente, Nombre, Direccion, idTrabajo, FechaInicio, Ancho, Alto, Profundidad } = req.body;
 
         const datos = { idCliente, Nombre };
         const faltantes = Object.entries(datos)
@@ -53,6 +66,9 @@ const create = async (req, res) => {
             Direccion,
             idTrabajo: idTrabajo ?? null,
             FechaInicio: FechaInicio ?? null,
+            Ancho: Ancho ?? null,
+            Alto: Alto ?? null,
+            Profundidad: Profundidad ?? null,
             idTrabajadorCtx: req.user?.idTrabajador
         });
 
@@ -145,4 +161,14 @@ const cambiarEstado = async (req, res) => {
     }
 };
 
-export default { getAll, create, update, remove, cambiarEstado, getById };
+// GET /obras/estados
+const getEstados = async (_req, res) => {
+    try {
+        const estados = await service.getEstados();
+        res.json(estados);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+export default { getAll, getDetalle, create, update, remove, cambiarEstado, getById, getEstados };
