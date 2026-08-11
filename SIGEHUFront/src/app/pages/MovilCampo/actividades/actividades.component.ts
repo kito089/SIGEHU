@@ -47,6 +47,21 @@ interface ObraRow {
   TRABAJADORES_IDTRABAJADOR?: number;
 }
 
+/* Catálogo EstadosObra (idEstadoObra → Nombre):
+ *   1 Solicitud recibida, 2 Levantamiento pendiente,
+ *   3 En fabricacion, 4 Instalacion programada,
+ *   5 Instalado, 6 Garantia, 7 Finalizado.
+ * La etapa de campo "pendiente" del trabajador se determina por el estado de
+ * SU asignación (oht.EstadosObra_idEstadoObra proyectado como
+ * IDESTADOASIGNACION en VW_OBRAS_TRABAJADOR), NO por el estado global de la
+ * obra. Esto evita descartar tareas cuando la obra ya avanzó globalmente pero
+ * el trabajador todavía tiene una etapa asignada pendiente (RF-22..RF-24). */
+const TIPO_POR_ESTADO_ASIGNACION: Record<number, { tipo: TipoActividad; ruta: string }> = {
+  2: { tipo: 'levantamiento', ruta: '/movil/levantamientos' },
+  3: { tipo: 'fabricacion', ruta: '/movil/fabricacion' },
+  4: { tipo: 'instalacion', ruta: '/movil/instalacion' },
+};
+
 interface CompraRow {
   ID: number;
   PROVEEDOR_NOMBRE?: string;
@@ -123,27 +138,13 @@ export class ActividadesComponent implements OnInit {
 
   private combinarObras(obras: ObraRow[]): void {
     for (const o of obras) {
-      const estado = (o.ESTADOBRA || '').toLowerCase();
-      let tipo: TipoActividad | null = null;
-      let ruta = '/movil/levantamientos';
-
-      if (estado.includes('levantamiento')) {
-        tipo = 'levantamiento';
-        ruta = '/movil/levantamientos';
-      } else if (estado.includes('fabrica')) {
-        tipo = 'fabricacion';
-        ruta = '/movil/fabricacion';
-      } else if (estado.includes('instalaci')) {
-        tipo = 'instalacion';
-        ruta = '/movil/instalacion';
-      }
-
-      if (!tipo) continue;
+      const asignacion = TIPO_POR_ESTADO_ASIGNACION[o.IDESTADOASIGNACION ?? 0];
+      if (!asignacion) continue;
 
       const fecha = this.toTs(o.FECHAASIGNACION);
 
       this.actividades.push({
-        tipo,
+        tipo: asignacion.tipo,
         id: o.IDOBRA,
         titulo: o.NOMBREOBRA || 'Obra asignada',
         cliente: o.NOMBRECLIENTE,
@@ -152,7 +153,7 @@ export class ActividadesComponent implements OnInit {
         fechaLimite: this.formatFecha(o.FECHAASIGNACION),
         fechaTs: fecha,
         asignacionTs: fecha,
-        ruta
+        ruta: asignacion.ruta
       });
     }
     this.finalizarCarga();
