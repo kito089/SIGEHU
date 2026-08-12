@@ -24,24 +24,16 @@
 
 *{ box-sizing: border-box; }
 
+/* El scroll lo gestiona de forma única el Layout (.main-content); no se impone
+   altura ni scroll propios (mismo patrón que proveedor-new / kit-form).
+   Layout en BLOQUE: el formulario se centra con su propio
+   `max-width: 960px; margin: 0 auto` (entity-form compartido) y su ancho
+   exterior queda fijo, independiente del contenido. Antes, `display: flex +
+   justify-content: center` hacía que el ancho dependiera del max-content del
+   contenido (más estrecho con Persona, más ancho al agregar contactos). */
 .page{
-  height: 100vh;
-  overflow-y: auto;
-  display: flex;
-  justify-content: center;
-  padding: 40px 20px;
+  padding: 40px 20px 60px;
 }
-
-/* Barra de desplazamiento con el tema oscuro de SIGEHU */
-.page::-webkit-scrollbar{ width: 10px; }
-.page::-webkit-scrollbar-track{ background: transparent; }
-.page::-webkit-scrollbar-thumb{
-  background: var(--field-border);
-  border-radius: 999px;
-  border: 2px solid var(--bg);
-}
-.page::-webkit-scrollbar-thumb:hover{ background: var(--accent); }
-.page{ scrollbar-width: thin; scrollbar-color: var(--field-border) transparent; }
 
 .form-card{
   width: 100%;
@@ -393,29 +385,8 @@ input[type="email"] {
 .btn-primary:disabled{ opacity: .65; cursor: not-allowed; }
 
 @media (max-width: 560px){
+  .page{ padding: 22px 14px 40px; }
   .form-card{ padding: 22px 18px 18px; }
   .field-row{ grid-template-columns: 1fr; }
   .contacto-row{ grid-template-columns: 1fr; }
-}
-
-/* Ancho del formulario Agregar/Editar Cliente estable.
-   El componente shared `.entity-form` solo declara `max-width: 960px` sin
-   `width`, por lo que en el contenedor flex `.page` su ancho colapsaba al del
-   contenido (más estrecho con solo Persona, más ancho con Datos Fiscales /
-   Contactos). Se fija `width: 100%` acotado a este componente para que el
-   formulario ocupe siempre el mismo espacio (su max-width sigue siendo
-   960px) y el contenido interno se adapte a ese ancho. No afecta a otros
-   formularios que reutilizan el componente shared.
-   `min-width: 0` sobre `app-entity-form` evita que el contenido interno
-   min-content (p. ej. la tabla de contactos con `min-width: 560px` + scroll
-   horizontal propio del wrapper) fuerce al flex item a ensancharse en
-   viewports pequeños; en Desktop es inocuo. Patrón idéntico al formulario
-   de Trabajador. */
-:host ::ng-deep app-entity-form {
-  min-width: 0;
-}
-
-:host ::ng-deep .entity-form {
-  width: 100%;
-  max-width: 960px;
 }
