@@ -5,7 +5,7 @@ import { IonicModule } from '@ionic/angular';
 import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 /* =========================================================================
    SIGEHU — Actividades pendientes (punto de entrada móvil del trabajador).
@@ -13,12 +13,13 @@ import { WorkerHeaderComponent } from '../../../shared/components/worker-header/
    Consolida en una sola lista las tareas activas del trabajador, ordenadas
    por fecha límite (la más próxima primero):
      - Obras en etapa Levantamiento, Fabricación o Instalación (VW_OBRAS_TRABAJADOR)
+     - Compras asignadas al chofer (VW/Compras por trabajador)
      - Garantías activas asignadas al trabajador (VW_GARANTIAS_CON_OBRA)
 
    Tocar una actividad navega a la sección correspondiente del campo.
    ========================================================================= */
 
-type TipoActividad = 'levantamiento' | 'fabricacion' | 'instalacion' | 'garantia';
+type TipoActividad = 'levantamiento' | 'fabricacion' | 'instalacion' | 'compra' | 'garantia';
 
 interface Actividad {
   tipo: TipoActividad;
@@ -31,6 +32,8 @@ interface Actividad {
   fechaTs: number;
   asignacionTs: number;
   ruta: string;
+  numeroDirecciones?: number;
+  numeroMateriales?: number;
 }
 
 interface ObraRow {
@@ -42,6 +45,31 @@ interface ObraRow {
   FECHAASIGNACION?: string | Date;
   NOMBRECLIENTE?: string;
   TRABAJADORES_IDTRABAJADOR?: number;
+}
+
+/* Catálogo EstadosObra (idEstadoObra → Nombre):
+ *   1 Solicitud recibida, 2 Levantamiento pendiente,
+ *   3 En fabricacion, 4 Instalacion programada,
+ *   5 Instalado, 6 Garantia, 7 Finalizado.
+ * La etapa de campo "pendiente" del trabajador se determina por el estado de
+ * SU asignación (oht.EstadosObra_idEstadoObra proyectado como
+ * IDESTADOASIGNACION en VW_OBRAS_TRABAJADOR), NO por el estado global de la
+ * obra. Esto evita descartar tareas cuando la obra ya avanzó globalmente pero
+ * el trabajador todavía tiene una etapa asignada pendiente (RF-22..RF-24). */
+const TIPO_POR_ESTADO_ASIGNACION: Record<number, { tipo: TipoActividad; ruta: string }> = {
+  2: { tipo: 'levantamiento', ruta: '/movil/levantamientos' },
+  3: { tipo: 'fabricacion', ruta: '/movil/fabricacion' },
+  4: { tipo: 'instalacion', ruta: '/movil/instalacion' },
+};
+
+interface CompraRow {
+  ID: number;
+  PROVEEDOR_NOMBRE?: string;
+  FECHA_ORDEN?: string | Date;
+  ESTADO?: string;
+  NUMERO_DIRECCIONES?: number;
+  NUMERO_MATERIALES?: number;
+  MATERIALES?: unknown[];
 }
 
 interface GarantiaRow {
@@ -57,7 +85,7 @@ interface GarantiaRow {
 @Component({
   selector: 'app-actividades',
   standalone: true,
-  imports: [CommonModule, IonicModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, MobileHeaderComponent],
   templateUrl: './actividades.component.html',
   styleUrls: ['./actividades.component.scss'],
 })
@@ -98,31 +126,25 @@ export class ActividadesComponent implements OnInit {
         this.loading = false;
       }
     });
+
+    this.api.get<CompraRow[]>('/Compras').subscribe({
+      next: (compras) => this.combinarCompras(compras || []),
+      error: () => {
+        this.error = true;
+        this.loading = false;
+      }
+    });
   }
 
   private combinarObras(obras: ObraRow[]): void {
     for (const o of obras) {
-      const estado = (o.ESTADOBRA || '').toLowerCase();
-      let tipo: TipoActividad | null = null;
-      let ruta = '/movil/levantamientos';
-
-      if (estado.includes('levantamiento')) {
-        tipo = 'levantamiento';
-        ruta = '/movil/levantamientos';
-      } else if (estado.includes('fabrica')) {
-        tipo = 'fabricacion';
-        ruta = '/movil/fabricacion';
-      } else if (estado.includes('instalaci')) {
-        tipo = 'instalacion';
-        ruta = '/movil/instalacion';
-      }
-
-      if (!tipo) continue;
+      const asignacion = TIPO_POR_ESTADO_ASIGNACION[o.IDESTADOASIGNACION ?? 0];
+      if (!asignacion) continue;
 
       const fecha = this.toTs(o.FECHAASIGNACION);
 
       this.actividades.push({
-        tipo,
+        tipo: asignacion.tipo,
         id: o.IDOBRA,
         titulo: o.NOMBREOBRA || 'Obra asignada',
         cliente: o.NOMBRECLIENTE,
@@ -131,7 +153,7 @@ export class ActividadesComponent implements OnInit {
         fechaLimite: this.formatFecha(o.FECHAASIGNACION),
         fechaTs: fecha,
         asignacionTs: fecha,
-        ruta
+        ruta: asignacion.ruta
       });
     }
     this.finalizarCarga();
@@ -162,12 +184,31 @@ export class ActividadesComponent implements OnInit {
     this.finalizarCarga();
   }
 
-  /** Concluye la carga una vez ambas fuentes resolvieron. */
-  private pendientes = 2;
+  private combinarCompras(compras: CompraRow[]): void {
+    for (const c of compras) {
+      const fecha = this.toTs(c.FECHA_ORDEN);
+      this.actividades.push({
+        tipo: 'compra',
+        id: c.ID,
+        titulo: c.PROVEEDOR_NOMBRE || `Orden de compra ${c.ID}`,
+        estado: c.ESTADO || 'Pendiente de Surtir',
+        fechaLimite: this.formatFecha(c.FECHA_ORDEN),
+        fechaTs: fecha,
+        asignacionTs: fecha,
+        ruta: '/movil/compras',
+        numeroDirecciones: c.NUMERO_DIRECCIONES ?? (c.MATERIALES?.length ? 1 : 0),
+        numeroMateriales: c.NUMERO_MATERIALES ?? c.MATERIALES?.length ?? 0
+      });
+    }
+    this.finalizarCarga();
+  }
+
+  /** Concluye la carga una vez las tres fuentes resolvieron. */
+  private pendientes = 3;
   private finalizarCarga(): void {
     this.pendientes -= 1;
     if (this.pendientes <= 0) {
-      this.pendientes = 2;
+      this.pendientes = 3;
       this.loading = false;
       this.ordenar();
     }
@@ -209,6 +250,7 @@ export class ActividadesComponent implements OnInit {
       case 'levantamiento': return 'resize-outline';
       case 'fabricacion': return 'construct-outline';
       case 'instalacion': return 'navigate-outline';
+      case 'compra': return 'cart-outline';
       case 'garantia': return 'shield-checkmark-outline';
     }
   }
@@ -218,6 +260,7 @@ export class ActividadesComponent implements OnInit {
       case 'levantamiento': return 'warning';
       case 'fabricacion': return 'primary';
       case 'instalacion': return 'purple';
+      case 'compra': return 'tertiary';
       case 'garantia': return 'danger';
     }
   }
@@ -227,8 +270,22 @@ export class ActividadesComponent implements OnInit {
       case 'levantamiento': return 'Levantamiento';
       case 'fabricacion': return 'Fabricación';
       case 'instalacion': return 'Instalación';
+      case 'compra': return 'Compra';
       case 'garantia': return 'Garantía';
     }
+  }
+
+  /** Clase de color del Tag de estado según DISEÑO_UI.md. */
+  claseEstado(estado: string): string {
+    const e = (estado || '').toLowerCase();
+    if (e.includes('solicitud')) return 'estado-solicitud';
+    if (e.includes('surtid')) return 'estado-finalizado';
+    if (e.includes('levantamiento')) return 'estado-levantamiento';
+    if (e.includes('fabrica')) return 'estado-fabricacion';
+    if (e.includes('instalaci')) return 'estado-instalacion';
+    if (e.includes('garantia')) return 'estado-garantia';
+    if (e.includes('finaliza')) return 'estado-finalizado';
+    return 'estado-otro';
   }
 
   abrir(actividad: Actividad): void {

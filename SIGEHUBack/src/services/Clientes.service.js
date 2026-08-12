@@ -239,11 +239,9 @@ const createCliente = async ({
         throw new Error("Para una empresa se requiere al menos un contacto");
     }
 
-    // Regla: una Empresa requiere RFC (persona: opcional, pero si se ingresa
-    // debe cumplir el formato de 12-13 caracteres).
-    if (tipoNormalizado === 'empresa' && !RFC) {
-        throw new Error("Para una empresa el RFC es obligatorio");
-    }
+    // RFC: opcional para ambos tipos, pero si se ingresa debe cumplir el
+    // formato de 12-13 caracteres (la captura la controla el switch "Datos
+    // Fiscales" del formulario).
 
     const db = await getConnection();
 
@@ -369,9 +367,6 @@ const updateCliente = async (id, {
         anterior = rows[0];
         anterior.tipoNormalizado = String(anterior.Tipo ?? 'persona').toLowerCase();
         const tipoEfectivo = tipoNormalizado ?? anterior.tipoNormalizado;
-        if (tipoEfectivo === 'empresa' && !RFC) {
-            throw new Error("Para una empresa el RFC es obligatorio");
-        }
 
     } catch (err) {
         await txRead.rollback();

@@ -99,11 +99,57 @@ async function readBlobValue(att, tx, value) {
     }
 }
 
+// Variante BINARIA de readBlobValue: devuelve el BLOB como Buffer crudo sin
+// decodificar a utf8. Indispensable para fotos/imágenes guardadas como BLOB
+// SUB_TYPE BINARY (el decode utf8 corrompería bytes no UTF-8).
+async function readBinaryBlobValue(att, tx, value) {
+
+    if (
+        value == null ||
+        typeof value !== 'object' ||
+        !('attachment' in value) ||
+        !('id' in value)
+    ) {
+        return value;
+    }
+
+    let stream;
+    try {
+        stream = await att.openBlob(tx, value);
+        const length = await stream.length;
+        const chunks = [];
+        const buffer = Buffer.alloc(16384);
+        let readTotal = 0;
+        while (readTotal < length) {
+            const n = await stream.read(buffer);
+            if (n === -1 || n === 0) break;
+            chunks.push(Buffer.from(buffer.subarray(0, n)));
+            readTotal += n;
+        }
+        return Buffer.concat(chunks);
+    } catch (err) {
+        return value;
+    } finally {
+        if (stream) await stream.close();
+    }
+}
+
 async function normalizeRow(att, tx, row, columnLabels) {
 
     const out = {};
     for (let i = 0; i < columnLabels.length; i++) {
         out[columnLabels[i]] = await readBlobValue(att, tx, row[i]);
+    }
+    return out;
+}
+
+// Igual que normalizeRow pero devuelve los BLOB como Buffer crudo (fotos/archivos
+// binarios). Los campos no-BLOB se normalizan de la misma forma.
+async function normalizeRowBinary(att, tx, row, columnLabels) {
+
+    const out = {};
+    for (let i = 0; i < columnLabels.length; i++) {
+        out[columnLabels[i]] = await readBinaryBlobValue(att, tx, row[i]);
     }
     return out;
 }
@@ -125,6 +171,36 @@ async function queryInternal(att, tx, sql, params = []) {
             const mapped = [];
             for (const row of rows) {
                 mapped.push(await normalizeRow(att, tx, row, columnLabels));
+            }
+            return mapped;
+
+        } finally {
+            await rs.close();
+        }
+
+    } finally {
+        await stmt.dispose();
+    }
+}
+
+// Igual que queryInternal pero usando normalizeRowBinary: útil para leer
+// columnas BLOB SUB_TYPE BINARY (fotografías) sin perder bytes. Los valores
+// no-BLOB se devuelven idénticos, así que es seguro usarlo para estas filas.
+async function queryInternalBinary(att, tx, sql, params = []) {
+
+    const stmt = await att.prepare(tx, sql);
+
+    try {
+        const columnLabels = await stmt.columnLabels;
+
+        const rs = await stmt.executeQuery(tx, params);
+
+        try {
+            const rows = await rs.fetch();
+
+            const mapped = [];
+            for (const row of rows) {
+                mapped.push(await normalizeRowBinary(att, tx, row, columnLabels));
             }
             return mapped;
 
@@ -241,6 +317,36 @@ export async function getConnection() {
 
                 const rows =
                     await queryInternal(
+                        att,
+                        tx,
+                        sql,
+                        params
+                    );
+
+                await tx.commit();
+
+                return rows;
+
+            } catch (err) {
+
+                await tx.rollback();
+
+                throw err;
+            }
+        },
+
+        async queryBinary(sql, params = []) {
+
+            const tx =
+                await att.startTransaction();
+
+            try {
+                if (userId) {
+                    await setSessionUserId(att, tx, userId);
+                }
+
+                const rows =
+                    await queryInternalBinary(
                         att,
                         tx,
                         sql,

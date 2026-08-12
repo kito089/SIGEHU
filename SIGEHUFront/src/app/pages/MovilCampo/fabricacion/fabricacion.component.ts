@@ -63,7 +63,7 @@ interface FotoPendiente {
 @Component({
   selector: 'app-fabricacion-campo',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
   templateUrl: './fabricacion.component.html',
   styleUrls: ['./fabricacion.component.scss']
 })

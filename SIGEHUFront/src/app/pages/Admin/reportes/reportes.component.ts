@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -117,7 +117,7 @@ function colorEstadoObra(orden: number): string {
   templateUrl: './reportes.component.html',
   styleUrl: './reportes.component.scss',
 })
-export class ReportesComponent {
+export class ReportesComponent implements OnInit {
   private reportes = inject(ReportesService);
   private router = inject(Router);
 

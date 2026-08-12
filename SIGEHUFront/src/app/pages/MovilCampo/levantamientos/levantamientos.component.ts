@@ -37,7 +37,7 @@ interface FotoPendiente {
 @Component({
   selector: 'app-levantamientos',
   standalone: true,
-  imports: [CommonModule, IonicModule, ReactiveFormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, ReactiveFormsModule, MobileHeaderComponent],
   templateUrl: './levantamientos.component.html',
   styleUrls: ['./levantamientos.component.scss'],
 })

@@ -205,6 +205,69 @@
   border-radius: 10px;
 }
 
+/* Skeleton Kanban:网格 de 4 columnas para que coincida con el layout del board. */
+.dashboard-kanban-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--sigehu-space-4);
+  width: 100%;
+  padding: 0;
+}
+
+/* Estado de error Kanban: tarjeta centrada con mensaje + detalle + boton. */
+.dashboard-kanban-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sigehu-space-2);
+  padding: var(--sigehu-space-8) var(--sigehu-space-4);
+  text-align: center;
+  border: 1px dashed var(--sigehu-danger, #ef4444);
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.06);
+  color: var(--sigehu-text-secondary, #94a3b8);
+
+  &__msg {
+    margin: 0;
+    font-size: var(--sigehu-font-size-md, 14px);
+    color: var(--sigehu-text-primary, #f8fafc);
+    font-weight: 600;
+  }
+
+  &__det {
+    margin: 0;
+    font-size: var(--sigehu-font-size-sm, 12px);
+    color: var(--sigehu-text-tertiary, #64748b);
+    word-break: break-word;
+    max-width: 480px;
+  }
+
+  &__btn {
+    cursor: pointer;
+    margin-top: var(--sigehu-space-2, 8px);
+    padding: 8px 16px;
+    background: var(--sigehu-primary-btn-bg, #3b82f6);
+    color: var(--sigehu-primary-btn-text, #ffffff);
+    border: none;
+    border-radius: var(--sigehu-radius-md, 8px);
+    font-size: var(--sigehu-font-size-md, 14px);
+    font-weight: 500;
+    transition: background 0.2s ease;
+
+    &:hover { background: #2563eb; }
+    &:focus-visible { outline: 2px solid var(--sigehu-active-text, #3b82f6); outline-offset: 2px; }
+  }
+}
+
+/* Empty state dentro del panel del Kanban: centrado y sin scroll. */
+.dashboard-panel app-empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .dashboard-kpis {

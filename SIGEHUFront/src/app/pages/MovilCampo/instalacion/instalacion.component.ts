@@ -11,7 +11,7 @@ import { EnvService } from '../../../services/env.service';
 import { OfflineSyncService } from '../../../services/offline-sync.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
 import { PermisosService } from '../../../core/services/permisos.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface ObraInstalacion {
   ID: number;
@@ -53,7 +53,7 @@ interface FotoPendiente {
 @Component({
   selector: 'app-instalacion',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule, WorkerHeaderComponent],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
   templateUrl: './instalacion.component.html',
   styleUrls: ['./instalacion.component.scss'],
 })

@@ -1,13 +1,15 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
 import { DashboardTabsComponent, DashboardTab } from '../../../shared/components/dashboard/tabs/dashboard-tabs.component';
-import { KanbanBoardComponent, KanbanColumnData, KanbanCardData } from '../../../shared/components/kanban/kanban-board.component';
+import { KanbanBoardComponent, KanbanColumnData, KanbanCardData, KanbanBadge } from '../../../shared/components/kanban/kanban-board.component';
 import { CalendarComponent } from '../../../shared/components/calendar/calendar.component';
+import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { DashboardService } from '../../../services/dashboard.service';
-import type { EventoCalendarioBackend } from '../../../services/dashboard.service';
+import type { EventoCalendarioBackend, KanbanRowBackend } from '../../../services/dashboard.service';
 import { ReportesService } from '../../../services/reportes.service';
 import type { CompraPendiente } from '../../../core/models/compra.model';
 import type { CalendarEvent } from '../../../core/models/dashboard.model';
@@ -23,6 +25,32 @@ interface KpiCardConfig {
   badgeColor: 'success' | 'warning' | 'info';
 }
 
+// Definicion canonica de las columnas Kanban del Dashboard (5 visibles + Garantias).
+// El `id` es la clave interna (string) que usa el componente board para el selector
+// movil y para ocultar columnas. El `idEstadoObra` es el valor que devuelve el
+// backend en `KanbanRowBackend.IDESTADOOBRA`.
+// Nota: la regla "Levantamiento sin trabajador -> Solicitud Recibida" se aplica
+// en `cargarKanban()` al asignar la obra a su columna; esta tabla NO cambia.
+interface DefColumnaKanban {
+  id: string;
+  title: string;
+  color: string;
+  idEstadoObra: number;
+}
+
+const COLUMNAS_KANBAN: DefColumnaKanban[] = [
+  { id: 'solicitud',     title: 'Solicitud Recibida',     color: '#94A3B8', idEstadoObra: 1 },
+  { id: 'levantamiento', title: 'Levantamiento',         color: '#F59E0B', idEstadoObra: 2 },
+  { id: 'fabricacion',   title: 'En Fabricación',        color: '#3B82F6', idEstadoObra: 3 },
+  { id: 'instalacion',   title: 'Instalación Programada', color: '#A855F7', idEstadoObra: 4 },
+  { id: 'instalado',     title: 'Instalado',            color: '#10B981', idEstadoObra: 5 },
+  { id: 'garantias',     title: 'Garantías',            color: '#EF4444', idEstadoObra: 6 },
+];
+
+// Paleta de colores para avatars de trabajadores en tarjetas Kanban.
+// Seleccion deterministica por hash del nombre del trabajador.
+const PALETA_AVATARES = ['#7C3AED', '#2563EB', '#F59E0B', '#10B981', '#A855F7', '#EF4444', '#3B82F6', '#22C55E'];
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -31,12 +59,14 @@ interface KpiCardConfig {
     KpiCardComponent,
     DashboardTabsComponent,
     KanbanBoardComponent,
-    CalendarComponent
+    CalendarComponent,
+    SkeletonComponent,
+    EmptyStateComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private dashboard = inject(DashboardService);
   private reportes = inject(ReportesService);
@@ -44,7 +74,7 @@ export class DashboardComponent {
   // Estado UI
   activeTab = signal<DashboardTab>('kanban');
 
-  // Columna del Kanban seleccionada en el control móvil (se conserva mientras
+  // Columna del Kanban seleccionada en el control movil (se conserva mientras
   // el usuario permanezca en la vista Kanban).
   readonly kanbanColumna = signal<string>('solicitud');
 
@@ -58,10 +88,22 @@ export class DashboardComponent {
   readonly calendarioEventos = signal<CalendarEvent[]>([]);
   readonly calendarioCargando = signal(false);
 
+  // Kanban real (GET /Dashboard/kanban).
+  // `kanbanColumns` reemplaza al mock hardcoded anterior. Inicia vacio y se
+  // rellena con `cargarKanban()`. Las senales de estado cargan la UX:
+  //   - kanbanCargando = skeleton mientras se obtiene
+  //   - kanbanError    =mensaje si la consulta falla (no se oculta el error)
+  //   - kanbanVacio    = estado empty cuando todo OK pero no hay obras
+  readonly kanbanColumns = signal<KanbanColumnData[]>([]);
+  readonly kanbanCargando = signal(false);
+  readonly kanbanError = signal<string | null>(null);
+  readonly kanbanVacio = signal(false);
+
   ngOnInit(): void {
     this.cargarKpis();
     this.cargarComprasPendientes();
     this.cargarEventosCalendario();
+    this.cargarKanban();
   }
 
   private async cargarKpis(): Promise<void> {
@@ -130,16 +172,26 @@ export class DashboardComponent {
 
   private mapearEvento(e: EventoCalendarioBackend): CalendarEvent {
     const color = this.colorPorEstado(e.estadoObra);
+    // Lista de trabajadores asignados: el backend la entrega separada por '|'.
+    // Se conserva el string crudo en `extendedProps.trabajadoresAsignados` para
+    // mostrarlo en el tooltip del calendario (hover) tal cual, sin separar.
+    const trabajadores = (e.trabajadoresAsignados ?? '').trim();
+    // Fecha utilizada por el calendario (prioridad en el backend):
+    // FechaInicio ?? FechaAsignacion(MIN) ?? FechaUltimaActualizacion.
+    const fechaCal = this.aISODate(e.fechaEvento);
     return {
       id: e.idObra,
       title: e.nombreObra,
-      start: this.aISODate(e.fechaEvento),
+      start: fechaCal,
       color,
       extendedProps: {
         type: this.tipoPorEstado(e.estadoObra),
         obraId: e.idObra,
         obraNombre: e.nombreObra,
         clienteNombre: e.nombreCliente,
+        estadoObra: e.estadoObra,
+        trabajadoresAsignados: trabajadores,
+        fechaCalendario: fechaCal,
       },
     };
   }
@@ -178,72 +230,139 @@ export class DashboardComponent {
   onEventoClick(evento: CalendarEvent): void {
     const obraId = evento.extendedProps.obraId;
     if (obraId === null || obraId === undefined || obraId === '') return;
-    this.router.navigate(['/admin/obras'], { queryParams: { ver: obraId } });
+    // Navegacion al detalle oficial de la obra (ruta existente).
+    this.router.navigate(['/admin/obras/detalle', obraId]);
   }
 
   onRegistrarVisita(evento: CalendarEvent): void {
     this.calendarioEventos.update(lista => [...lista, evento]);
   }
 
-  readonly kanbanColumns = signal<KanbanColumnData[]>([
-    {
-      id: 'solicitud',
-      title: 'Solicitud Recibida',
-      color: '#94A3B8',
-      cards: [
-        { id: 1, code: 'C1', client: 'Residencial Alvento', title: 'Cancel Principal Baño', badges: [], date: '28 Jul 2024', avatarInitials: 'CU', avatarColor: '#7C3AED', assigneeName: 'C. Utrilla' },
-        { id: 2, code: 'C2', client: 'Carlos Mendoza', title: 'Puerta de Herrería Tipo Forja', badges: [], date: '25 Jul 2024', avatarInitials: 'JM', avatarColor: '#2563EB', assigneeName: 'J. Medina' },
-      ]
-    },
-    {
-      id: 'levantamiento',
-      title: 'Levantamiento',
-      color: '#F59E0B',
-      cards: [
-        { id: 3, code: 'C3', client: 'Motel Sol Clarión', title: 'Barandales Terraza Norte', badges: [{ text: 'Pendiente', type: 'pending' }], date: '20 Jul 2024', avatarInitials: 'IB', avatarColor: '#F59E0B', assigneeName: 'I. Beltrán' },
-        { id: 9, code: 'C9', client: 'Farmacia del Valle', title: 'Reja Enrollable Local', badges: [{ text: 'Realizado', type: 'done' }], date: '18 Jul 2024', avatarInitials: 'IB', avatarColor: '#F59E0B', assigneeName: 'I. Beltrán' },
-      ]
-    },
-    {
-      id: 'fabricacion',
-      title: 'En Fabricación',
-      color: '#3B82F6',
-      cards: [
-        { id: 4, code: 'C4', client: 'Inmobiliaria Viste', title: 'Protecciones Ventana Mod. P12', badges: [], date: '22 Jul 2024', avatarInitials: 'MJ', avatarColor: '#3B82F6', assigneeName: 'M. J. López' },
-        { id: 5, code: 'C5', client: 'Sofía Hernández', title: 'Estructura Domo Patio', badges: [{ text: 'Alta', type: 'high' }], date: '15 Jul 2024', avatarInitials: 'MS', avatarColor: '#3B82F6', assigneeName: 'M. S.' },
-      ]
-    },
-    {
-      id: 'instalacion',
-      title: 'Instalación Programada',
-      color: '#A855F7',
-      cards: [
-        { id: 6, code: 'C6', client: 'Isra. García Torres', title: 'Portón Automatizado Principal', badges: [], date: '18 Jul 2024', avatarInitials: 'NB', avatarColor: '#A855F7', assigneeName: 'N. Bárcenas' },
-      ]
-    },
-    {
-      id: 'instalado',
-      title: 'Instalado',
-      color: '#10B981',
-      cards: [
-        { id: 7, code: 'C7', client: 'Gregorio Amezcuano', title: 'Reja Perimetral Sección A', badges: [], date: '12 Jul 2024', avatarInitials: 'EB', avatarColor: '#10B981', assigneeName: 'Equipo Bárcenas' },
-      ]
-    },
-    {
-      id: 'garantias',
-      title: 'Garantías',
-      color: '#EF4444',
-      cards: [
-        { id: 8, code: 'C8', client: 'Restaurante El Asador', title: 'Ajuste Chapa Portón Cocina', badges: [{ text: 'Reportada', type: 'reported' }], date: '16 Jul 2024', avatarInitials: 'CU', avatarColor: '#EF4444', assigneeName: 'Sin asignar' },
-        { id: 10, code: 'C10', client: 'Carlos Mendoza', title: 'Fuga en Bisagra Portón', badges: [{ text: 'En atención', type: 'in_progress' }], date: '11 Jul 2024', avatarInitials: 'JL', avatarColor: '#EF4444', assigneeName: 'J. López' },
-        { id: 11, code: 'C11', client: 'Motel Sol Clarión', title: 'Ajuste Barandal Escalera', badges: [{ text: 'Resuelta', type: 'resolved' }], date: '3 Jul 2024', avatarInitials: 'IB', avatarColor: '#EF4444', assigneeName: 'I. Beltrán' },
-      ]
-    },
-  ]);
-
   // Activity Feed (RF-33)
-  // La "Actividad reciente" vive ahora únicamente en la página de Reportes,
+  // La "Actividad reciente" vive ahora unicamente en la pagina de Reportes,
   // alimentada por Auditorias / AuditoriasDetalles del backend.
+
+  // ── Kanban real (GET /Dashboard/kanban) ────────────────────────────────────
+  // La fuente unica de obras es /Dashboard/kanban (VW_OBRAS_KANBAN + lista de
+  // trabajadores asignados). La transformacion agrupa por ESTADO y mapea a
+  // KanbanColumnData/KanbanCardData. Aplica la regla:
+  //   obra en "Levantamiento pendiente" SIN trabajadores asignados
+  //   → se mueve a la columna "Solicitud Recibida".
+  private async cargarKanban(): Promise<void> {
+    this.kanbanCargando.set(true);
+    this.kanbanError.set(null);
+    this.kanbanVacio.set(false);
+    try {
+      const filas = await firstValueFrom(this.dashboard.kanban());
+      this.kanbanColumns.set(this.construirColumnas(filas));
+      const totalObras = this.kanbanColumns().reduce((n, c) => n + c.cards.length, 0);
+      this.kanbanVacio.set(totalObras === 0);
+    } catch (e: unknown) {
+      // No ocultamos el error ni lo sustituimos por mocks.
+      const msg = e instanceof Error ? e.message : 'No se pudieron cargar las obras del tablero.';
+      this.kanbanError.set(msg);
+      this.kanbanColumns.set([]);
+      this.kanbanVacio.set(false);
+    } finally {
+      this.kanbanCargando.set(false);
+    }
+  }
+
+  // Reintento manual desde el boton de error.
+  recargarKanban(): void { this.cargarKanban(); }
+
+  private construirColumnas(filas: KanbanRowBackend[]): KanbanColumnData[] {
+    // Inicializa cada columna canonica con cards vacio, conservando el orden
+    // definido por su idEstadoObra.
+    const columnas: KanbanColumnData[] = COLUMNAS_KANBAN.map(def => ({
+      id: def.id,
+      title: def.title,
+      color: def.color,
+      cards: [],
+    }));
+    const colPorIdEstado = new Map<number, KanbanColumnData>();
+    COLUMNAS_KANBAN.forEach((def, i) => colPorIdEstado.set(def.idEstadoObra, columnas[i]));
+    const colSolicitud = columnas[0];
+    const colLevantamiento = columnas[1];
+
+    for (const f of filas ?? []) {
+      const idEstado = Number(f.IDESTADOOBRA ?? 0);
+      const trabajadoresRaw = String(f.TRABAJADORESASIGNADOS ?? '').trim();
+      const tieneTrabajador = trabajadoresRaw.length > 0;
+
+      // Regla especial: Levantamiento (idEstadoObra=2) SIN trabajador → Solicitud Recibida.
+      // Se aplica aqui en la capa de transformacion (no en SQL) para no duplicar
+      // la logica en varias vistas y respetar la regla del enunciado.
+      let colDestino = colPorIdEstado.get(idEstado) ?? null;
+      if (idEstado === 2 && !tieneTrabajador && colSolicitud && colLevantamiento) {
+        colDestino = colSolicitud;
+      }
+      if (!colDestino) continue; // estado fuera del tablero (e.g. Finalizado=7) se omite
+
+      colDestino.cards.push(this.mapearCardKanban(f, trabajadoresRaw));
+    }
+    return columnas;
+  }
+
+  private mapearCardKanban(f: KanbanRowBackend, trabajadoresRaw: string): KanbanCardData {
+    const idObra = Number(f.IDOBRA ?? 0);
+    const nombreObra = String(f.NOMBREOBRA ?? '').trim();
+    const nombreCliente = String(f.NOMBRECLIENTE ?? '').trim();
+
+    // Trabajadores: el backend entrega "Nombre1|Nombre2". Tomamos el primero
+    // para avatar+assigneeName; si hay mas, el assigneeName mostra "y N mAs".
+    const trabajadores = trabajadoresRaw.length ? trabajadoresRaw.split('|').map(t => t.trim()).filter(Boolean) : [];
+    const primerTrab = trabajadores[0] ?? '';
+    const assigneeName = trabajadores.length === 0
+      ? 'Sin asignar'
+      : trabajadores.length === 1
+        ? primerTrab
+        : `${primerTrab} y ${trabajadores.length - 1} más`;
+
+    return {
+      id: idObra,
+      // Codigo corto de la tarjeta: "O" + idObra, como ya hacia el mock ("C1").
+      code: `O${idObra}`,
+      client: nombreCliente,
+      title: nombreObra,
+      // badges: la informacion de badges (Pendiente/Realizado/Alta/etc.) proviene
+      // de logicas que NO estan en VW_OBRAS_KANBAN. Se deja vacio (no hay mocks).
+      badges: [] as KanbanBadge[],
+      // Fecha de la tarjeta: usa FechaUltimaActualizacion (proxy de ultimo
+      // cambio de estado, ya que TR_OBRAS_BU la bump-a en cualquier UPDATE).
+      date: this.formatearFechaCorta(String(f.FECHAULTIMAACTUALIZACION ?? '')),
+      avatarInitials: this.inicialesDe(primerTrab),
+      avatarColor: this.colorAvatarDe(primerTrab),
+      assigneeName,
+    };
+  }
+
+  // Iniciales (hasta 2) del nombre del trabajador: "Jose Luis Perez" -> "JP".
+  private inicialesDe(nombre: string): string {
+    const limp = (nombre ?? '').trim();
+    if (!limp) return '—';
+    const partes = limp.split(/\s+/).filter(Boolean);
+    if (partes.length === 0) return '—';
+    if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+  }
+
+  // Color determinista para el avatar basado en el hash del nombre.
+  private colorAvatarDe(nombre: string): string {
+    const s = (nombre ?? '').trim() || 'x';
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return PALETA_AVATARES[h % PALETA_AVATARES.length];
+  }
+
+  // "10 Ago 2026" a partir de una fecha ISO/Date-parseable.
+  private formatearFechaCorta(valor: string): string {
+    if (!valor) return '';
+    const d = new Date(valor);
+    if (Number.isNaN(d.getTime())) return '';
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+  }
 
   onTabChange(tab: DashboardTab): void {
     this.activeTab.set(tab);
@@ -282,7 +401,10 @@ export class DashboardComponent {
   }
 
   onCardClick(card: KanbanCardData): void {
-    // TODO: Abrir modal detalle
-    console.log('Card clicked:', card);
+    // Navegacion al detalle oficial de la obra (ruta existente).
+    // Reutiliza el ID real de la obra (idObra) que ahora se almacena en card.id.
+    const id = card.id;
+    if (id === null || id === undefined || id === '') return;
+    this.router.navigate(['/admin/obras/detalle', id]);
   }
 }

@@ -4,14 +4,21 @@ import { getConnection } from "../config/db.js";
 const createNota = async ({ idGarantia, idEstadoGarantia, idTrabajador, nota }) => {
     const db = await getConnection();
 
-    const rows = await db.query(
+    // Nota es BLOB SUB_TYPE TEXT: el driver exige Buffer, no string.
+    const notaBuffer = nota != null ? Buffer.from(String(nota), "utf8") : null;
+
+    const rows = await db.executeReturning(
         `INSERT INTO NotasGarantias (Garantias_idGarantia, EstadosGarantia_idEstadoGarantia, Trabajadores_idTrabajador, Nota)
          VALUES (?, ?, ?, ?)
          RETURNING idNotaGarantia`,
-        [idGarantia, idEstadoGarantia, idTrabajador, nota]
+        [idGarantia, idEstadoGarantia, idTrabajador, notaBuffer]
     );
 
-    return rows[0]?.IDNOTAGarantia;
+    let raw = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
+    if (raw != null && typeof raw === 'object') {
+        raw = raw.IDNOTAGARANTIA;
+    }
+    return raw;
 };
 
 // ─── GET por Garantia ────────────────────────────────────────────────────────────
@@ -43,9 +50,10 @@ const updateNota = async (id, { nota }) => {
     const existe = await getNotaById(id);
     if (!existe) return null;
 
+    const notaBuffer = nota != null ? Buffer.from(String(nota), "utf8") : null;
     await db.execute(
         "UPDATE NotasGarantias SET Nota = ? WHERE idNotaGarantia = ?",
-        [nota, id]
+        [notaBuffer, id]
     );
 
     return true;

@@ -38,6 +38,16 @@ export class ApiService {
     }).pipe(catchError(e => this.handleError(e)));
   }
 
+  // Descarga un recurso como Blob manteniendo el token de autenticación.
+  // Se usa para mostrar imágenes guardadas como BLOB en el backend (el <img>
+  // no puede enviar el header Authorization).
+  getBlob(path: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}${path}`, {
+      headers: this.getHeaders(),
+      responseType: 'blob'
+    }) as Observable<Blob>;
+  }
+
   post<T>(path: string, body: unknown = {}): Observable<T> {
     return this.http.post<T>(`${this.baseUrl}${path}`, body, {
       headers: this.getHeaders()

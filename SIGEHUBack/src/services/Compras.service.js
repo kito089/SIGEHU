@@ -425,6 +425,26 @@ const getComprasChoferList = async (idTrabajador) => {
             grupo.ESTADO = grupo.RECIBIDA ? 'Surtida en Proveedor' : 'Pendiente de Surtir';
             resultados.push(grupo);
         }
+        
+        const materiales = (detalles ?? []).map(d => ({
+            MATERIAL_NOMBRE: d.NOMBREMATERIAL,
+            CANTIDAD: d.CANTIDAD,
+            UNIDAD: d.MEDIDA ?? d.UNIDADMEDIDA ?? null
+        }));
+        const direcciones = new Set((detalles ?? []).map(d => d.IDPROVEEDOR ?? d.idProveedor));
+        const proveedor = (detalles ?? [])[0] ?? {};
+
+        resultados.push({
+            ID: Number(idCompra),
+            PROVEEDOR_NOMBRE: proveedor.NOMBREPROVEEDOR ?? null,
+            PROVEEDOR_DIRECCION: proveedor.DIRECCIONPROVEDOR ?? null,
+            PROVEEDOR_TELEFONO: proveedor.TELEFONOPROVEDOR ?? null,
+            FECHA_ORDEN: normalizeDate(c.FECHACOMPRA ?? c.FechaCompra ?? null),
+            ESTADO: c.RECIBIDA ? 'Surtida en Proveedor' : 'Pendiente de Surtir',
+            MATERIALES: materiales,
+            NUMERO_DIRECCIONES: direcciones.size,
+            NUMERO_MATERIALES: materiales.length
+        });
     }
 
     return resultados;

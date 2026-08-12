@@ -1,21 +1,23 @@
 <header class="m-header" role="banner">
   <div class="m-header__left">
     <img src="assets/icon/icon.png" alt="SIGEHU" class="m-header__logo" />
-    <h1 class="m-header__title">{{ pageTitle() }}</h1>
+    <h1 class="m-header__title">{{ pageTitle() || title() }}</h1>
   </div>
 
   <div class="m-header__right">
     <app-logout-button class="m-header__logout"></app-logout-button>
 
-    <button
-      class="m-icon-btn"
-      (click)="onNewWork()"
-      type="button"
-      aria-label="Agregar obra"
-      title="Agregar obra"
-    >
-      <span [innerHTML]="icon('plus')" aria-hidden="true"></span>
-    </button>
+    @if (showNewWork()) {
+      <button
+        class="m-icon-btn"
+        (click)="onNewWork()"
+        type="button"
+        aria-label="Agregar obra"
+        title="Agregar obra"
+      >
+        <span [innerHTML]="icon('plus')" aria-hidden="true"></span>
+      </button>
+    }
 
     <div class="m-notif-wrap" #notifWrapper (click)="$event.stopPropagation()">
       <button
