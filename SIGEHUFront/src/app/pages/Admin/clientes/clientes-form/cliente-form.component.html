@@ -68,12 +68,12 @@
                 type="tel"
                 formControlName="telefono"
                 inputmode="tel"
-                maxlength="14"
+                maxlength="16"
                 placeholder="+52 449 000000"
-                title="Máximo 14 caracteres incluyendo espacios: +52 y el número"
+                title="Máximo 16 caracteres incluyendo espacios: +52 y el número"
                 (input)="onTelefonoInput($event)">
               <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
-                Teléfono inválido: usa "+52" y el número (máx. 14 caracteres incluyendo espacios)
+                Teléfono inválido: usa "+52" y el número (máx. 16 caracteres incluyendo espacios)
               </span>
             </div>
             <div class="field">
