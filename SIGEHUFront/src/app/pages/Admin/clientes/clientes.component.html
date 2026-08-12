@@ -45,9 +45,6 @@
           @case ('correo') {
             <span class="td-muted">{{ row.correo }}</span>
           }
-          @case ('rfc') {
-            <span class="td-muted">{{ row.rfc }}</span>
-          }
           @case ('obrasActivas') {
             <span class="tag" [class.tag-obras-empty]="row.obrasActivas === 0">
               {{ obrasLabel(row.obrasActivas) }}

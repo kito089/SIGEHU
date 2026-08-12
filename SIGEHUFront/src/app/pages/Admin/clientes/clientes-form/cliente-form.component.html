@@ -75,9 +75,6 @@
               <span class="field-error" *ngIf="form.get('telefono')?.touched && form.get('telefono')?.invalid">
                 Teléfono inválido: usa "+52" y el número (máx. 14 caracteres incluyendo espacios)
               </span>
-              <span class="hint" *ngIf="!form.get('telefono')?.value && !form.get('correo')?.value">
-                Se requiere al menos un teléfono o un correo
-              </span>
             </div>
             <div class="field">
               <label for="personaCorreo">Correo</label>
@@ -90,6 +87,12 @@
                 Correo electrónico inválido
               </span>
             </div>
+          </div>
+
+          <!-- Validación cruzada: Teléfono O Correo (regla OR).
+               Se muestra a nivel de formulario cuando ambos están vacíos. -->
+          <div class="field-error field-error--block" *ngIf="telefonoOcorreoInvalido">
+            Es obligatorio el registro del Teléfono o del Correo
           </div>
 
           <div class="field">
@@ -136,6 +139,9 @@
 
           <!-- Contactos (min 1) -->
           <div class="contactos-wrap">
+            <div class="contactos-legend" *ngIf="faltaContactoEmpresa">
+              Es necesario mínimo 1 contacto
+            </div>
             <app-contact-list
               [contactos]="contactos()"
               (contactosChange)="onContactosChange($event)">
@@ -143,24 +149,30 @@
           </div>
         }
 
-        <!-- Datos fiscales: para persona activables con checkbox; para
-             empresa son obligatorios (RFC requerido) y siempre visibles. -->
+        <!-- Datos fiscales: switch ON/OFF (slider) para Persona y Empresa.
+             El bloque de campos fiscales se muestra cuando el switch está
+             activado. RFC obligatorio (12-13) solo si switch ON. -->
         <div class="fiscal-block" [formGroup]="fiscalGroup">
-          @if (tipo() === 'persona') {
-            <label class="fiscal-toggle" for="datosFiscales">
-              <input id="datosFiscales" type="checkbox" formControlName="datosFiscales">
-              <span class="fiscal-toggle__label">Datos Fiscales</span>
-              <span class="fiscal-toggle__hint">Capturar información de facturación SAT (RFC, régimen, CFDI…)</span>
-            </label>
-          }
+          <label class="switch" for="datosFiscales">
+            <input
+              id="datosFiscales"
+              type="checkbox"
+              formControlName="datosFiscales"
+              (change)="onDatosFiscalesToggle()">
+            <span class="switch__track" aria-hidden="true">
+              <span class="switch__thumb"></span>
+            </span>
+            <span class="switch__label">Datos Fiscales</span>
+            <span class="switch__hint">Capturar información de facturación SAT (RFC, régimen, CFDI…)</span>
+          </label>
 
-          @if (tipo() === 'empresa' || fiscalGroup.get('datosFiscales')?.value) {
+          @if (fiscalGroup.get('datosFiscales')?.value) {
             <div class="field-row">
               <div class="field">
-                <label for="rfc" [class.required-label]="tipo() === 'empresa'">RFC</label>
+                <label for="rfc" [class.required-label]="fiscalGroup.get('datosFiscales')?.value">RFC</label>
                 <input id="rfc" type="text" formControlName="rfc" maxlength="13" placeholder="Ej. UTCA850101AB1">
                 <span class="field-error" *ngIf="form.get('fiscal')?.get('rfc')?.touched && form.get('fiscal')?.get('rfc')?.invalid">
-                  {{ form.get('fiscal')?.get('rfc')?.hasError('required') ? 'El RFC es obligatorio para la empresa (12-13 caracteres)' : 'RFC inválido (12-13 caracteres)' }}
+                  {{ form.get('fiscal')?.get('rfc')?.hasError('required') ? 'El RFC es obligatorio (12-13 caracteres)' : 'RFC inválido (12-13 caracteres)' }}
                 </span>
               </div>
               <div class="field">
