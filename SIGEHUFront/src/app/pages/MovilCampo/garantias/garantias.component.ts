@@ -34,7 +34,7 @@ interface TicketGarantia {
 @Component({
   selector: 'app-garantias-campo',
   standalone: true,
-  imports: [CommonModule, IonicModule, FormsModule],
+  imports: [CommonModule, IonicModule, FormsModule, MobileHeaderComponent],
   templateUrl: './garantias.component.html',
   styleUrls: ['./garantias.component.scss'],
 })

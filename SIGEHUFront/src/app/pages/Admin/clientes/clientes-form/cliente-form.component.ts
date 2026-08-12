@@ -192,7 +192,7 @@ export class ClienteFormComponent implements OnInit {
   // Al alternar el switch Datos Fiscales se actualizan los validators del RFC
   // (sin re-validar el estado completo del formulario).
   onDatosFiscalesChange(): void {
-    this.actualizarValidacionRfc(this.form, this.tipo());
+    this.actualizarValidacionFiscal(this.form);
   }
 
   // Las personas solo requieren un teléfono o un correo; las empresas
@@ -455,6 +455,8 @@ export class ClienteFormComponent implements OnInit {
   private aplicarEdicion(data: ClienteForm): void {
     this.tipo.set(data.tipo);
     this.aplicarValidacionTipo(this.form);
+
+    const datosFiscalesGuardados = !!data.rfc;
 
     this.form.patchValue({
       nombre: data.nombre,
