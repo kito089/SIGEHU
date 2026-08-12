@@ -110,7 +110,7 @@ export class ClienteFormComponent implements OnInit {
   private buildForm(): FormGroup {
     const group = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(NOMBRE_MAX)]],
-      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN), Validators.maxLength(14)]],
+      telefono: ['', [Validators.pattern(TELEFONO_REACTIVO_PATTERN), Validators.maxLength(16)]],
       correo: ['', [Validators.email, Validators.maxLength(EMAIL_MAX)]],
       direccion: ['', [Validators.maxLength(DIRECCION_MAX)]],
       observaciones: ['', [Validators.maxLength(OBSERVACIONES_MAX)]],
@@ -301,7 +301,7 @@ export class ClienteFormComponent implements OnInit {
     // Teléfono del cliente persona: mismo saneado/validación que Trabajadores.
     const raw = this.form.getRawValue();
     if (this.tipo() === 'persona' && raw.telefono && sanitizarTelefono(raw.telefono) === null) {
-      this.toast.error('Teléfono inválido: usa "+52" y el número, máximo 14 caracteres incluyendo espacios');
+      this.toast.error('Teléfono inválido: usa "+52" y el número, máximo 16 caracteres incluyendo espacios');
       return;
     }
 
@@ -311,7 +311,7 @@ export class ClienteFormComponent implements OnInit {
         c => (c.telefono ?? '').trim() !== '' && sanitizarTelefono(c.telefono ?? '') === null
       );
       if (conTelefonoInvalido) {
-        this.toast.warning('Revisa el teléfono de los contactos: usa "+52" y el número, máximo 14 caracteres incluyendo espacios');
+        this.toast.warning('Revisa el teléfono de los contactos: usa "+52" y el número, máximo 16 caracteres incluyendo espacios');
         return;
       }
 

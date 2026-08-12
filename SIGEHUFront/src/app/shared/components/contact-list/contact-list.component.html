@@ -38,14 +38,14 @@
                   [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="c.telefono"
                   inputmode="tel"
-                  maxlength="14"
+                  maxlength="16"
                   placeholder="+52 449 000000"
-                  title="Máximo 14 caracteres incluyendo espacios: +52 y el número"
+                  title="Máximo 16 caracteres incluyendo espacios: +52 y el número"
                   (input)="onTelefonoInput($event, i)"
                   (blur)="marcarTelTocado(i)"
                   [class.invalid]="mostrarErrorTel(i, c)">
                 @if (mostrarErrorTel(i, c)) {
-                  <span class="cl__tel-error">Teléfono inválido: usa "+52" y el número (máx. 14 incluyendo espacios)</span>
+                  <span class="cl__tel-error">Teléfono inválido: usa "+52" y el número (máx. 16 incluyendo espacios)</span>
                 }
               </td>
               <td>
