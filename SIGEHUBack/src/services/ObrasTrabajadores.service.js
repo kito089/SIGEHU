@@ -114,11 +114,34 @@ const registrarPago = async ({ idObra, idTipoPago, idTrabajador, idEstadoObra, m
 };
 
 // ─── GET pagos de una obra ───────────────────────────────────────────────────
+// Devuelve cada pago con sus catálogos resueltos (Tipo de pago, Forma de pago,
+// Estado de obra al que se asoció y el trabajador que lo registró) en claves
+// UPPERCASE (TIPOPAGO, FORMAPAGO, ESTADOOBRA, TRABAJADORQUEREGISTRO) para que el
+// frontend del Detalle de Obra pueda mapearlos sin transformaciones. Reutiliza
+// los JOIN estándar del esquema (TiposPago / FormasPago / EstadosObra /
+// Trabajadores) sin crear vistas/SP nuevos (RNF-05).
 const getPagosByObra = async (idObra) => {
     const db = await getConnection();
 
     return await db.query(
-        "SELECT * FROM DetallesPagos WHERE Obras_idObra = ? ORDER BY FechaRegistro DESC",
+        `SELECT
+            dp.idDetallePago        AS IDDETALLEPAGO,
+            dp.Obras_idObra         AS IDOBRA,
+            dp.Monto                AS MONTO,
+            dp.FechaRegistro        AS FECHAREGISTRO,
+            tp.Nombre               AS TIPOPAGO,
+            fp.Nombre               AS FORMAPAGO,
+            eo.idEstadoObra         AS IDESTADOOBRA,
+            eo.Nombre               AS ESTADOOBRA,
+            t.idTrabajador          AS IDTRABAJADOR,
+            t.NombreCompleto        AS TRABAJADORQUEREGISTRO
+         FROM DetallesPagos dp
+         JOIN TiposPago    tp ON tp.idTipoPago    = dp.TiposPago_idTipoPago
+         JOIN FormasPago   fp ON fp.idFormaPago   = dp.FormasPago_idFormaPago
+         JOIN EstadosObra  eo ON eo.idEstadoObra  = dp.EstadosObra_idEstadoObra
+         LEFT JOIN Trabajadores t ON t.idTrabajador = dp.Trabajadores_idTrabajador
+         WHERE dp.Obras_idObra = ?
+         ORDER BY dp.FechaRegistro DESC, dp.idDetallePago DESC`,
         [idObra]
     );
 };

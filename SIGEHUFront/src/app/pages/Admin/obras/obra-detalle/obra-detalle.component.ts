@@ -100,6 +100,34 @@ export class ObraDetalleComponent implements OnInit {
     this.pagos().reduce((acc, p) => acc + (Number(p.monto) || 0), 0)
   );
 
+  // Estado actual de la obra con color asociado (reutiliza el mapa de colores
+  // de ObrasComponent para mantener consistencia visual con el resto de la app).
+  private readonly MAPA_ESTADOS_COLOR: { nombre: string; color: string }[] = [
+    { nombre: 'Solicitud recibida', color: '#94A3B8' },
+    { nombre: 'Levantamiento pendiente', color: '#F59E0B' },
+    { nombre: 'En fabricación', color: '#3B82F6' },
+    { nombre: 'Instalación programada', color: '#A855F7' },
+    { nombre: 'Instalado', color: '#10B981' },
+    { nombre: 'Garantía', color: '#EF4444' },
+    { nombre: 'Finalizado', color: '#64748B' },
+    { nombre: 'Pendiente de aceptación', color: '#3B82F6' },
+  ];
+
+  // Estado actual visible: { nombre, color, orden }. 'orden' permite mostrar un
+  // subtítulo de etapa (Levantamiento / Fabricación / Instalación) coherente con
+  // el requerimiento sin inventar estados nuevos.
+  estadoActualInfo = computed(() => {
+    const ob = this.obra();
+    const nombre = String(ob?.ESTADOBRA ?? ob?.estadoObra ?? '') || 'Sin estado';
+    const found = this.MAPA_ESTADOS_COLOR.find(
+      (e) => e.nombre.toLowerCase() === nombre.toLowerCase()
+    );
+    return {
+      nombre,
+      color: found?.color ?? '#94A3B8',
+    };
+  });
+
   async ngOnInit(): Promise<void> {
     this.idObra = Number(this.route.snapshot.paramMap.get('id')) || null;
     if (!this.idObra) {
@@ -274,11 +302,29 @@ export class ObraDetalleComponent implements OnInit {
   }
 
   regresar(): void {
-    const state = this.router.getCurrentNavigation()?.extras.state as { clienteId?: number } | null;
+    // El árbol de navegación SIGEHU ya no expone "Obras y Proyectos" en el
+    // sidebar (se eliminó como acceso principal). El Detalle de Obra se alcanza
+    // desde tres puntos: Dashboard (Kanban/calendario), Detalle de Cliente
+    // (pestaña Trabajos/Obras) y el omnibox. Regresar debe devolver al usuario
+    // al punto de origen, NO a la página obsoleta /admin/obras.
+    //
+    // Resolución:
+    //   1) Si la navegación trajo state.clienteId (vino de Detalle de Cliente),
+    //      regresar ahí.
+    //   2) En otro caso, si hay historial de navegación real, usar history.back()
+    //      para volver a la pantalla exacta de origen (Dashboard, etc.).
+    //   3) Si no hay historial (entrada directa por URL/refresh), ir al Dashboard,
+    //      que es la pantalla principal vigente de obras.
+    const state = (this.router.getCurrentNavigation()?.extras.state ??
+      (history.state as { clienteId?: number } | null)) as { clienteId?: number } | null;
     if (state?.clienteId) {
       this.router.navigate(['/admin/clientes', state.clienteId]);
-    } else {
-      this.router.navigate(['/admin/obras']);
+      return;
     }
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    this.router.navigate(['/admin/dashboard']);
   }
 }

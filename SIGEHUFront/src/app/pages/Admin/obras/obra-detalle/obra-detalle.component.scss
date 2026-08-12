@@ -62,6 +62,52 @@
 
 .detalle-obra__estado{ display: flex; }
 
+/* ---------- Sección Estado de la obra ---------- */
+.estado-obra{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--sigehu-surface-input, #1a2338);
+  border: 1px solid var(--sigehu-border-subtle, #2a3552);
+  border-radius: 8px;
+}
+.estado-obra__label{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.estado-obra__pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--estado-color, #94A3B8) 14%, transparent);
+  color: var(--estado-color, #94A3B8);
+  border: 1px solid var(--estado-color, #94A3B8);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.estado-obra__dot{
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--estado-color, #94A3B8);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--estado-color, #94A3B8) 22%, transparent);
+  flex-shrink: 0;
+}
+.estado-obra__nombre{
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .badge{
   padding: 3px 10px;
   border-radius: 999px;
@@ -273,6 +319,112 @@
   font-size: 12.5px;
   font-weight: 700;
 }
+
+/* Resumen financiero: tarjetas Total pagado / Saldo pendiente.
+   Diseño coherente con las "medida" del header (fondo --sigehu-surface-input,
+   borde --sigehu-border-subtle, radio 8px) y tokens del design system. */
+.pagos-resumen{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.pago-card{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background: var(--sigehu-card-bg, #0f172a);
+  border: 1px solid var(--sigehu-border-divider, #1f2b44);
+  border-radius: 12px;
+}
+.pago-card--paid{ border-color: color-mix(in srgb, var(--success, #10B981) 40%, var(--sigehu-border-divider, #1f2b44)); }
+.pago-card--pending{ border-color: color-mix(in srgb, var(--sigehu-warning, #F59E0B) 35%, var(--sigehu-border-divider, #1f2b44)); }
+.pago-card__label{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pago-card__valor{
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--success, #10B981);
+  line-height: 1.1;
+}
+.pago-card__valor--muted{
+  color: var(--text-secondary, #94A3B8);
+  font-size: 18px;
+  font-style: italic;
+}
+.pago-card__sub{
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* Historial de pagos: tabla semántica responsive.
+   Mantiene la estrutura row/column de medida/detalle-obra (inputs oscuros,
+   bordes sutiles). En móvil se conserva la cuadrícula con scroll horizontal
+   natural; no se convierte en lista para mantener el contrato tabular. */
+.pagos-tabla{
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--sigehu-border-divider, #1f2b44);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.pagos-tabla__head,
+.pagos-tabla__row{
+  display: grid;
+  grid-template-columns:
+    minmax(110px, 1fr)      /* Fecha */
+    minmax(180px, 1.4fr)    /* Concepto */
+    minmax(140px, 1fr)      /* Estado */
+    minmax(140px, 1fr)      /* Autor */
+    minmax(110px, 0.9fr);   /* Monto (alineado a la derecha) */
+  gap: 10px;
+  align-items: center;
+  padding: 11px 14px;
+}
+.pagos-tabla__head{
+  background: var(--sigehu-surface-input, #1a2338);
+  border-bottom: 1px solid var(--sigehu-border-divider, #1f2b44);
+}
+.pagos-tabla__head .pagos-tabla__col{
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pagos-tabla__row{
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--sigehu-border-subtle, #2a3552);
+}
+.pagos-tabla__row:last-child{ border-bottom: 0; }
+.pagos-tabla__row:nth-child(odd of .pagos-tabla__row){
+  background: color-mix(in srgb, var(--sigehu-surface-input, #1a2338) 35%, transparent);
+}
+.pagos-tabla__col--monto{
+  text-align: right;
+  font-weight: 700;
+  color: var(--success, #10B981);
+}
+.pagos-tabla__col--concepto{
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pagos-tabla__col--estado .badge-estado{ font-size: 10.5px; }
+.pago-tag--muted{
+  background: color-mix(in srgb, var(--text-secondary, #94A3B8) 12%, transparent);
+  color: var(--text-secondary, #94A3B8);
+  border-color: color-mix(in srgb, var(--text-secondary, #94A3B8) 30%, transparent);
+}
+
+/* Mantenidos por retrocompatibilidad con otros componentes del archivo. */
 .detalle-obra__pagos{
   list-style: none;
   margin: 0;
