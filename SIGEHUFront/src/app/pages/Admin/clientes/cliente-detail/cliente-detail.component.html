@@ -533,7 +533,6 @@
     <app-nueva-obra-modal
       [idClienteInicial]="clienteId"
       [idTrabajoInicial]="obraEnTrabajoSeleccionado?.id ?? null"
-      [ocultarCampoTrabajo]="obraEnTrabajoSeleccionado !== null"
       (creada)="onNuevaObraCreada()"
       (cancelar)="cerrarNuevaObra()">
     </app-nueva-obra-modal>

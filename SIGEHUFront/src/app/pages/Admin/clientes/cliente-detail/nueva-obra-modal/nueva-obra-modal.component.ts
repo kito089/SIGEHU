@@ -26,11 +26,6 @@ interface OpcionCliente {
   nombre: string;
 }
 
-interface OpcionTrabajo {
-  idTrabajo: number;
-  nombre: string;
-}
-
 @Component({
   selector: 'app-nueva-obra-modal',
   standalone: true,
@@ -53,11 +48,6 @@ export class NuevaObraModalComponent implements OnInit {
   // para precargar la dirección del trabajo en el modal de la obra.
   @Input() direccionPrecargada: string | null = null;
 
-  // Oculta el selector "Tipo de trabajo": cuando el modal se usa como paso 2
-  // del flujo "Nuevo Trabajo", el trabajo aún no existe y no debe poder
-  // elegirse uno distinto (se vinculará al trabajo recién creado).
-  @Input() ocultarCampoTrabajo = false;
-
   // Emite el id de la obra creada para que el flujo de "Nuevo Trabajo" pueda
   // vincularla a un trabajo recién creado.
   @Output() creada = new EventEmitter<number>();
@@ -68,7 +58,6 @@ export class NuevaObraModalComponent implements OnInit {
   guardando = false;
 
   clientes: OpcionCliente[] = [];
-  trabajos: OpcionTrabajo[] = [];
 
   // Direcciones del cliente seleccionado (para el combobox) + bandera que
   // habilita el input de "Otra dirección…".
@@ -85,7 +74,6 @@ export class NuevaObraModalComponent implements OnInit {
     this.form = this.fb.group({
       idCliente: [null, [Validators.required]],
       nombre: ['', [Validators.required, Validators.minLength(3)]],
-      idTrabajo: [null],
       fechaInicio: ['', [Validators.required]],
       direccion: [''],
       ancho: [null],
@@ -102,11 +90,6 @@ export class NuevaObraModalComponent implements OnInit {
       if (this.idClienteInicial != null) {
         this.form.patchValue({ idCliente: this.idClienteInicial });
         await this.onClienteCambio();
-
-        // Trabajo preseleccionado: fuerza el selector a ese trabajo (activo).
-        if (this.idTrabajoInicial != null) {
-          this.form.patchValue({ idTrabajo: this.idTrabajoInicial });
-        }
 
         // Precargar la dirección del trabajo en el flujo "Nuevo Trabajo → Obra".
         const precargada = this.direccionPrecargada?.trim();
@@ -135,33 +118,17 @@ export class NuevaObraModalComponent implements OnInit {
     }
   }
 
-  private async cargarTrabajos(idCliente: number): Promise<void> {
-    try {
-      const raw: any = await firstValueFrom(this.api.get<any>('/Clientes/' + idCliente + '/trabajos'));
-      const lista = Array.isArray(raw?.trabajos) ? raw.trabajos : [];
-      this.trabajos = lista.map((t: any) => ({
-        idTrabajo: Number(t.IDTRABAJO ?? t.idTrabajo),
-        nombre: String(t.NOMBRE ?? t.Nombre ?? t.nombre ?? ''),
-      }));
-    } catch {
-      this.trabajos = [];
-    }
-  }
-
-  // Carga los trabajos y las direcciones del cliente (general y fiscal) para
-  // el combobox de dirección.
+  // Carga las direcciones del cliente (general y fiscal) para el combobox de
+  // dirección.
   async onClienteCambio(): Promise<void> {
     const id = this.form.get('idCliente')?.value;
-    this.form.patchValue({ idTrabajo: null, direccion: '' });
+    this.form.patchValue({ direccion: '' });
     this.usarOtraDireccion = false;
     this.direccionesCliente = [];
 
     if (id == null) {
-      this.trabajos = [];
       return;
     }
-
-    await this.cargarTrabajos(Number(id));
 
     try {
       const raw: any = await firstValueFrom(this.api.get<any>('/Clientes/' + Number(id)));
@@ -222,7 +189,7 @@ export class NuevaObraModalComponent implements OnInit {
         idCliente: raw.idCliente,
         Nombre: raw.nombre.trim(),
         Direccion: raw.direccion?.trim() || null,
-        idTrabajo: raw.idTrabajo ?? null,
+        idTrabajo: this.idTrabajoInicial ?? null,
         FechaInicio: raw.fechaInicio || null,
         Ancho: raw.ancho != null && raw.ancho !== '' ? Number(raw.ancho) : null,
         Alto: raw.alto != null && raw.alto !== '' ? Number(raw.alto) : null,

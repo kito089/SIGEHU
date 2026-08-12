@@ -62,36 +62,18 @@
             }
           </div>
 
-          <div class="form-row">
-            @if (!ocultarCampoTrabajo) {
-              <div class="form-field">
-                <label class="form-label" for="no-trabajo">Tipo de trabajo</label>
-                <select
-                  id="no-trabajo"
-                  class="form-select"
-                  formControlName="idTrabajo"
-                >
-                  <option [ngValue]="null">— Obra independiente (sin trabajo) —</option>
-                  @for (t of trabajos; track t.idTrabajo) {
-                    <option [ngValue]="t.idTrabajo">{{ t.nombre }}</option>
-                  }
-                </select>
-              </div>
+          <div class="form-field">
+            <label class="form-label" for="no-fecha">Fecha de inicio <span class="form-required">*</span></label>
+            <input
+              id="no-fecha"
+              class="form-input"
+              type="date"
+              formControlName="fechaInicio"
+              [class.form-input--error]="form.controls['fechaInicio'].invalid && form.controls['fechaInicio'].touched"
+            />
+            @if (form.controls['fechaInicio'].invalid && form.controls['fechaInicio'].touched) {
+              <span class="form-error">Indica la fecha de inicio</span>
             }
-
-            <div class="form-field">
-              <label class="form-label" for="no-fecha">Fecha de inicio <span class="form-required">*</span></label>
-              <input
-                id="no-fecha"
-                class="form-input"
-                type="date"
-                formControlName="fechaInicio"
-                [class.form-input--error]="form.controls['fechaInicio'].invalid && form.controls['fechaInicio'].touched"
-              />
-              @if (form.controls['fechaInicio'].invalid && form.controls['fechaInicio'].touched) {
-                <span class="form-error">Indica la fecha de inicio</span>
-              }
-            </div>
           </div>
 
           <!-- Dirección: combobox con las direcciones del cliente + otra -->
