@@ -157,15 +157,31 @@ export class NuevaObraModalComponent implements OnInit {
   }
 
   // Archivos de foto → levantamientos. Validación genérica (se reutiliza la
-  // del backend: JPEG/JPG/PNG/WEBP, máx 10MB).
+  // del backend: JPEG/JPG/PNG/WEBP, máx 10MB). Cada selección AÑADE archivos a
+  // los ya elegidos (no los reemplaza) y limpia el input para poder volver a
+  // seleccionar archivos uno por uno.
   onFotosChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files ?? []);
-    this.fotosSeleccionadas = files.map((file) => ({
-      file,
-      nombre: file.name,
-      url: URL.createObjectURL(file),
-    }));
+    const nuevos = Array.from(input.files ?? []);
+    input.value = '';
+
+    if (nuevos.length === 0) return;
+
+    const yaAgregados = new Set(
+      this.fotosSeleccionadas.map((f) => `${f.file.name}::${f.file.size}`)
+    );
+    const aAgregar = nuevos.filter(
+      (file) => !yaAgregados.has(`${file.name}::${file.size}`)
+    );
+
+    this.fotosSeleccionadas = [
+      ...this.fotosSeleccionadas,
+      ...aAgregar.map((file) => ({
+        file,
+        nombre: file.name,
+        url: URL.createObjectURL(file),
+      })),
+    ];
   }
 
   quitarFoto(idx: number): void {
