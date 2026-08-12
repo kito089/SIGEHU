@@ -24,9 +24,21 @@
               <a [href]="'mailto:' + ob.CORREOCLIENTE">{{ ob.CORREOCLIENTE }}</a>
             }
           </p>
-          <div class="detalle-obra__estado">
-            <span class="badge badge-estado">{{ ob.ESTADOBRA ?? ob.estadoObra ?? 'Sin estado' }}</span>
-          </div>
+
+          <!-- ═══ SECCIÓN ESTADO DE LA OBRA ═══ -->
+          <!-- Estado real de la obra (de la base de datos vía VW_DETALLE_OBRA),
+               nunca un valor escrito manualmente. Color e ícono según el catálogo
+               EstadosObra. -->
+          <section class="estado-obra" aria-label="Estado de la obra">
+            <span class="estado-obra__label">Estado de la obra</span>
+            <span
+              class="estado-obra__pill"
+              [style.--estado-color]="estadoActualInfo().color"
+            >
+              <span class="estado-obra__dot" aria-hidden="true"></span>
+              <span class="estado-obra__nombre">{{ estadoActualInfo().nombre }}</span>
+            </span>
+          </section>
         </div>
         <div class="detalle-obra__medidas">
           <div class="medida">
@@ -183,36 +195,74 @@
       <!-- ═════════ PESTAÑA PAGOS ═════════ -->
       @if (tab() === 'pagos' && !esTrabajador()) {
         <div class="detalle-obra__tabbody">
+          <!-- Resumen financiero: tarjetas de Total pagado y Saldo pendiente.
+               Nota: el esquema actual de la BD NO define un "Total de la obra"
+               (no hay columna PresupuestoTotal en Obras); solo existen pagos
+               individuales en DetallesPagos.Monto. Por ello NO se inventa ni
+               se endurece un total en el frontend (RNF-05: no duplicar
+               cálculos inexistentes). El saldo se muestra como "N/D" en lugar
+               de forzar Saldo = -Total pagado. -->
+          <section class="pagos-resumen" aria-label="Resumen de pagos">
+            <article class="pago-card pago-card--paid">
+              <span class="pago-card__label">Total pagado</span>
+              <span class="pago-card__valor">{{ formatearMonto(totalPagos()) }}</span>
+              <span class="pago-card__sub">{{ pagos().length }} pago(s) registrado(s)</span>
+            </article>
+            <article class="pago-card pago-card--pending">
+              <span class="pago-card__label">Saldo pendiente</span>
+              <span class="pago-card__valor pago-card__valor--muted">N/D</span>
+              <span class="pago-card__sub">Sin total de obra definido</span>
+            </article>
+          </section>
+
           <section class="detalle-obra__card">
             <div class="detalle-obra__card-header-row">
-              <h2 class="detalle-obra__card-title">Pagos registrados</h2>
-              <span class="total-pagos">Total: {{ formatearMonto(totalPagos()) }}</span>
+              <h2 class="detalle-obra__card-title">Historial de pagos</h2>
+              <span class="total-pagos">Pagado: {{ formatearMonto(totalPagos()) }}</span>
             </div>
             @if (pagos().length === 0) {
               <p class="muted">No hay pagos registrados.</p>
             } @else {
-              <ul class="detalle-obra__pagos">
+              <div class="pagos-tabla" role="table" aria-label="Historial de pagos">
+                <div class="pagos-tabla__head" role="row">
+                  <span class="pagos-tabla__col pagos-tabla__col--fecha" role="columnheader">Fecha</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--concepto" role="columnheader">Concepto</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--estado" role="columnheader">Estado</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--autor" role="columnheader">Registrado por</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--monto" role="columnheader">Monto</span>
+                </div>
                 @for (p of pagos(); track p.id) {
-                  <li class="detalle-obra__pago">
-                    <span class="detalle-obra__pago-monto">{{ formatearMonto(p.monto) }}</span>
-                    <div class="detalle-obra__pago-info">
-                      <span class="badge badge-estado">{{ p.estadoObra || '—' }}</span>
-                      @if (p.tipoPago) {
-                        <span class="pago-tag">{{ p.tipoPago }}</span>
-                      }
+                  <div class="pagos-tabla__row" role="row">
+                    <span class="pagos-tabla__col pagos-tabla__col--fecha" role="cell">{{ formatearFecha(p.fecha) }}</span>
+                    <span class="pagos-tabla__col pagos-tabla__col--concepto" role="cell">
                       @if (p.formaPago) {
                         <span class="pago-tag">{{ p.formaPago }}</span>
                       }
-                    </div>
-                    <div class="detalle-obra__pago-meta">
-                      @if (p.trabajador) {
-                        <span>Registrado por {{ p.trabajador }}</span>
+                      @if (p.tipoPago) {
+                        <span class="pago-tag pago-tag--muted">{{ p.tipoPago }}</span>
                       }
-                      <time class="muted">{{ formatearFecha(p.fecha) }}</time>
-                    </div>
-                  </li>
+                      @if (!p.formaPago && !p.tipoPago) {
+                        <span class="muted">—</span>
+                      }
+                    </span>
+                    <span class="pagos-tabla__col pagos-tabla__col--estado" role="cell">
+                      @if (p.estadoObra) {
+                        <span class="badge badge-estado">{{ p.estadoObra }}</span>
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </span>
+                    <span class="pagos-tabla__col pagos-tabla__col--autor" role="cell">
+                      @if (p.trabajador) {
+                        {{ p.trabajador }}
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </span>
+                    <span class="pagos-tabla__col pagos-tabla__col--monto" role="cell">{{ formatearMonto(p.monto) }}</span>
+                  </div>
                 }
-              </ul>
+              </div>
             }
           </section>
         </div>
