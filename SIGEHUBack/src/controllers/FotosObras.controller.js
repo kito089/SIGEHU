@@ -31,11 +31,23 @@ const upload = async (req, res) => {
             return res.status(400).json({ error: "idEstadoObra e idTrabajador son requeridos (o tipo)" });
         }
 
+        // Lee el buffer para guardar el BLOB binario en la BD (además de la
+        // ruta relativa para el servido estático vía /uploads).
+        let buffer = null;
+        try {
+            buffer = await fs.readFile(req.file.path);
+        } catch {
+            // Si el archivo no se puede leer se guarda igual el registro (fotos
+            // previas guardaban solo la ruta).
+        }
+
         const resultado = await service.createFotoObra({
             idObra: req.params.idObra,
             idEstadoObra,
             idTrabajador,
-            nombreArchivo: req.file.filename
+            nombreArchivo: req.file.filename,
+            buffer,
+            contentType: req.file.mimetype
         });
 
         res.status(201).json({
@@ -58,6 +70,38 @@ const getByObra = async (req, res) => {
     }
 };
 
+// GET /obras/fotos/:id/archivo — devuelve el BLOB binario de la foto
+const getArchivo = async (req, res) => {
+    try {
+        const foto = await service.getFotoById(req.params.id);
+        if (!foto) {
+            return res.status(404).json({ error: "Foto no encontrada" });
+        }
+
+        const contentType = String(foto.CONTENTTYPE ?? foto.ContentType ?? 'image/jpeg');
+        const blob = foto.FOTO;
+
+        if (blob != null) {
+            const buffer = Buffer.isBuffer(blob)
+                ? blob
+                : Buffer.from(String(blob), 'binary');
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            return res.send(buffer);
+        }
+
+        // Fotografía antigua sin BLOB: responder 301 hacia el archivo estático.
+        const rutaArchivo = String(foto.RUTAARCHIVO ?? foto.RutaArchivo ?? '');
+        if (rutaArchivo) {
+            res.redirect('/' + rutaArchivo.replace(/^[\\/]+/, ''));
+        } else {
+            res.status(404).json({ error: "Foto sin contenido" });
+        }
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 // DELETE /fotos/:id
 const remove = async (req, res) => {
     try {
@@ -74,4 +118,4 @@ const remove = async (req, res) => {
     }
 };
 
-export default { upload, getByObra, remove };
+export default { upload, getByObra, getArchivo, remove };

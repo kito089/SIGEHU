@@ -358,7 +358,9 @@ const idAudit = auditRows?.[0]?.ID ?? null;
 
 // Lista de compras para el chofer (rol Trabajador). Sin datos financieros:
 // la tabla Compras no tiene columnas de precio/monto. Devuelve el shape que
-// consume la página móvil /movil/compras (claves en MAYÚSCULAS como Firebird).
+// consume la página móvil /movil/compras: una tarjeta por proveedor/dirección
+// (agrupando los detalles que comparten el mismo proveedor y dirección), con
+// claves en MAYÚSCULAS como Firebird.
 const getComprasChoferList = async (idTrabajador) => {
     const db = await getConnection();
 
@@ -374,10 +376,10 @@ const getComprasChoferList = async (idTrabajador) => {
     for (const c of compras ?? []) {
         const idCompra = c.IDCOMPRA ?? c.idCompra;
         const detalles = await db.query(
-            `SELECT p.idProveedor, p.Nombre AS NombreProveedor, p.Direccion AS DireccionProveedor,
-                    p.Telefono AS TelefonoProveedor,
+            `SELECT p.idProveedor, p.Nombre AS NombreProveedor,
+                    p.Direccion AS DireccionProveedor, p.Telefono AS TelefonoProveedor,
                     m.Nombre AS NombreMaterial, m.UnidadMedida,
-                    dc.Cantidad, dc.Medida
+                    dc.Cantidad, dc.Medida, dc.idDetalleCompra
              FROM DetallesCompras dc
              JOIN Proveedores_has_Materiales ph
                  ON ph.Proveedores_idProveedor = dc.Proveedores_has_Materiales_Proveedores_idProveedor
@@ -388,16 +390,48 @@ const getComprasChoferList = async (idTrabajador) => {
             [idCompra]
         );
 
+        // Agrupa los detalles por (idProveedor + dirección) → la tarjeta de la
+        // app móvil separa las compras por "dirección/proveedor". Cada grupo es
+        // una tarjeta distinta con su propio checklist y confirmación de surtido.
+        const grupos = new Map();
+        for (const d of detalles ?? []) {
+            const idProv = Number(d.IDPROVEEDOR ?? d.idProveedor);
+            const direccion = String(d.DIRECCIONPROVEEDOR ?? d.DireccionProveedor ?? '');
+            const clave = `${idProv}|${direccion}`;
+
+            let grupo = grupos.get(clave);
+            if (!grupo) {
+                grupo = {
+                    ID: Number(idCompra),
+                    IDPROVEEDOR: idProv,
+                    PROVEEDOR_NOMBRE: d.NOMBREPROVEEDOR ?? null,
+                    PROVEEDOR_DIRECCION: direccion || null,
+                    PROVEEDOR_TELEFONO: d.TELEFONOPROVEEDOR ?? null,
+                    FECHA_ORDEN: normalizeDate(c.FECHACOMPRA ?? c.FechaCompra ?? null),
+                    RECIBIDA: Boolean(c.RECIBIDA),
+                    MATERIALES: []
+                };
+                grupos.set(clave, grupo);
+            }
+            grupo.MATERIALES.push({
+                idDetalleCompra: Number(d.IDDETALLECOMPRA ?? d.idDetalleCompra),
+                MATERIAL_NOMBRE: d.NOMBREMATERIAL,
+                CANTIDAD: d.CANTIDAD,
+                UNIDAD: d.MEDIDA ?? d.UNIDADMEDIDA ?? null
+            });
+        }
+
+        for (const grupo of grupos.values()) {
+            grupo.ESTADO = grupo.RECIBIDA ? 'Surtida en Proveedor' : 'Pendiente de Surtir';
+            resultados.push(grupo);
+        }
+        
         const materiales = (detalles ?? []).map(d => ({
             MATERIAL_NOMBRE: d.NOMBREMATERIAL,
             CANTIDAD: d.CANTIDAD,
             UNIDAD: d.MEDIDA ?? d.UNIDADMEDIDA ?? null
         }));
-
-        // Nº de direcciones reales = proveedores distintos en la compra (cada
-        // proveedor aporta la dirección donde se surte el material).
         const direcciones = new Set((detalles ?? []).map(d => d.IDPROVEEDOR ?? d.idProveedor));
-
         const proveedor = (detalles ?? [])[0] ?? {};
 
         resultados.push({
@@ -443,13 +477,11 @@ const getCompraChofer = async (idCompra) => {
     );
 
     return {
-        idCompra: compra[0].IDCOMPRA,
+        ...compra[0],
         FechaCompra: normalizeDate(compra[0].FECHACOMPRA ?? compra[0].FechaCompra ?? null),
-        Notas: compra[0].NOTAS,
-        Recibida: compra[0].RECIBIDA,
         Proveedores: detalles.map(d => ({
             NombreProveedor: d.NOMBREPROVEEDOR,
-            DireccionProveedor: d.DIRECCIONPROVEDOR,
+            DireccionProveedor: d.DIRECCIONPROVEEDOR,
             TelefonoProveedor: d.TELEFONOPROVEEDOR,
             Materiales: [{
                 NombreMaterial: d.NOMBREMATERIAL,
@@ -488,6 +520,22 @@ const marcarRecibida = async (idCompra, idTrabajador, rol) => {
         if (compra.RECIBIDA) {
             await tx.rollback();
             return { error: 'already' };
+        }
+
+        // Validación backend (RF-18): la orden debe tener al menos un
+        // detalle asociado antes de permitir marcarla como surtida. El
+        // checklist ítem por ítem se valida en el frontend (no hay campo
+        // persistente); esta defensa evita confirmar órdenes vacías.
+        const detallesRows = await tx.query(
+            `SELECT COUNT(*) AS CNT
+             FROM DetallesCompras
+             WHERE Compras_idCompra = ?`,
+            [idCompra]
+        );
+        const cantidadDetalles = Number(detallesRows?.[0]?.CNT ?? 0);
+        if (cantidadDetalles === 0) {
+            await tx.rollback();
+            return { error: 'La orden no tiene materiales que recolectar' };
         }
 
         await tx.execute(

@@ -24,26 +24,6 @@ import {
   sanitizarTelefono,
 } from '../../../../core/utils/telefono.util';
 
-/* =========================================================================
-   SIGEHU — Agregar / Editar Cliente (componente Angular standalone)
-
-   Soporta los dos tipos definidos por el modelo Clientes (RF-03):
-     - persona: Nombre (obligatorio) + Teléfono/Correo (al menos uno) y
-                datos fiscales opcionales. El backend crea/actualiza el
-                contacto principal a partir de Telefono/Correo.
-     - empresa: Nombre (obligatorio), Dirección, Observaciones, al menos un
-                contacto y datos fiscales opcionales (siempre visibles).
-
-   Datos fiscales siempre visibles (decisión Wave 10) para ambos tipos con
-   combos searchable de régimen/uso con focus+clic de una sola vez.
-
-   Conexión al backend (pertenencia: módulo Clientes):
-     - GET    /Clientes/RegimenesFiscales  → catálogo de regímenes
-     - GET    /Clientes/UsosCFDI           → catálogo de usos de CFDI
-     - GET    /Clientes/:id                → carga datos para edición
-     - POST   /Clientes                    → alta
-     - PUT    /Clientes/:id                → edición
-   ========================================================================= */
 
 interface OpcionCatalogo {
   value: string;
@@ -207,6 +187,12 @@ export class ClienteFormComponent implements OnInit {
       group.get(['fiscal', 'direccionFiscal'])?.setValue('');
     }
     this.actualizarValidacionFiscal(group);
+  }
+
+  // Al alternar el switch Datos Fiscales se actualizan los validators del RFC
+  // (sin re-validar el estado completo del formulario).
+  onDatosFiscalesChange(): void {
+    this.actualizarValidacionRfc(this.form, this.tipo());
   }
 
   // Las personas solo requieren un teléfono o un correo; las empresas
@@ -477,7 +463,7 @@ export class ClienteFormComponent implements OnInit {
       direccion: data.direccion ?? '',
       observaciones: data.observaciones ?? '',
       fiscal: {
-        datosFiscales: !!(data.rfc || data.razonSocial || data.regimenFiscal || data.codigoPostal || data.direccionFiscal),
+        datosFiscales: this.tipo() === 'empresa' ? true : datosFiscalesGuardados,
         rfc: data.rfc ?? '',
         razonSocial: data.razonSocial ?? '',
         regimenFiscal: data.idRegimenFiscal != null ? String(data.idRegimenFiscal) : '',

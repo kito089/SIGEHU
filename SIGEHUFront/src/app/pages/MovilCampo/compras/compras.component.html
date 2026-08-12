@@ -1,9 +1,12 @@
 <app-mobile-header [showNewWork]="false"></app-mobile-header>
 
 <ion-content class="ion-padding sigehu-content">
-  <div class="header-section">
-    <h2>Órdenes de Compra (Logística)</h2>
-    <p class="subtitle">Lista de insumos a recolección con proveedores (RF-18)</p>
+
+  <div class="mobile-header">
+    <button type="button" class="back-btn" (click)="volver()" aria-label="Volver a Actividades Pendientes">
+      <ion-icon name="chevron-back-outline"></ion-icon>
+    </button>
+    <h2>Orden de Compra</h2>
   </div>
 
   <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
@@ -15,24 +18,21 @@
     <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
   </div>
 
-  <div *ngIf="compras.length === 0 && !loading && !error" class="empty-box">
+  <!-- Estado vacío -->
+  <div *ngIf="!loading && !error && compras.length === 0" class="state-box">
     <ion-icon name="cart-outline"></ion-icon>
-    <p>No hay órdenes de compra pendientes para choferes.</p>
+    <p>No hay órdenes de compra pendientes para ti.</p>
   </div>
 
-  <!-- Lista de órdenes de compra asignadas -->
+  <!-- Tarjetas por proveedor / dirección (RF-18) -->
   <div *ngFor="let c of compras" class="compra-card-wrap">
     <ion-card class="sigehu-card">
       <ion-card-header>
         <div class="card-top">
-          <ion-badge color="warning">{{ c.ESTADO }}</ion-badge>
+          <ion-badge [color]="c.RECIBIDA ? 'success' : 'warning'">{{ c.ESTADO }}</ion-badge>
           <span class="compra-id">OC-{{ c.ID }}</span>
         </div>
         <ion-card-title>{{ c.PROVEEDOR_NOMBRE }}</ion-card-title>
-        <ion-card-subtitle>
-          <ion-icon name="location-outline"></ion-icon>
-          {{ c.PROVEEDOR_DIRECCION }}
-        </ion-card-subtitle>
         <ion-card-subtitle *ngIf="c.PROVEEDOR_TELEFONO">
           <ion-icon name="call-outline"></ion-icon>
           {{ c.PROVEEDOR_TELEFONO }}
@@ -40,44 +40,87 @@
       </ion-card-header>
 
       <ion-card-content>
-        <div class="materials-header">
-          <h3>Lista de Materiales a Recoger</h3>
-          <span class="shield-notice">
-            <ion-icon name="shield-checkmark-outline"></ion-icon>
-            Aislamiento Financiero Activo (Sin costos)
-          </span>
+        <!-- Ubicación textual + previsualización retráctil de Google Maps -->
+        <div class="info-row" *ngIf="c.PROVEEDOR_DIRECCION">
+          <span class="info-label">Ubicación</span>
+          <strong class="info-val">{{ c.PROVEEDOR_DIRECCION }}</strong>
         </div>
 
-        <ion-list class="materials-list">
+        <div class="maps-block" *ngIf="c.PROVEEDOR_DIRECCION">
+          <button type="button" class="maps-toggle" (click)="toggleMaps(c)">
+            <ion-icon name="map-outline"></ion-icon>
+            <span>{{ mapasVisible(c) ? 'Ocultar mapa' : 'Ver mapa' }}</span>
+            <ion-icon [name]="mapasVisible(c) ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+          </button>
+          <div class="maps-preview" *ngIf="mapasVisible(c)">
+            <iframe
+              [src]="mapsEmbedUrl(c)"
+              title="Ubicación del proveedor"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allowfullscreen></iframe>
+          </div>
+          <ion-button
+            size="small"
+            fill="outline"
+            color="primary"
+            class="maps-open-btn"
+            (click)="abrirGoogleMaps(c)">
+            <ion-icon name="navigate-outline" slot="start"></ion-icon>
+            Abrir en Google Maps
+          </ion-button>
+        </div>
+
+        <!-- Checklist de materiales + progreso -->
+        <div class="materials-header">
+          <h3>Lista de Materiales a Recoger</h3>
+          <ion-badge [color]="checklistCompleto(c) ? 'success' : 'primary'">
+            {{ progreso(c) }}%
+          </ion-badge>
+        </div>
+        <ion-progress-bar
+          [value]="progreso(c) / 100"
+          [color]="checklistCompleto(c) ? 'success' : 'primary'"></ion-progress-bar>
+
+        <ion-list class="materials-list" *ngIf="c.MATERIALES.length > 0">
           <ion-item
             *ngFor="let m of c.MATERIALES"
             lines="full"
             class="material-item"
-            (click)="toggleMaterialItem(m)"
+            [class.disabled]="c.RECIBIDA"
+            (click)="toggleItem(m, $event)"
           >
             <ion-checkbox
               slot="start"
               [checked]="m.COMPLETADO"
-              (click)="$event.stopPropagation(); toggleMaterialItem(m)"
+              [disabled]="c.RECIBIDA"
+              (click)="$event.stopPropagation(); toggleItem(m, $event)"
             ></ion-checkbox>
             <ion-label [class.completed]="m.COMPLETADO">
               <h2>{{ m.MATERIAL_NOMBRE }}</h2>
+              <p *ngIf="m.CANTIDAD">{{ m.CANTIDAD }} {{ m.UNIDAD }}</p>
             </ion-label>
-            <ion-badge slot="end" color="primary">{{ m.CANTIDAD }} {{ m.UNIDAD }}</ion-badge>
           </ion-item>
         </ion-list>
+        <p class="empty-hint" *ngIf="c.MATERIALES.length === 0">
+          La orden no tiene materiales asociados.
+        </p>
+        <p class="checklist-hint" *ngIf="c.MATERIALES.length > 0 && !checklistCompleto(c) && !c.RECIBIDA">
+          Marca todos los materiales antes de confirmar la recolección.
+        </p>
 
         <ion-button
           expand="block"
-          color="primary"
+          color="success"
           class="confirm-btn"
-          [disabled]="c.ESTADO === 'Surtida en Proveedor'"
-          (click)="marcarCompraCompletada(c)"
+          [disabled]="c.RECIBIDA || confirmando.has(c.ID) || !checklistCompleto(c)"
+          (click)="confirmarRecoleccion(c, $event)"
         >
-          <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
-          {{ c.ESTADO === 'Surtida en Proveedor' ? 'Orden Completa' : 'Confirmar Recolección Surtida' }}
+          <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
+          {{ c.RECIBIDA ? 'Recolección confirmada' : (confirmando.has(c.ID) ? 'Confirmando…' : 'Confirmar recolección') }}
         </ion-button>
       </ion-card-content>
     </ion-card>
   </div>
+
 </ion-content>

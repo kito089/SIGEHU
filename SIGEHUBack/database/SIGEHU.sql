@@ -187,6 +187,20 @@ INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Instalado', 5);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Garantia', 6);
 INSERT INTO EstadosObra (Nombre, Orden) VALUES ('Finalizado', 7);
 
+-- Estado intermedio del flujo de doble validación (RF-13/RF-17): el trabajador
+-- finaliza una etapa y la obra queda "Pendiente de aceptación" (8) hasta que el
+-- propietario la acepta en la app web y se ejecuta la transición oficial vía
+-- SP_CAMBIAR_ESTADO_OBRA. Inserto idempotente para poder re-ejecutar el script.
+SET TERM ^;
+EXECUTE BLOCK
+AS
+BEGIN
+    IF (NOT EXISTS(SELECT 1 FROM EstadosObra WHERE idEstadoObra = 8)) THEN
+        INSERT INTO EstadosObra (idEstadoObra, Nombre, Orden)
+        VALUES (8, 'Pendiente de aceptación', 8);
+END^
+SET TERM ;^
+
 -- -----------------------------------------------------
 -- Materiales
 -- -----------------------------------------------------
@@ -446,6 +460,8 @@ CREATE TABLE FotosObras (
     EstadosObra_idEstadoObra INTEGER NOT NULL,
     Trabajadores_idTrabajador INTEGER NOT NULL,
     RutaArchivo VARCHAR(300) NOT NULL,
+    ContentType VARCHAR(50),
+    Foto BLOB SUB_TYPE BINARY,
     FechaCreacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (idFotoObra),
     CONSTRAINT fk_Fotos_Obras1
@@ -2628,7 +2644,10 @@ BEGIN
 
     -- Validar transiciones permitidas
     -- Estado 1=Solicitud recibida, 2=Levantamiento pendiente, 3=En fabricacion,
-    -- 4=Instalacion programada, 5=Instalado, 6=Garantia, 7=Finalizado
+    -- 4=Instalacion programada, 5=Instalado, 6=Garantia, 7=Finalizado,
+    -- 8=Pendiente de aceptacion (intermedio del flujo de doble validacion).
+    -- El trabajador que finaliza una etapa deja la obra en 8; el propietario
+    -- la acepta avanzando 8 -> 3 (tras levantamiento) o 8 -> 4 (tras fabricacion).
     vTransicionValida = 0;
 
     IF (vEstadoActual = 1 AND pNuevoEstado = 2) THEN vTransicionValida = 1;
@@ -2638,6 +2657,14 @@ BEGIN
     IF (vEstadoActual = 5 AND pNuevoEstado = 6) THEN vTransicionValida = 1;
     IF (vEstadoActual = 5 AND pNuevoEstado = 7) THEN vTransicionValida = 1;
     IF (vEstadoActual = 6 AND pNuevoEstado = 7) THEN vTransicionValida = 1;
+    -- Finalizacion de etapa por el trabajador (doble validacion)
+    IF (vEstadoActual = 2 AND pNuevoEstado = 8) THEN vTransicionValida = 1;
+    IF (vEstadoActual = 3 AND pNuevoEstado = 8) THEN vTransicionValida = 1;
+    IF (vEstadoActual = 4 AND pNuevoEstado = 8) THEN vTransicionValida = 1;
+    -- Aceptacion del propietario
+    IF (vEstadoActual = 8 AND pNuevoEstado = 3) THEN vTransicionValida = 1;
+    IF (vEstadoActual = 8 AND pNuevoEstado = 4) THEN vTransicionValida = 1;
+    IF (vEstadoActual = 8 AND pNuevoEstado = 5) THEN vTransicionValida = 1;
 
     /* ========= REGRESAR ========= */
     -- Una obra finalizada no se puede regresar a ningún estado anterior.  Solo se permite regresar de 6->5, 5->4, 4->3, 3->2, 2->1

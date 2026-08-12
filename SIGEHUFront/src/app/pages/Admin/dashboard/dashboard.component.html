@@ -40,11 +40,39 @@
 @switch (activeTab()) {
   @case ('kanban') {
     <section class="dashboard-panel" aria-labelledby="kanban-heading">
-      <app-kanban-board
-        [columns]="kanbanColumns()"
-        [columnaActiva]="kanbanColumna()"
-        (cardClick)="onCardClick($event)"
-      ></app-kanban-board>
+      <!-- Estado de carga: skeleton de tarjetas Kanban (no se muestran mocks) -->
+      @if (kanbanCargando()) {
+        <div class="dashboard-kanban-skeleton" aria-live="polite" aria-busy="true">
+          <app-skeleton type="kanban-card" [lines]="4"></app-skeleton>
+          <app-skeleton type="kanban-card" [lines]="4"></app-skeleton>
+          <app-skeleton type="kanban-card" [lines]="4"></app-skeleton>
+          <app-skeleton type="kanban-card" [lines]="4"></app-skeleton>
+        </div>
+      }
+      <!-- Estado de error: no se oculta el error, no se sustituye por mocks -->
+      @else if (kanbanError()) {
+        <div class="dashboard-kanban-error" role="alert">
+          <p class="dashboard-kanban-error__msg">No se pudieron cargar las obras del tablero.</p>
+          <p class="dashboard-kanban-error__det">{{ kanbanError() }}</p>
+          <button type="button" class="dashboard-kanban-error__btn" (click)="recargarKanban()">Reintentar</button>
+        </div>
+      }
+      <!-- Estado vacio: sin obras, pero la consulta fue exitosa -->
+      @else if (kanbanVacio()) {
+        <app-empty-state
+          icon="cube-outline"
+          title="No hay obras para mostrar"
+          subtitle="Las obras activas aparecerán aquí agrupadas por estado."
+        ></app-empty-state>
+      }
+      <!-- Caso normal: tablero Kanban con datos reales -->
+      @else {
+        <app-kanban-board
+          [columns]="kanbanColumns()"
+          [columnaActiva]="kanbanColumna()"
+          (cardClick)="onCardClick($event)"
+        ></app-kanban-board>
+      }
     </section>
   }
   @case ('calendar') {

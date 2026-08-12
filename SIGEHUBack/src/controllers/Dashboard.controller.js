@@ -41,12 +41,18 @@ const getCalendarEvents = async (_req, res) => {
     try {
         const events = await service.getCalendarEvents();
         const normalizados = events.map((r) => ({
-            tipoEvento: String(r.TIPOEVENTO ?? r.TipoEvento ?? ''),
+            tipoEvento: String(r.TIPOEVENTO ?? r.TipoEvento ?? '').trim(),
             idObra: Number(r.IDOBRA ?? r.IdObra ?? r.idObra ?? 0),
-            nombreObra: String(r.NOMBREOBRA ?? r.NombreObra ?? r.nombreObra ?? ''),
-            nombreCliente: String(r.NOMBRECLIENTE ?? r.NombreCliente ?? r.nombreCliente ?? ''),
-            estadoObra: String(r.ESTADOOBRA ?? r.EstadoObra ?? r.estadoObra ?? ''),
+            nombreObra: String(r.NOMBREOBRA ?? r.NombreObra ?? r.nombreObra ?? '').trim(),
+            nombreCliente: String(r.NOMBRECLIENTE ?? r.NombreCliente ?? r.nombreCliente ?? '').trim(),
+            estadoObra: String(r.ESTADOOBRA ?? r.EstadoObra ?? r.estadoObra ?? '').trim(),
             fechaEvento: aISO(primero(r, ['FECHAEVENTO', 'FechaEvento', 'fechaEvento'])),
+            // Lista de trabajadores asignados separados por '|'. Vacío si no hay asignados.
+            // Sirve para el tooltip del calendario (hover) y para la regla
+            // "Levantamiento sin trabajador -> Solicitud Recibida" en el Kanban.
+            trabajadoresAsignados: String(
+                primero(r, ['TRABAJADORESASIGNADOS', 'TrabajadoresAsignados', 'trabajadoresAsignados']) ?? ''
+            ),
         }));
         res.json(normalizados);
     } catch (e) {

@@ -46,8 +46,19 @@ const getResumen = async () => {
 
 const getKanban = async () => {
     const db = await getConnection();
+    // Adjunta la lista de trabajadores asignados por obra (separados por '|').
+    // Lo usa el frontend para:
+    //   - mostrar el trabajador en la tarjeta del Kanban;
+    //   - aplicar la regla "Levantamiento sin trabajador -> Solicitud Recibida".
+    // No modifica el esquema: solo enriquece la SQL sobre tablas/columnas ya existentes.
     return await db.query(
-        "SELECT * FROM VW_OBRAS_KANBAN",
+        `SELECT k.*,
+                (SELECT LIST(t.NombreCompleto, '|')
+                   FROM Obras_has_Trabajadores oht
+                   JOIN Trabajadores t ON t.idTrabajador = oht.Trabajadores_idTrabajador
+                  WHERE oht.Obras_idObra = k.idObra
+                    AND t.Activo = TRUE) AS TrabajadoresAsignados
+         FROM VW_OBRAS_KANBAN k`,
         []
     );
 };
@@ -76,18 +87,41 @@ const getActivityFeed = async (limit = 20) => {
 const getCalendarEvents = async () => {
     const db = await getConnection();
 
+    // Prioridad de fecha para cada obra (RF-02 / Calendar):
+    //   1. Obras.FechaInicio            (programada/entrega/realizacion)
+    //   2. MIN(Obras_has_Trabajadores.FechaAsignacion)  (fecha de asignacion de trabajador)
+    //   3. Obras.FechaUltimaActualizacion (fecha de cambio de estado, proxy via trigger TR_OBRAS_BU)
+    // Si ninguna existe, la obra queda fuera del calendario (su FechaEvento será NULL y se omite).
+    // Adicionalmente se devuelve la lista de trabajadores asignados (para el tooltip del calendario)
+    // y el nombre del estado (ya estaba en la consulta original).
     return await db.query(
         `SELECT 'Obra' AS TipoEvento, o.idObra, o.Nombre AS NombreObra,
                 c.NombreCompleto AS NombreCliente,
                 e.Nombre AS EstadoObra,
-                o.FechaUltimaActualizacion AS FechaEvento
+                COALESCE(
+                    o.FechaInicio,
+                    (SELECT MIN(oht.FechaAsignacion)
+                       FROM Obras_has_Trabajadores oht
+                      WHERE oht.Obras_idObra = o.idObra),
+                    o.FechaUltimaActualizacion
+                ) AS FechaEvento,
+                (SELECT LIST(t.NombreCompleto, '|')
+                   FROM Obras_has_Trabajadores oht2
+                   JOIN Trabajadores t ON t.idTrabajador = oht2.Trabajadores_idTrabajador
+                  WHERE oht2.Obras_idObra = o.idObra
+                    AND t.Activo = TRUE) AS TrabajadoresAsignados
          FROM Obras o
          JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
          JOIN EstadosObra e ON e.idEstadoObra = o.EstadosObra_idEstadoObra
          WHERE o.Activo = TRUE AND c.Activo = TRUE
          UNION ALL
          SELECT 'Garantia', g.Obras_idObra, o.Nombre,
-                c.NombreCompleto, 'Garantia', g.FechaCreacion
+                 c.NombreCompleto, 'Garantia', g.FechaCreacion,
+                 (SELECT LIST(t.NombreCompleto, '|')
+                    FROM Obras_has_Trabajadores oht3
+                   JOIN Trabajadores t ON t.idTrabajador = oht3.Trabajadores_idTrabajador
+                  WHERE oht3.Obras_idObra = g.Obras_idObra
+                    AND t.Activo = TRUE)
          FROM Garantias g
          JOIN Obras o ON o.idObra = g.Obras_idObra
          JOIN Clientes c ON c.idCliente = o.Clientes_idCliente

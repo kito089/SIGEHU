@@ -128,7 +128,7 @@
               <div class="detalle-obra__fotos">
                 @for (f of fotos(); track f.id) {
                   <figure class="detalle-obra__foto">
-                    <img [src]="urlFoto(f.ruta)" alt="Foto de la obra" loading="lazy" />
+                    <img [src]="urlFoto(f)" alt="Foto de la obra" loading="lazy" />
                     <figcaption>{{ nombreEstado(f.idEstadoObra) }}</figcaption>
                   </figure>
                 }

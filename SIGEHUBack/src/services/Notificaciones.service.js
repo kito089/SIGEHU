@@ -8,6 +8,7 @@
 // =============================================================================
 
 import { getConnection } from "../config/db.js";
+import sse from "./sse.hub.js";
 
 export const MAX_NOTIFICACIONES = 100;
 
@@ -126,11 +127,40 @@ const clearAll = async (idTrabajador) => {
     );
 };
 
+// Crea una notificación para TODOS los usuarios propietarios activos
+// (TiposUsuarios_idTipoUsuario = 1) y la propaga por SSE a cada una de sus
+// conexiones. Se usa para avisar al propietario cuando un trabajador finaliza
+// una etapa (levantamiento/fabricación) y queda pendiente de aceptación.
+const notifyOwners = async (mensaje, tipo = 'info') => {
+    const db = await getConnection();
+
+    const rows = await db.query(
+        `SELECT idTrabajador FROM Trabajadores
+         WHERE TiposUsuarios_idTipoUsuario = 1 AND Activo = TRUE`
+    );
+
+    const propietarios = (rows || [])
+        .map((r) => Number(r.IDTRABAJADOR ?? r.idTrabajador))
+        .filter((n) => Number.isFinite(n) && n > 0);
+
+    for (const idTrabajador of propietarios) {
+        try {
+            const creada = await create(idTrabajador, { tipo, mensaje });
+            sse.publish(idTrabajador, 'notification.created', creada);
+        } catch (e) {
+            console.error(`No se pudo notificar al propietario ${idTrabajador}:`, e.message);
+        }
+    }
+
+    return propietarios.length;
+};
+
 export default {
     list,
     create,
     remove,
     clearAll,
+    notifyOwners,
     MAX_NOTIFICACIONES,
     isValidType: (tipo) => TIPOS.has(String(tipo).toLowerCase())
 };

@@ -187,11 +187,23 @@ export class CalendarComponent {
     this.eventClick.emit(evento);
   }
 
+  // Tooltip nativo (atributo `title`) que aparece en hover (escritorio) y en
+  // pulsacion larga en algunos navegadores moviles. Mantiene el comportamiento
+  // compacto: NO es una pantalla de detalles, solo un resumen corto en texto.
+  // Lineas separadas por \n para que el navegador lo renderice como multilinea.
   tooltipEvento(e: CalendarEvent): string {
-    const cliente = e.extendedProps.clienteNombre ? ` — ${e.extendedProps.clienteNombre}` : '';
-    const hora = e.extendedProps.hora ? ` · ${e.extendedProps.hora}` : '';
-    const notas = e.extendedProps.notas ? `\n${e.extendedProps.notas}` : '';
-    return `${e.title}${cliente}${hora}${notas}`;
+    const partes: string[] = [];
+    partes.push(e.title ?? '');
+    if (e.extendedProps.clienteNombre) partes.push(`Cliente: ${e.extendedProps.clienteNombre}`);
+    if (e.extendedProps.estadoObra) partes.push(`Estado: ${e.extendedProps.estadoObra}`);
+    if (e.extendedProps.trabajadoresAsignados) {
+      partes.push(`Trabajador(es): ${e.extendedProps.trabajadoresAsignados.replace(/\|/g, ', ')}`);
+    }
+    if (e.extendedProps.fechaCalendario) partes.push(`Fecha: ${e.extendedProps.fechaCalendario}`);
+    // hora/notas solo si existen (eventos "agendar visita" pueden incluirlos).
+    if (e.extendedProps.hora) partes.push(`Hora: ${e.extendedProps.hora}`);
+    if (e.extendedProps.notas) partes.push(`Notas: ${e.extendedProps.notas}`);
+    return partes.join('\n');
   }
 
   private fechaISO(valor: string): string | null {

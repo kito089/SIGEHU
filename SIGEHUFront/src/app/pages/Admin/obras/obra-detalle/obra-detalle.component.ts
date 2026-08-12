@@ -41,6 +41,7 @@ interface FotoDetalle {
   idEstadoObra: number;
   estadoObra?: string;
   trabajador?: string;
+  url?: string;
 }
 
 interface TrabajadorAsignado {
@@ -174,6 +175,10 @@ export class ObraDetalleComponent implements OnInit {
         }))
       );
 
+      // Carga las imágenes usando el token de autenticación (las fotos ya se
+      // registran como BLOB en la BD; el <img> no puede mandar Authorization).
+      this.cargarImagenesFotos(listaFotos);
+
       const listaTrabajadores: any[] = (trabajadoresRaw as any[]) || [];
       this.trabajadores.set(
         listaTrabajadores.map((t) => ({
@@ -229,8 +234,34 @@ export class ObraDetalleComponent implements OnInit {
     });
   }
 
-  urlFoto(ruta: string): string {
-    return '/uploads/' + ruta.replace(/^uploads[\\/]/, '');
+  urlFoto(f: FotoDetalle): string {
+    // Las fotos nuevas se muestran como Blob (requieren el token de auth, que
+    // el <img> no envía) vía objectURL. Las antiguas solo tienen ruta estática.
+    return f.url || '/uploads/' + f.ruta.replace(/^uploads[\\/]/, '');
+  }
+
+  // Descarga cada foto autenticada y la convierte en objectURL local.
+  private async cargarImagenesFotos(listaFotos: any[]): Promise<void> {
+    const conId = listaFotos.filter((f) => f.IDFOTOOBRA ?? f.idFotoObra);
+    if (conId.length === 0) return;
+
+    const actuales = this.fotos();
+    for (const item of conId) {
+      const idFoto = Number(item.IDFOTOOBRA ?? item.idFotoObra);
+      if (!idFoto) continue;
+
+      try {
+        const blob = await firstValueFrom(this.api.getBlob('/Obras/Fotos/' + idFoto + '/archivo'));
+        const url = URL.createObjectURL(blob);
+        const idx = actuales.findIndex((x) => x.id === idFoto);
+        if (idx >= 0) {
+          actuales[idx] = { ...actuales[idx], url };
+          this.fotos.set([...actuales]);
+        }
+      } catch {
+        // Foto ilegible o sin token: se deja la ruta estática como respaldo.
+      }
+    }
   }
 
   formatoMedida(valor: any): string {

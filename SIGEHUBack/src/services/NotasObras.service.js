@@ -1,25 +1,42 @@
 import { getConnection } from "../config/db.js";
 
 // ─── CREATE ─────────────────────────────────────────────────────────────────
+// Nota es BLOB SUB_TYPE TEXT: el driver exige Buffer, no string (igual que
+// Observaciones en Trabajadores). El INSERT usa executeReturning porque query()
+// abre un cursor, inválido para INSERT...RETURNING.
 const createNota = async ({ idObra, idEstadoObra, idTrabajador, nota }) => {
     const db = await getConnection();
 
-    const rows = await db.query(
+    const notaBuffer = nota != null ? Buffer.from(String(nota), "utf8") : null;
+
+    const rows = await db.executeReturning(
         `INSERT INTO NotasObras (Obras_idObra, EstadosObra_idEstadoObra, Trabajadores_idTrabajador, Nota)
          VALUES (?, ?, ?, ?)
          RETURNING idNotaObra`,
-        [idObra, idEstadoObra, idTrabajador, nota]
+        [idObra, idEstadoObra, idTrabajador, notaBuffer]
     );
 
-    return rows[0]?.IDNOTAOBRA;
+    let raw = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
+    if (raw != null && typeof raw === 'object') {
+        raw = raw.IDNOTAOBRA;
+    }
+    return raw;
 };
 
 // ─── GET por obra ────────────────────────────────────────────────────────────
+// Incluye la procedencia (autor y rol) para que la vista de fabricación pueda
+// agrupar "Notas del administrador" antes que "Notas del levantamiento" y
+// conservar la autoría de cada registro.
 const getNotasByObra = async (idObra) => {
     const db = await getConnection();
 
     return await db.query(
-        "SELECT * FROM NotasObras WHERE Obras_idObra = ? ORDER BY FechaCreacion DESC",
+        `SELECT n.*, t.NombreCompleto AS AutorNombre, tu.Nombre AS RolAutor
+         FROM NotasObras n
+         JOIN Trabajadores t ON t.idTrabajador = n.Trabajadores_idTrabajador
+         LEFT JOIN TiposUsuarios tu ON tu.idTipoUsuario = t.TiposUsuarios_idTipoUsuario
+         WHERE n.Obras_idObra = ?
+         ORDER BY n.FechaCreacion DESC, n.idNotaObra DESC`,
         [idObra]
     );
 };
@@ -43,9 +60,10 @@ const updateNota = async (id, { nota }) => {
     const existe = await getNotaById(id);
     if (!existe) return null;
 
+    const notaBuffer = nota != null ? Buffer.from(String(nota), "utf8") : null;
     await db.execute(
         "UPDATE NotasObras SET Nota = ? WHERE idNotaObra = ?",
-        [nota, id]
+        [notaBuffer, id]
     );
 
     return true;

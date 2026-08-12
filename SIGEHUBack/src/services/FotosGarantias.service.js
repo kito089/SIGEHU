@@ -11,15 +11,22 @@ const createFotoGarantia = async ({ idGarantia, idEstadoGarantia, idTrabajador, 
     // Guardamos la ruta relativa, no la absoluta — evita romper si el proyecto se mueve
     const rutaRelativa = path.join("uploads", "Garantias", nombreArchivo);
 
-    const rows = await db.query(
+    const rows = await db.executeReturning(
         `INSERT INTO FotosGarantias (Garantias_idGarantia, EstadosGarantia_idEstadoGarantia, Trabajadores_idTrabajador, RutaArchivo)
          VALUES (?, ?, ?, ?)
          RETURNING idFotoGarantia`,
         [idGarantia, idEstadoGarantia, idTrabajador, rutaRelativa]
     );
 
+    // El driver devuelve el valor RETURNING como escalar, array u objeto según el
+    // tipo de conexión; se extrae de forma segura.
+    let raw = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
+    if (raw != null && typeof raw === 'object') {
+        raw = raw.IDFOTOGARANTIA ?? raw.PhotoId;
+    }
+
     return {
-        idFotoGarantia: rows[0]?.IDFOTOGarantia,
+        idFotoGarantia: raw,
         rutaArchivo: rutaRelativa
     };
 };
