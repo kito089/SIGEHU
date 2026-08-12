@@ -3,122 +3,197 @@
 <ion-content class="ion-padding sigehu-content">
 
   <div class="mobile-header">
-    <h2>Instalación de Kits en Domicilio</h2>
-    <p class="subtitle">Verificación de kit para instalación y entrega en domicilio (RF-19, RF-20, RF-23)</p>
+    <button type="button" class="back-btn" (click)="volver()" aria-label="Volver a Actividades Pendientes">
+      <ion-icon name="chevron-back-outline"></ion-icon>
+    </button>
+    <h2>Instalación</h2>
   </div>
 
   <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
 
-  <!-- Estado de error con reintento -->
   <div *ngIf="error && !loading" class="state-box">
     <ion-icon name="alert-circle-outline"></ion-icon>
     <p>No se pudieron cargar las obras asignadas para instalación.</p>
     <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
   </div>
 
-  <!-- Estado vacío -->
   <div *ngIf="!loading && !error && obrasInstalacion.length === 0" class="state-box">
     <ion-icon name="navigate-outline"></ion-icon>
     <p>No tienes obras programadas para instalación en este momento.</p>
   </div>
 
-  <!-- Selector de obra asignada -->
   <div *ngIf="obrasInstalacion.length > 1" class="obra-selector">
-    <ion-label>Seleccionar Instalación:</ion-label>
+    <ion-label>Obra Asignada:</ion-label>
     <ion-select [value]="selectedObra?.ID" (ionChange)="seleccionarObra($any($event.detail.value))" interface="popover">
-      <ion-select-option *ngFor="let o of obrasInstalacion" [value]="o.ID">
-        {{ o.NOMBRE }} ({{ o.ESTADO }})
-      </ion-select-option>
+      <ion-select-option *ngFor="let o of obrasInstalacion" [value]="o.ID">{{ o.NOMBRE }}</ion-select-option>
     </ion-select>
   </div>
 
-  <!-- Datos de Entrega / Cliente (RF-19) -->
-  <ion-card class="sigehu-card" *ngIf="selectedObra">
-    <ion-card-header>
-      <div class="card-top">
-        <ion-badge color="purple">{{ selectedObra.ESTADO }}</ion-badge>
-        <span class="obra-id">OB-{{ selectedObra.ID }}</span>
-      </div>
-      <ion-card-title>{{ selectedObra.NOMBRE }}</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <div class="info-row">
-        <span class="info-label">Cliente</span>
-        <strong class="info-val">{{ entrega.cliente }}</strong>
-      </div>
-      <div class="info-row" *ngIf="puedeVerTelefono">
-        <span class="info-label">Teléfono</span>
-        <strong class="info-val">{{ entrega.telefono }}</strong>
-      </div>
-      <div class="info-row" *ngIf="puedeVerDireccion">
-        <span class="info-label">Dirección</span>
-        <strong class="info-val">{{ entrega.direccion }}</strong>
-      </div>
-    </ion-card-content>
-  </ion-card>
+  <ng-container *ngIf="selectedObra as obra">
 
-  <!-- Checklist de Kit para Salida a Campo (RF-23) -->
-  <ion-card class="sigehu-card" *ngIf="selectedObra">
-    <ion-card-header>
-      <div class="card-top">
-        <ion-card-title>Checklist del Kit de Instalación</ion-card-title>
-        <ion-badge [color]="porcentajeVerificado === 100 ? 'success' : 'warning'">
-          {{ porcentajeVerificado }}% verificado
-        </ion-badge>
-      </div>
-      <ion-card-subtitle>Verifica tus herramientas e insumos antes de salir a la instalación</ion-card-subtitle>
-    </ion-card-header>
+    <ion-card class="sigehu-card">
+      <ion-card-header>
+        <div class="card-top">
+          <ion-badge color="purple">{{ obra.ESTADO }}</ion-badge>
+          <span class="obra-id">OB-{{ obra.ID }}</span>
+        </div>
+        <ion-card-title>{{ obra.NOMBRE }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="info-row">
+          <span class="info-label">Cliente</span>
+          <strong class="info-val">{{ detalle.cliente }}</strong>
+        </div>
+        <div class="info-row" *ngIf="puedeVerTelefono && detalle.telefono">
+          <span class="info-label">Teléfono</span>
+          <strong class="info-val">{{ detalle.telefono }}</strong>
+        </div>
+        <div class="info-row" *ngIf="puedeVerDireccion && direccionNormalizada">
+          <span class="info-label">Ubicación</span>
+          <strong class="info-val">{{ direccionNormalizada }}</strong>
+        </div>
 
-    <ion-card-content class="ion-no-padding">
-      <ion-progress-bar [value]="porcentajeVerificado / 100" [color]="porcentajeVerificado === 100 ? 'success' : 'primary'"></ion-progress-bar>
+        <div class="maps-block" *ngIf="puedeVerDireccion && direccionNormalizada">
+          <button type="button" class="maps-toggle" (click)="toggleMaps()">
+            <ion-icon name="map-outline"></ion-icon>
+            <span>{{ mapsVisible ? 'Ocultar mapa' : 'Ver mapa' }}</span>
+            <ion-icon [name]="mapsVisible ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+          </button>
+          <div class="maps-preview" *ngIf="mapsVisible">
+            <iframe
+              [src]="mapsEmbedUrl"
+              title="Ubicación de la obra"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allowfullscreen></iframe>
+          </div>
+          <ion-button
+            size="small"
+            fill="outline"
+            color="primary"
+            class="maps-open-btn"
+            (click)="abrirGoogleMaps()">
+            <ion-icon name="navigate-outline" slot="start"></ion-icon>
+            Abrir en Google Maps
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
 
-      <ion-list class="checklist-list">
-        <ion-item *ngFor="let item of checklist" lines="full" class="checklist-item">
-          <ion-checkbox
-            slot="start"
-            [(ngModel)]="item.verificado"
-          ></ion-checkbox>
-          <ion-label [class.checked]="item.verificado">
-            {{ item.nombre }}
-          </ion-label>
-        </ion-item>
-      </ion-list>
-    </ion-card-content>
-  </ion-card>
+    <ion-card class="sigehu-card" *ngIf="kit; else sinKit">
+      <ion-card-header>
+        <div class="card-top">
+          <ion-card-title>Kit de Instalación</ion-card-title>
+          <ion-badge [color]="porcentajeVerificado === 100 ? 'success' : 'warning'">
+            {{ porcentajeVerificado }}% verificado
+          </ion-badge>
+        </div>
+        <ion-card-subtitle *ngIf="kit.NOMBRE || kit.Nombre">{{ kit.NOMBRE || kit.Nombre }}</ion-card-subtitle>
+        <ion-card-subtitle *ngIf="kit.ASIGNADOPOR || kit.AsignadoPor">Asignado por: {{ kit.ASIGNADOPOR || kit.AsignadoPor }}</ion-card-subtitle>
+      </ion-card-header>
 
-  <!-- Entrega de Obra e Evidencia (RF-20) -->
-  <ion-card class="sigehu-card validation-card" *ngIf="selectedObra">
-    <ion-card-header>
-      <ion-card-title>Confirmación de Instalación Entregada</ion-card-title>
-      <ion-card-subtitle>Sube fotografía final en domicilio del cliente</ion-card-subtitle>
-    </ion-card-header>
+      <ion-card-content class="ion-no-padding">
+        <ion-progress-bar [value]="porcentajeVerificado / 100" [color]="porcentajeVerificado === 100 ? 'success' : 'primary'"></ion-progress-bar>
 
-    <ion-card-content>
-      <div class="field-wrap">
-        <label>Observaciones de instalación:</label>
-        <ion-textarea
-          [(ngModel)]="notaInstalacion"
-          rows="3"
-          placeholder="Estructura nivelada y anclada correctamente en muro..."
-        ></ion-textarea>
-      </div>
+        <ion-list class="checklist-list" *ngIf="items.length > 0">
+          <ion-item *ngFor="let item of items" lines="full" class="checklist-item">
+            <ion-checkbox
+              slot="start"
+              [checked]="item.Marcado"
+              (ionChange)="toggleItem(item, $event)"
+              [disabled]="confirmando || finalizado"
+            ></ion-checkbox>
+            <ion-label [class.checked]="item.Marcado">
+              <h2>{{ item.NombreMaterial }}</h2>
+              <p *ngIf="item.Cantidad">{{ item.Cantidad }} {{ item.UnidadMedida || '' }}</p>
+              <p *ngIf="item.NotasKit" class="notas-kit">{{ item.NotasKit }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <p class="empty-hint" *ngIf="items.length === 0">
+          El kit asignado no tiene materiales en el checklist.
+        </p>
+        <p class="checklist-hint" *ngIf="items.length > 0 && porcentajeVerificado < 100">
+          Debes completar todos los ítems antes de finalizar la instalación.
+        </p>
+      </ion-card-content>
+    </ion-card>
 
-      <div class="field-wrap">
-        <label>Fotografía de Instalación Terminada:</label>
-        <input type="file" accept="image/*" (change)="onFileChange($event)" class="file-input" />
-      </div>
+    <ng-template #sinKit>
+      <ion-card class="sigehu-card">
+        <ion-card-header>
+          <ion-card-title>Kit de Instalación</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="empty-hint">No hay kit de instalación asignado a esta obra.</p>
+        </ion-card-content>
+      </ion-card>
+    </ng-template>
 
-      <ion-button
-        expand="block"
-        color="success"
-        size="large"
-        class="submit-btn"
-        [disabled]="confirmando"
-        (click)="confirmarEntrega()"
-      >
-        <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
-        {{ confirmando ? 'Enviando…' : 'Marcar Instalación Entregada (RF-20)' }}
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
+    <ion-button
+      type="button"
+      expand="block"
+      size="large"
+      color="success"
+      class="sigehu-submit"
+      [disabled]="confirmando || finalizado || !puedeConfirmarActividad || !checklistCompleto"
+      (click)="abrirModalFinalizar()"
+    >
+      <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
+      {{ finalizado ? 'Pendiente de aceptación' : (confirmando ? 'Guardando…' : 'Finalizar Instalación') }}
+    </ion-button>
+  </ng-container>
+
 </ion-content>
+
+<div class="modal-backdrop" *ngIf="modalFinalizarAbierto" (click)="cerrarModalFinalizar()"></div>
+<div class="modal-sheet" *ngIf="modalFinalizarAbierto" role="dialog" aria-modal="true" aria-label="Finalizar instalación">
+  <div class="modal-handle"></div>
+  <h3>Finalizar Instalación</h3>
+  <p class="modal-desc">Registra observaciones y evidencia fotográfica. Quedará pendiente de aceptación del administrador.</p>
+
+  <div class="field-wrap">
+    <label>Observaciones de instalación</label>
+    <ion-textarea
+      [(ngModel)]="notaInstalacion"
+      rows="3"
+      placeholder="Estructura nivelada y anclada correctamente en muro…"></ion-textarea>
+  </div>
+
+  <div class="field-wrap" *ngIf="puedeSubirFotos">
+    <label>Fotografías de evidencia</label>
+    <div class="fotos-actions">
+      <ion-button size="small" color="primary" fill="outline" (click)="camaraInput.click()">
+        <ion-icon name="camera-outline" slot="start"></ion-icon>
+        Cámara
+      </ion-button>
+      <ion-button size="small" color="medium" fill="outline" (click)="galeriaInput.click()">
+        <ion-icon name="images-outline" slot="start"></ion-icon>
+        Galería
+      </ion-button>
+      <input #camaraInput type="file" accept="image/*" capture="environment" hidden (change)="onCamara($event)" />
+      <input #galeriaInput type="file" accept="image/*" multiple hidden (change)="onGaleria($event)" />
+    </div>
+    <div class="fotos-thumbs" *ngIf="fotosPendientes.length > 0">
+      <div class="foto-thumb" *ngFor="let f of fotosPendientes; let i = index">
+        <img [src]="f.url" alt="Evidencia" />
+        <button type="button" class="foto-remove" (click)="quitarFotoPendiente(i)" aria-label="Quitar foto">
+          <ion-icon name="close-circle"></ion-icon>
+        </button>
+      </div>
+    </div>
+    <p class="fotos-hint" *ngIf="fotosPendientes.length === 0">
+      Cada fotografía se enviará individualmente al servidor.
+    </p>
+  </div>
+
+  <div class="modal-actions">
+    <ion-button size="large" fill="clear" color="medium" (click)="cerrarModalFinalizar()" [disabled]="confirmando">
+      Cancelar
+    </ion-button>
+    <ion-button size="large" color="success" class="confirm-btn" (click)="finalizarInstalacion()" [disabled]="confirmando">
+      <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
+      {{ confirmando ? 'Guardando…' : 'Confirmar Finalización' }}
+    </ion-button>
+  </div>
+</div>

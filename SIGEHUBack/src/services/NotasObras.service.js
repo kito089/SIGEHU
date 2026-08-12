@@ -15,11 +15,19 @@ const createNota = async ({ idObra, idEstadoObra, idTrabajador, nota }) => {
 };
 
 // ─── GET por obra ────────────────────────────────────────────────────────────
+// Incluye la procedencia (autor y rol) para que la vista de fabricación pueda
+// agrupar "Notas del administrador" antes que "Notas del levantamiento" y
+// conservar la autoría de cada registro.
 const getNotasByObra = async (idObra) => {
     const db = await getConnection();
 
     return await db.query(
-        "SELECT * FROM NotasObras WHERE Obras_idObra = ? ORDER BY FechaCreacion DESC",
+        `SELECT n.*, t.NombreCompleto AS AutorNombre, tu.Nombre AS RolAutor
+         FROM NotasObras n
+         JOIN Trabajadores t ON t.idTrabajador = n.Trabajadores_idTrabajador
+         LEFT JOIN TiposUsuarios tu ON tu.idTipoUsuario = t.TiposUsuarios_idTipoUsuario
+         WHERE n.Obras_idObra = ?
+         ORDER BY n.FechaCreacion DESC, n.idNotaObra DESC`,
         [idObra]
     );
 };

@@ -13,11 +13,28 @@ const MAPA_ESTADOS_OBRA = {
     'instalado': 5,
     'garantia': 6,
     'finalizado': 7,
+    // Estado intermedio del flujo de doble validación (RF-13/RF-17): el
+    // trabajador finaliza una etapa → "Pendiente de aceptación" (8) y el
+    // propietario la acepta vía SP_CAMBIAR_ESTADO_OBRA hacia el siguiente
+    // estado oficial.
+    'pendiente de aceptacion': 8,
+    'levantamiento finalizado': 8,
+    'fabricacion finalizada': 8,
     // Etapas "Pendiente de Validación" del flujo de doble validación →
-    // siguiente estado oficial que el Propietario aprobaría.
+    // siguiente estado oficial que el Propietario aprobaría (compatibilidad).
     'levantamiento pendiente de validacion': 3,
     'fabricacion pendiente de validacion': 4,
     'instalacion pendiente de validacion': 5
+};
+
+// Etapa ORIGEN y aviso de cada finalización del flujo móvil. La nota de
+// finalización se registra con la etapa origen (levantamiento=2, fabricacion=3,
+// instalacion=4) para que la aceptación del propietario pueda resolver el
+// estado destino.
+const ETAPAS_FINALIZACION = {
+    'levantamiento finalizado': { etapa: 2, aviso: 'El trabajador {nombre} terminó el levantamiento' },
+    'fabricacion finalizada': { etapa: 3, aviso: 'El trabajador {nombre} terminó la fabricación' },
+    'instalacion finalizada': { etapa: 4, aviso: 'El trabajador {nombre} terminó la instalación' }
 };
 
 const normalizarEstado = (nombre) =>
@@ -318,7 +335,8 @@ const deleteObra = async (id, idTrabajadorCtx = 1) => {
 //   2) Actualiza las medidas que haya enviado.
 //   3) Registra la nota de avance en NotasObras (con el estado resultante).
 const completarEtapa = async (id, {
-    estado, Nombre, Direccion, Ancho, Alto, Profundidad, nota, idTrabajadorCtx = 1
+    estado, Nombre, Direccion, Ancho, Alto, Profundidad, nota,
+    idTrabajadorCtx = 1, nombreTrabajador = 'asignado'
 }) => {
     const db = await getConnection();
     const tx = await db.transaction();
@@ -337,6 +355,8 @@ const completarEtapa = async (id, {
         }
 
         const estadoActual = obras[0].ESTADOACTUAL ?? obras[0].EstadoActual;
+        const finalizacion = estado ? ETAPAS_FINALIZACION[normalizarEstado(estado)] : null;
+        let notificacion = null;
 
         // 1. Resolver y aplicar transición de estado si viene `estado`
         if (estado) {
@@ -351,13 +371,95 @@ const completarEtapa = async (id, {
                 [String(idTrabajadorCtx)]
             );
 
-            const transicion = await transicionarProgresivo(
-                tx, id, Number(estadoActual) || 0, idEstadoDestino
-            );
+            // Flujo de finalización (doble validación): el trabajador deja la
+            // obra en "Pendiente de aceptación" (8). Se valida que esté asignado
+            // a la etapa, que tenga permiso para confirmar y que la obra esté en
+            // la etapa correcta (evita doble finalización y saltos indebidos).
+            if (finalizacion) {
+                const asignacion = await tx.query(
+                    `SELECT 1 FROM Obras_has_Trabajadores
+                     WHERE Obras_idObra = ? AND Trabajadores_idTrabajador = ? AND EstadosObra_idEstadoObra = ?`,
+                    [id, idTrabajadorCtx, finalizacion.etapa]
+                );
+                if (!asignacion || asignacion.length === 0) {
+                    await tx.rollback();
+                    return { error: 'El trabajador no está asignado a esta etapa de la obra' };
+                }
 
-            if (!transicion.ok) {
-                await tx.rollback();
-                return { error: transicion.mensaje };
+                const permiso = await tx.query(
+                    `SELECT 1 FROM PermisosGranularesObras pgo
+                     JOIN CamposPermiso cp ON cp.idCampoPermiso = pgo.CamposPermiso_idCampoPermiso
+                     WHERE pgo.Obras_idObra = ? AND pgo.Trabajadores_idTrabajador = ? AND cp.NombreCampo = 'confirmar_actividad'`,
+                    [id, idTrabajadorCtx]
+                );
+                if (!permiso || permiso.length === 0) {
+                    await tx.rollback();
+                    return { error: 'Sin permiso para confirmar la finalización de la etapa' };
+                }
+
+                if (Number(estadoActual) === 8) {
+                    await tx.rollback();
+                    return { error: 'La obra ya está pendiente de aceptación' };
+                }
+                if (Number(estadoActual) !== finalizacion.etapa) {
+                    await tx.rollback();
+                    return { error: 'La obra no se encuentra en la etapa correspondiente' };
+                }
+
+                // Finalización de instalación (RF-23): se exige que TODO el
+                // checklist del kit asignado esté marcado antes de poder
+                // finalizar la etapa. Si no hay kit asignado se admite (la obra
+                // puede no requerir kit), pero si lo hay debe estar completo.
+                if (finalizacion.etapa === 4) {
+                    const kitRows = await tx.query(
+                        `SELECT ok.idObraKit
+                         FROM Obras_has_Kits ok
+                         WHERE ok.Obras_idObra = ?`,
+                        [id]
+                    );
+                    if (kitRows && kitRows.length > 0) {
+                        const idObraKit = kitRows[0].IDOBRAKIT ?? kitRows[0].idObraKit;
+                        const incomplete = await tx.query(
+                            `SELECT COUNT(*) AS CNT
+                             FROM Obras_Kits_Checklist
+                             WHERE Obras_has_Kits_idObraKit = ? AND Marcado = FALSE`,
+                            [idObraKit]
+                        );
+                        const pendientes = Number(incomplete?.[0]?.CNT ?? 0);
+                        if (pendientes > 0) {
+                            await tx.rollback();
+                            return {
+                                error: `Debes completar el checklist del kit antes de finalizar la instalación (${pendientes} faltan)`
+                            };
+                        }
+                    }
+                }
+
+                const sp = await tx.query(
+                    'SELECT * FROM SP_CAMBIAR_ESTADO_OBRA (?, ?)',
+                    [id, idEstadoDestino]
+                );
+                const res = sp?.[0];
+                if (res && Number(res.OEXITO) === 0) {
+                    await tx.rollback();
+                    return { error: res.OMENSAJE || 'Transición de estado no permitida' };
+                }
+
+                notificacion = {
+                    mensaje: finalizacion.aviso.replace('{nombre}', nombreTrabajador),
+                    tipo: 'info'
+                };
+            } else {
+                // Comportamiento previo (etapas "X Pendiente de Validación"):
+                // avanza progresivamente hacia el siguiente estado oficial.
+                const transicion = await transicionarProgresivo(
+                    tx, id, Number(estadoActual) || 0, idEstadoDestino
+                );
+
+                if (!transicion.ok) {
+                    await tx.rollback();
+                    return { error: transicion.mensaje };
+                }
             }
         }
 
@@ -384,17 +486,22 @@ const completarEtapa = async (id, {
             );
         }
 
-        // 3. Registrar la nota de avance con el estado resultante
+        // 3. Registrar la nota de avance. En las finalizaciones se conserva la
+        //    etapa ORIGEN (levantamiento=2, fabricacion=3) en el registro, de
+        //    modo que la aceptación del propietario resuelve el estado destino.
         if (nota && String(nota).trim() !== '') {
+            const idEstadoNota = finalizacion
+                ? finalizacion.etapa
+                : (resolverEstadoObra(estado) ?? Number(estadoActual)) || 1;
             await tx.execute(
                 `INSERT INTO NotasObras (Obras_idObra, EstadosObra_idEstadoObra, Trabajadores_idTrabajador, Nota)
                  VALUES (?, ?, ?, ?)`,
-                [id, (resolverEstadoObra(estado) ?? Number(estadoActual)) || 1, idTrabajadorCtx, String(nota)]
+                [id, idEstadoNota, idTrabajadorCtx, String(nota)]
             );
         }
 
         await tx.commit();
-        return { ok: true };
+        return { ok: true, notificacion };
     } catch (err) {
         await tx.rollback();
         throw err;
@@ -402,13 +509,43 @@ const completarEtapa = async (id, {
 };
 
 // ─── UPDATE (Cambiar de Estado) ────────────────────────────────────────────────────────────
+// Aceptación de la doble validación: cuando la obra está en "Pendiente de
+// aceptación" (8) y se pide aceptarla (destino 8), el estado destino real se
+// resuelve desde la última nota registrada (etapa origen + 1): levantamiento →
+// En fabricacion (3), fabricacion → Instalacion programada (4). El resto de
+// solicitudes se pasan tal cual al SP_CAMBIAR_ESTADO_OBRA.
 const cambiarEstado = async (idObra, idEstado, idTrabajadorCtx = 1) => {
     const db = await getConnection();
     const transaction = await db.transaction();
 
     let result;
+    let destino = Number(idEstado);
 
     try {
+        if (destino === 8) {
+            const obraRows = await transaction.query(
+                "SELECT EstadosObra_idEstadoObra AS EstadoActual FROM Obras WHERE idObra = ?",
+                [idObra]
+            );
+            const estadoActual = Number(obraRows?.[0]?.ESTADOACTUAL ?? obraRows?.[0]?.EstadoActual);
+
+            if (estadoActual === 8) {
+                const notaRows = await transaction.query(
+                    `SELECT FIRST 1 EstadosObra_idEstadoObra AS Etapa
+                     FROM NotasObras WHERE Obras_idObra = ?
+                     ORDER BY FechaCreacion DESC, idNotaObra DESC`,
+                    [idObra]
+                );
+                const etapa = Number(notaRows?.[0]?.ETAPA ?? notaRows?.[0]?.Etapa);
+                destino = (etapa >= 2 && etapa <= 4) ? etapa + 1 : null;
+
+                if (!destino) {
+                    await transaction.rollback();
+                    return { error: 'No se pudo resolver el estado destino de la aceptación' };
+                }
+            }
+        }
+
         await transaction.execute(
             "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
             [String(idTrabajadorCtx)]
@@ -416,7 +553,7 @@ const cambiarEstado = async (idObra, idEstado, idTrabajadorCtx = 1) => {
 
         const rows = await transaction.query(
             `SELECT * FROM SP_CAMBIAR_ESTADO_OBRA (?, ?)`,
-            [idObra, idEstado]
+            [idObra, destino]
         );
 
         result = rows[0];

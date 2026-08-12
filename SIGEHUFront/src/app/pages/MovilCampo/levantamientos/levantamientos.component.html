@@ -3,8 +3,10 @@
 <ion-content class="ion-padding sigehu-content">
 
   <div class="mobile-header">
+    <button type="button" class="back-btn" (click)="volver()" aria-label="Volver a Actividades Pendientes">
+      <ion-icon name="chevron-back-outline"></ion-icon>
+    </button>
     <h2>Levantamiento de Medidas</h2>
-    <p class="subtitle">Captura de dimensiones reales y especificaciones en sitio (RF-11, RF-12)</p>
   </div>
 
   <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
@@ -32,85 +34,147 @@
     </ion-select>
   </div>
 
-  <!-- Información de Obra / Cliente (datos de la orden, RF-11) -->
-  <ion-card class="sigehu-card">
-    <ion-card-header>
-      <ion-card-subtitle>Orden de levantamiento asignada</ion-card-subtitle>
-      <ion-card-title>{{ informacionObra.obra }}</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <div class="info-row">
-        <span class="info-label">Cliente</span>
-        <strong class="info-val">{{ informacionObra.cliente }}</strong>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Ubicación</span>
-        <strong class="info-val">{{ informacionObra.ubicacion }}</strong>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Teléfono</span>
-        <strong class="info-val">{{ informacionObra.telefono }}</strong>
-      </div>
-    </ion-card-content>
-  </ion-card>
+  <ng-container *ngIf="selectedObra as obra">
 
-  <!-- Captura de medidas y observaciones (RF-12) -->
-  <form [formGroup]="form" (ngSubmit)="submitLevantamiento()" novalidate>
+    <!-- Información de Obra / Cliente (RF-11) -->
     <ion-card class="sigehu-card">
       <ion-card-header>
-        <ion-card-title>Dimensiones Reales (m)</ion-card-title>
+        <ion-card-subtitle>Orden de levantamiento asignada</ion-card-subtitle>
+        <ion-card-title>{{ obra.NOMBRE }}</ion-card-title>
       </ion-card-header>
-      <ion-card-content class="ion-no-padding">
-        <ion-list class="form-list">
-          <ion-item class="sigehu-field">
-            <ion-label position="stacked">Alto (m)</ion-label>
-            <ion-input
-              type="number"
-              formControlName="alto"
-              placeholder="Ej. 2.40"
-              inputmode="decimal"></ion-input>
-          </ion-item>
-          <ion-item class="sigehu-field">
-            <ion-label position="stacked">Ancho (m)</ion-label>
-            <ion-input
-              type="number"
-              formControlName="ancho"
-              placeholder="Ej. 3.50"
-              inputmode="decimal"></ion-input>
-          </ion-item>
-          <ion-item class="sigehu-field">
-            <ion-label position="stacked">Profundidad (m)</ion-label>
-            <ion-input
-              type="number"
-              formControlName="profundidad"
-              placeholder="Ej. 0.15"
-              inputmode="decimal"></ion-input>
-          </ion-item>
-          <ion-item class="sigehu-field">
-            <ion-label position="stacked">Observaciones del sitio</ion-label>
-            <ion-textarea
-              rows="3"
-              formControlName="observaciones"
-              placeholder="Desnivel, muros, obstáculos…"></ion-textarea>
-          </ion-item>
-          <ion-item class="sigehu-field">
-            <ion-label position="stacked">Fotografía del Sitio (Evidencia)</ion-label>
-            <input type="file" accept="image/*" (change)="onFileChange($event)" class="file-input" />
-          </ion-item>
-        </ion-list>
+      <ion-card-content>
+        <div class="info-row" *ngIf="detalle.cliente">
+          <span class="info-label">Cliente</span>
+          <strong class="info-val">{{ detalle.cliente }}</strong>
+        </div>
+
+        <div class="info-row" *ngIf="puedeVerDireccion && direccionNormalizada">
+          <span class="info-label">Ubicación</span>
+          <strong class="info-val">{{ direccionNormalizada }}</strong>
+        </div>
+
+        <div class="info-row" *ngIf="puedeVerTelefono && detalle.telefono">
+          <span class="info-label">Teléfono</span>
+          <strong class="info-val">{{ detalle.telefono }}</strong>
+        </div>
+
+        <!-- Previsualización retráctil de Google Maps -->
+        <div class="maps-block" *ngIf="puedeVerDireccion && direccionNormalizada">
+          <button type="button" class="maps-toggle" (click)="toggleMaps()">
+            <ion-icon name="map-outline"></ion-icon>
+            <span>{{ mapsVisible ? 'Ocultar mapa' : 'Ver mapa' }}</span>
+            <ion-icon [name]="mapsVisible ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+          </button>
+          <div class="maps-preview" *ngIf="mapsVisible">
+            <iframe
+              [src]="mapsEmbedUrl"
+              title="Ubicación de la obra"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allowfullscreen></iframe>
+          </div>
+          <ion-button
+            size="small"
+            fill="outline"
+            color="primary"
+            class="maps-open-btn"
+            (click)="abrirGoogleMaps()">
+            <ion-icon name="navigate-outline" slot="start"></ion-icon>
+            Abrir en Google Maps
+          </ion-button>
+        </div>
       </ion-card-content>
     </ion-card>
 
-    <ion-button
-      type="submit"
-      expand="block"
-      size="large"
-      color="primary"
-      class="sigehu-submit"
-      [disabled]="guardando"
-    >
-      <ion-icon name="send-outline" slot="start"></ion-icon>
-      {{ guardando ? 'Guardando…' : 'Enviar a Validación (RF-13)' }}
-    </ion-button>
-  </form>
+    <!-- Captura de medidas y observaciones (RF-12) -->
+    <form [formGroup]="form" (ngSubmit)="submitLevantamiento()" novalidate>
+      <ion-card class="sigehu-card">
+        <ion-card-header>
+          <ion-card-title>Dimensiones Reales (m)</ion-card-title>
+        </ion-card-header>
+        <ion-card-content class="ion-no-padding">
+          <ion-list class="form-list">
+            <ion-item class="sigehu-field">
+              <ion-label position="stacked">Alto (m)</ion-label>
+              <ion-input
+                type="number"
+                formControlName="alto"
+                placeholder="Ej. 2.40"
+                inputmode="decimal"></ion-input>
+            </ion-item>
+            <ion-item class="sigehu-field">
+              <ion-label position="stacked">Ancho (m)</ion-label>
+              <ion-input
+                type="number"
+                formControlName="ancho"
+                placeholder="Ej. 3.50"
+                inputmode="decimal"></ion-input>
+            </ion-item>
+            <ion-item class="sigehu-field">
+              <ion-label position="stacked">Profundidad (m)</ion-label>
+              <ion-input
+                type="number"
+                formControlName="profundidad"
+                placeholder="Ej. 0.15"
+                inputmode="decimal"></ion-input>
+            </ion-item>
+            <ion-item class="sigehu-field">
+              <ion-label position="stacked">Observaciones del sitio</ion-label>
+              <ion-textarea
+                rows="3"
+                formControlName="observaciones"
+                placeholder="Desnivel, muros, obstáculos…"></ion-textarea>
+            </ion-item>
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Fotografías: cámara + galería, múltiples, subida individual -->
+      <ion-card class="sigehu-card" *ngIf="puedeSubirFotos">
+        <ion-card-header>
+          <ion-card-title>Fotografías del Sitio (Evidencia)</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="fotos-actions">
+            <ion-button size="small" color="primary" fill="outline" (click)="camaraInput.click()">
+              <ion-icon name="camera-outline" slot="start"></ion-icon>
+              Cámara
+            </ion-button>
+            <ion-button size="small" color="medium" fill="outline" (click)="galeriaInput.click()">
+              <ion-icon name="images-outline" slot="start"></ion-icon>
+              Galería
+            </ion-button>
+            <input #camaraInput type="file" accept="image/*" capture="environment" hidden (change)="onCamara($event)" />
+            <input #galeriaInput type="file" accept="image/*" multiple hidden (change)="onGaleria($event)" />
+          </div>
+
+          <div class="fotos-thumbs" *ngIf="fotos.length > 0">
+            <div class="foto-thumb" *ngFor="let f of fotos; let i = index">
+              <img [src]="f.url" alt="Evidencia" />
+              <button type="button" class="foto-remove" (click)="quitarFoto(i)" aria-label="Quitar foto">
+                <ion-icon name="close-circle"></ion-icon>
+              </button>
+            </div>
+          </div>
+          <p class="fotos-hint" *ngIf="fotos.length === 0">
+            Puedes capturar varias fotografías. Cada una se enviará individualmente al servidor.
+          </p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-button
+        type="button"
+        expand="block"
+        size="large"
+        color="primary"
+        class="sigehu-submit"
+        [disabled]="guardando || finalizado || !puedeConfirmarActividad"
+        (click)="submitLevantamiento()"
+      >
+        <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
+        {{ finalizado ? 'Pendiente de aceptación' : (guardando ? 'Guardando…' : 'Finalizar Levantamiento') }}
+      </ion-button>
+    </form>
+  </ng-container>
+
 </ion-content>

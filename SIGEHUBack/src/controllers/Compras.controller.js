@@ -170,14 +170,17 @@ const marcarRecibida = async (req, res) => {
         if (resultado.error === 'not_found') {
             return res.status(404).json({ error: 'Compra no encontrada' });
         }
-        if (resultado.error === 'forbidden') {
-            return res.status(403).json({ error: 'Solo el chofer asignado puede marcar la compra como recibida' });
-        }
-        if (resultado.error === 'already') {
-            return res.status(400).json({ error: 'La compra ya fue marcada como recibida' });
-        }
+            if (resultado.error === 'forbidden') {
+                return res.status(403).json({ error: 'Solo el chofer asignado puede marcar la compra como recibida' });
+            }
+            if (resultado.error === 'already') {
+                return res.status(400).json({ error: 'La compra ya fue marcada como recibida' });
+            }
+            if (resultado.error === 'empty') {
+                return res.status(400).json({ error: resultado.error });
+            }
 
-        res.json({ message: 'Compra marcada como recibida' });
+            res.json({ message: 'Compra marcada como recibida' });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

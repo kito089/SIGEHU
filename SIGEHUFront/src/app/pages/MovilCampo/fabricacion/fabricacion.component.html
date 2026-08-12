@@ -1,128 +1,222 @@
 <app-worker-header></app-worker-header>
 
 <ion-content class="ion-padding sigehu-content">
-  <!-- Selector de obras en taller -->
-  <div class="header-section">
-    <h2>Orden de Trabajo (Taller)</h2>
-    <p class="subtitle">Especificaciones de fabricación y lista de materiales (RF-15)</p>
+
+  <div class="mobile-header">
+    <button type="button" class="back-btn" (click)="volver()" aria-label="Volver a Actividades Pendientes">
+      <ion-icon name="chevron-back-outline"></ion-icon>
+    </button>
+    <div class="titles">
+      <h2>Orden de Trabajo</h2>
+      <span class="entrega-tag" *ngIf="selectedObra">
+        <ion-icon name="calendar-outline"></ion-icon>
+        Entrega: {{ fechaEntrega }}
+      </span>
+    </div>
   </div>
 
   <ion-progress-bar *ngIf="loading" type="indeterminate"></ion-progress-bar>
 
-  <!-- Estado de error con reintento -->
   <div *ngIf="error && !loading" class="state-box">
     <ion-icon name="alert-circle-outline"></ion-icon>
     <p>No se pudieron cargar tus obras de fabricación.</p>
     <ion-button size="small" color="primary" fill="outline" (click)="reintentar()">Reintentar</ion-button>
   </div>
 
-  <div *ngIf="obras.length === 0 && !loading && !error" class="empty-box">
+  <div *ngIf="!loading && !error && obras.length === 0" class="state-box">
     <ion-icon name="construct-outline"></ion-icon>
-    <p>No tienes obras asignadas en proceso de fabricación.</p>
+    <p>No tienes obras asignadas en fabricación.</p>
   </div>
 
-  <!-- Selector de obra asignada -->
   <div *ngIf="obras.length > 1" class="obra-selector">
-    <ion-label>Seleccionar Obra:</ion-label>
+    <ion-label>Obra Asignada:</ion-label>
     <ion-select [value]="selectedObra?.ID" (ionChange)="seleccionarObra($any($event.detail.value))" interface="popover">
-      <ion-select-option *ngFor="let o of obras" [value]="o.ID">
-        {{ o.NOMBRE }} ({{ o.ESTADO }})
-      </ion-select-option>
+      <ion-select-option *ngFor="let o of obras" [value]="o.ID">{{ o.NOMBRE }}</ion-select-option>
     </ion-select>
   </div>
 
-  <div *ngIf="selectedObra" class="fabricacion-card-wrap">
-    <!-- Tarjeta Principal de Obra -->
+  <ng-container *ngIf="selectedObra as obra">
+
     <ion-card class="sigehu-card">
       <ion-card-header>
         <div class="card-top">
-          <ion-badge color="primary">{{ selectedObra.ESTADO }}</ion-badge>
-          <span class="obra-id">OB-{{ selectedObra.ID }}</span>
+          <ion-badge color="primary">{{ obra.ESTADO }}</ion-badge>
+          <span class="obra-id">OB-{{ obra.ID }}</span>
         </div>
-        <ion-card-title>{{ selectedObra.NOMBRE }}</ion-card-title>
-        <ion-card-subtitle *ngIf="selectedObra.CLIENTE_NOMBRE">
-          Cliente: {{ selectedObra.CLIENTE_NOMBRE }}
-        </ion-card-subtitle>
+        <ion-card-title>{{ obra.NOMBRE }}</ion-card-title>
+        <ion-card-subtitle *ngIf="obra.NOMBRECLIENTE">Cliente: {{ obra.NOMBRECLIENTE }}</ion-card-subtitle>
       </ion-card-header>
-
       <ion-card-content>
-        <!-- Medidas Reales -->
+        <div class="info-row" *ngIf="puedeVerDireccion && obra.DIRECCION">
+          <span class="info-label">Ubicación</span>
+          <strong class="info-val">{{ obra.DIRECCION }}</strong>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="sigehu-card collapsible" *ngIf="puedeVerMedidas">
+      <ion-card-header (click)="toggleMedidas()" class="collapsible-header">
+        <ion-card-title>Medidas Reales</ion-card-title>
+        <ion-icon [name]="medidasExpanded ? 'chevron-up-outline' : 'chevron-down-outline'" class="collapse-icon"></ion-icon>
+      </ion-card-header>
+      <ion-card-content *ngIf="medidasExpanded" class="ion-no-padding">
         <div class="measures-grid">
           <div class="measure-box">
             <span class="label">Alto</span>
-            <span class="value">{{ selectedObra.MEDIDAS_ALTO || '2.50' }} m</span>
+            <span class="value">{{ obra.ALTO || '—' }} m</span>
           </div>
           <div class="measure-box">
             <span class="label">Ancho</span>
-            <span class="value">{{ selectedObra.MEDIDAS_ANCHO || '4.20' }} m</span>
+            <span class="value">{{ obra.ANCHO || '—' }} m</span>
           </div>
           <div class="measure-box">
             <span class="label">Profundidad</span>
-            <span class="value">{{ selectedObra.MEDIDAS_PROFUNDIDAD || '0.15' }} m</span>
+            <span class="value">{{ obra.PROFUNDIDAD || '—' }} m</span>
           </div>
         </div>
-
-        <!-- Especificaciones del Diseño -->
-        <div class="spec-section">
-          <h3>Especificaciones Técnicas</h3>
-          <p class="spec-text">{{ selectedObra.ESPECIFICACIONES || 'Verificar nivelación en base y refuerzo central.' }}</p>
-          <div *ngIf="selectedObra.MODELO_DISENO" class="model-badge">
-            <ion-icon name="image-outline"></ion-icon>
-            <span>Diseño: {{ selectedObra.MODELO_DISENO }}</span>
-          </div>
-        </div>
-
-        <!-- Lista de Insumos / Materiales Requeridos -->
-        <div class="materials-section">
-          <h3>Materiales Asignados para la Obra</h3>
-          <ion-list class="materials-list">
-            <ion-item *ngFor="let m of selectedObra.MATERIALES" lines="full" class="material-item">
-              <ion-icon name="cube-outline" slot="start"></ion-icon>
-              <ion-label>
-                <h2>{{ m.MATERIAL }}</h2>
-                <p>{{ m.UNIDAD }}</p>
-              </ion-label>
-              <ion-badge slot="end" color="medium">{{ m.CANTIDAD }} {{ m.UNIDAD }}</ion-badge>
-            </ion-item>
-          </ion-list>
-        </div>
+        <p class="empty-hint" *ngIf="!obra.ALTO && !obra.ANCHO && !obra.PROFUNDIDAD">
+          Aún no se han registrado medidas. Se capturan durante el levantamiento.
+        </p>
       </ion-card-content>
     </ion-card>
 
-    <!-- Doble Validación de Fabricación (RF-17) -->
-    <ion-card class="sigehu-card validation-card">
-      <ion-card-header>
-        <ion-card-title>Conclusión y Evidencia Fotográfica</ion-card-title>
-        <ion-card-subtitle>Al terminar la pieza en taller, captura la evidencia fotográfica</ion-card-subtitle>
+    <ion-card class="sigehu-card collapsible" *ngIf="puedeVerMateriales">
+      <ion-card-header (click)="toggleMateriales()" class="collapsible-header">
+        <ion-card-title>Materiales Asignados</ion-card-title>
+        <ion-icon [name]="materialesExpanded ? 'chevron-up-outline' : 'chevron-down-outline'" class="collapse-icon"></ion-icon>
       </ion-card-header>
-
-      <ion-card-content>
-        <div class="field-wrap">
-          <label>Nota de avance / fabricación:</label>
-          <ion-textarea
-            [(ngModel)]="notaAvance"
-            rows="3"
-            placeholder="Fabricación concluida. Estructura soldada y pulida, lista para pintura..."
-          ></ion-textarea>
-        </div>
-
-        <div class="field-wrap">
-          <label>Fotografía de evidencia:</label>
-          <input type="file" accept="image/*" (change)="onFileChange($event)" class="file-input" />
-        </div>
-
-        <ion-button
-          expand="block"
-          color="success"
-          size="large"
-          class="submit-btn"
-          [disabled]="guardando"
-          (click)="marcarFabricacionTerminada()"
-        >
-          <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
-          {{ guardando ? 'Enviando...' : 'Marcar Fabricación Terminada' }}
-        </ion-button>
+      <ion-card-content *ngIf="materialesExpanded" class="ion-no-padding">
+        <ion-list class="materials-list" *ngIf="materiales.length > 0">
+          <ion-item *ngFor="let m of materiales" lines="full" class="material-item">
+            <ion-icon name="cube-outline" slot="start"></ion-icon>
+            <ion-label>
+              <h2>{{ m.Nombre }}</h2>
+              <p *ngIf="m.Notas">{{ m.Notas }}</p>
+            </ion-label>
+            <ion-badge slot="end" color="medium">{{ m.Cantidad }} {{ m.Medida || m.UnidadMedida }}</ion-badge>
+          </ion-item>
+        </ion-list>
+        <p class="empty-hint" *ngIf="materiales.length === 0">
+          No hay materiales asignados a esta obra.
+        </p>
       </ion-card-content>
     </ion-card>
-  </div>
+
+    <ion-card class="sigehu-card" *ngIf="puedeVerFotos">
+      <ion-card-header>
+        <ion-card-title>Fotografías de la Obra</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="foto-principal" *ngIf="fotoPrincipal; else sinFotos" (click)="abrirZoom()">
+          <img [src]="fotoUrl(fotoPrincipal.RutaArchivo)" alt="Fotografía principal" />
+          <span class="procedencia" *ngIf="fotoPrincipal.SubioNombre">
+            <ion-icon name="person-outline"></ion-icon>
+            {{ fotoPrincipal.SubioNombre }} · {{ esFotoAdmin(fotoPrincipal) ? 'Administrador' : 'Trabajador' }}
+          </span>
+        </div>
+        <ng-template #sinFotos>
+          <p class="empty-hint">No hay fotografías registradas para esta obra.</p>
+        </ng-template>
+
+        <div class="fotos-carrusel" *ngIf="fotos.length > 1">
+          <div *ngFor="let f of fotos" class="foto-thumb" [class.active]="f.idFotoObra === fotoPrincipal?.idFotoObra" (click)="seleccionarFotoPrincipal(f)">
+            <img [src]="fotoUrl(f.RutaArchivo)" alt="Miniatura" />
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="sigehu-card" *ngIf="puedeVerNotas">
+      <ion-card-header>
+        <ion-card-title>Notas</ion-card-title>
+      </ion-card-header>
+      <ion-card-content class="ion-no-padding">
+        <ion-list class="notas-list" *ngIf="notas.length > 0">
+          <ion-item *ngFor="let n of notas" lines="full" class="nota-item">
+            <ion-icon [name]="esNotaAdmin(n) ? 'shield-checkmark-outline' : 'person-outline'" slot="start"></ion-icon>
+            <ion-label>
+              <h2 [class.admin]="esNotaAdmin(n)">{{ n.Nota }}</h2>
+              <p>{{ n.AutorNombre || 'Autor' }} · {{ esNotaAdmin(n) ? 'Administrador' : 'Trabajador' }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <p class="empty-hint" *ngIf="notas.length === 0">
+          No hay notas registradas para esta obra.
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-button
+      type="button"
+      expand="block"
+      size="large"
+      color="success"
+      class="sigehu-submit"
+      [disabled]="guardando || finalizado || !puedeConfirmarActividad"
+      (click)="abrirModalFinalizar()"
+    >
+      <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
+      {{ finalizado ? 'Pendiente de aceptación' : (guardando ? 'Guardando…' : 'Finalizar Fabricación') }}
+    </ion-button>
+  </ng-container>
+
 </ion-content>
+
+<div class="modal-backdrop" *ngIf="modalFinalizarAbierto" (click)="cerrarModalFinalizar()"></div>
+<div class="modal-sheet" *ngIf="modalFinalizarAbierto" role="dialog" aria-modal="true" aria-label="Finalizar fabricación">
+  <div class="modal-handle"></div>
+  <h3>Finalizar Fabricación</h3>
+  <p class="modal-desc">Registra observaciones y evidencia fotográfica. Quedará pendiente de aceptación del administrador.</p>
+
+  <div class="field-wrap">
+    <label>Nota de avance / observaciones</label>
+    <ion-textarea
+      [(ngModel)]="notaAvance"
+      rows="3"
+      placeholder="Fabricación concluida en taller. Lista para revisión…"></ion-textarea>
+  </div>
+
+  <div class="field-wrap" *ngIf="puedeSubirFotos">
+    <label>Fotografías de evidencia</label>
+    <div class="fotos-actions">
+      <ion-button size="small" color="primary" fill="outline" (click)="camaraInput.click()">
+        <ion-icon name="camera-outline" slot="start"></ion-icon>
+        Cámara
+      </ion-button>
+      <ion-button size="small" color="medium" fill="outline" (click)="galeriaInput.click()">
+        <ion-icon name="images-outline" slot="start"></ion-icon>
+        Galería
+      </ion-button>
+      <input #camaraInput type="file" accept="image/*" capture="environment" hidden (change)="onCamara($event)" />
+      <input #galeriaInput type="file" accept="image/*" multiple hidden (change)="onGaleria($event)" />
+    </div>
+    <div class="fotos-thumbs" *ngIf="fotosPendientes.length > 0">
+      <div class="foto-thumb" *ngFor="let f of fotosPendientes; let i = index">
+        <img [src]="f.url" alt="Evidencia" />
+        <button type="button" class="foto-remove" (click)="quitarFotoPendiente(i)" aria-label="Quitar foto">
+          <ion-icon name="close-circle"></ion-icon>
+        </button>
+      </div>
+    </div>
+    <p class="fotos-hint" *ngIf="fotosPendientes.length === 0">
+      Cada fotografía se enviará individualmente al servidor.
+    </p>
+  </div>
+
+  <div class="modal-actions">
+    <ion-button size="large" fill="clear" color="medium" (click)="cerrarModalFinalizar()" [disabled]="guardando">
+      Cancelar
+    </ion-button>
+    <ion-button size="large" color="success" class="confirm-btn" (click)="finalizarFabricacion()" [disabled]="guardando">
+      <ion-icon name="checkmark-done-circle-outline" slot="start"></ion-icon>
+      {{ guardando ? 'Guardando…' : 'Confirmar Finalización' }}
+    </ion-button>
+  </div>
+</div>
+
+<div class="zoom-overlay" *ngIf="zoomVisible && fotoPrincipal" (click)="cerrarZoom()">
+  <img [src]="fotoUrl(fotoPrincipal.RutaArchivo)" alt="Fotografía ampliada" />
+  <button type="button" class="zoom-close" aria-label="Cerrar zoom">
+    <ion-icon name="close-circle"></ion-icon>
+  </button>
+</div>

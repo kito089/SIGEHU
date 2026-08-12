@@ -1,4 +1,5 @@
 import service from "../services/Obras.service.js";
+import notificaciones from "../services/Notificaciones.service.js";
 
 // GET /obras
 const getAll = async (req, res) => {
@@ -96,7 +97,8 @@ const update = async (req, res) => {
         const notaAvance = nota ?? observaciones ?? null;
 
         // Flujo móvil (doble validación): el trabajador marca una etapa como
-        // "Pendiente de Validación" y opcionalmente aporta medidas + nota.
+        // "Pendiente de Validación" o la finaliza ("X Finalizado" → queda en
+        // "Pendiente de aceptación") y opcionalmente aporta medidas + nota.
         // Nombre es opcional en ese flujo (el backend no debe exigirlo).
         if (estado) {
             const resultado = await service.completarEtapa(req.params.id, {
@@ -107,7 +109,8 @@ const update = async (req, res) => {
                 Alto: alto,
                 Profundidad: profundidad,
                 nota: notaAvance,
-                idTrabajadorCtx: req.user?.idTrabajador
+                idTrabajadorCtx: req.user?.idTrabajador,
+                nombreTrabajador: req.user?.nombre ?? 'asignado'
             });
 
             if (resultado === null) {
@@ -116,6 +119,14 @@ const update = async (req, res) => {
 
             if (resultado.error) {
                 return res.status(400).json({ error: resultado.error });
+            }
+
+            // Finalización de etapa: avisa por SSE a todos los propietarios.
+            if (resultado.notificacion) {
+                await notificaciones.notifyOwners(
+                    resultado.notificacion.mensaje,
+                    resultado.notificacion.tipo
+                ).catch((e) => console.error('No se pudo notificar la finalización:', e.message));
             }
 
             return res.json({ message: "Obra actualizada" });
@@ -190,6 +201,10 @@ const cambiarEstado = async (req, res) => {
 
         if (!resultado) {
             return res.status(404).json({ error: "Obra no encontrada" });
+        }
+
+        if (resultado.error) {
+            return res.status(400).json({ error: resultado.error });
         }
 
         if (Number(resultado.OEXITO) === 0) {

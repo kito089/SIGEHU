@@ -25,11 +25,19 @@ const createFotoObra = async ({ idObra, idEstadoObra, idTrabajador, nombreArchiv
 };
 
 // ─── GET fotos por obra ────────────────────────────────────────────────────────
+// Incluye la procedencia (nombre y rol de quien subió la foto) para poder
+// ordenar en el móvil: asignadas por el propietario primero, luego las del
+// levantamiento, y preservar la autoría en la vista de fabricación.
 const getFotosByObra = async (idObra) => {
     const db = await getConnection();
 
     return await db.query(
-        "SELECT * FROM FotosObras WHERE Obras_idObra = ?",
+        `SELECT f.*, t.NombreCompleto AS SubioNombre, tu.Nombre AS RolSubio
+         FROM FotosObras f
+         JOIN Trabajadores t ON t.idTrabajador = f.Trabajadores_idTrabajador
+         LEFT JOIN TiposUsuarios tu ON tu.idTipoUsuario = t.TiposUsuarios_idTipoUsuario
+         WHERE f.Obras_idObra = ?
+         ORDER BY f.FechaCreacion DESC, f.idFotoObra DESC`,
         [idObra]
     );
 };

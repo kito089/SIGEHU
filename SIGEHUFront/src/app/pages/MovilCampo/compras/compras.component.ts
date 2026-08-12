@@ -2,26 +2,31 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { EnvService } from '../../../services/env.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
 import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
 
 interface MaterialCompra {
+  idDetalleCompra?: number;
   MATERIAL_NOMBRE: string;
   CANTIDAD: number;
-  UNIDAD: string;
-  COMPRADOR?: string;
+  UNIDAD?: string;
   COMPLETADO?: boolean;
 }
 
 interface OrdenCompraChofer {
   ID: number;
+  IDPROVEEDOR?: number;
   PROVEEDOR_NOMBRE: string;
   PROVEEDOR_DIRECCION?: string;
   PROVEEDOR_TELEFONO?: string;
   FECHA_ORDEN?: string;
   ESTADO: string;
+  RECIBIDA?: boolean;
   MATERIALES: MaterialCompra[];
 }
 
@@ -35,14 +40,26 @@ interface OrdenCompraChofer {
 export class ComprasComponent implements OnInit {
   private api = inject(ApiService);
   private toast = inject(ToastService);
+  private env = inject(EnvService);
   private layout = inject(WorkerLayoutService);
+  private router = inject(Router);
 
   compras: OrdenCompraChofer[] = [];
   loading = false;
   error = false;
+  confirmando = new Set<number>();
+  mapasVisibles = new Set<string>();
 
   ngOnInit(): void {
-    this.layout.setPageTitle('Compras');
+    this.layout.setPageTitle('Orden de Compra');
+    this.cargarOrdenesCompra();
+  }
+
+  volver(): void {
+    this.router.navigateByUrl('/movil/actividades');
+  }
+
+  reintentar(): void {
     this.cargarOrdenesCompra();
   }
 
@@ -52,16 +69,14 @@ export class ComprasComponent implements OnInit {
     this.api.get<OrdenCompraChofer[]>('/Compras').subscribe({
       next: (data) => {
         this.loading = false;
-        // Mapear ordenes sin información financiera (RF-18). Firebird devuelve
-        // claves en mayúsculas (ID, PROVEEDOR_NOMBRE...).
+        // RF-18: el backend ya filtra por chofer autenticado (rol Trabajador) y
+        // no envía datos financieros. Se inicializa el checklist local para que
+        // el trabajador marque la recolección ítem por ítem (la validación final
+        // ocurriá en backend al marcar la orden como Surtida).
         this.compras = (data || []).map(c => ({
+          ...c,
           ID: Number(c.ID),
-          PROVEEDOR_NOMBRE: c.PROVEEDOR_NOMBRE || 'Proveedor',
-          PROVEEDOR_DIRECCION: c.PROVEEDOR_DIRECCION || 'Dirección registrada en catálogo',
-          PROVEEDOR_TELEFONO: c.PROVEEDOR_TELEFONO || 'Sin teléfono',
-          FECHA_ORDEN: c.FECHA_ORDEN,
-          ESTADO: c.ESTADO || 'Pendiente de Surtir',
-          MATERIALES: c.MATERIALES || []
+          MATERIALES: (c.MATERIALES || []).map(m => ({ ...m, COMPLETADO: false }))
         }));
       },
       error: () => {
@@ -71,21 +86,82 @@ export class ComprasComponent implements OnInit {
     });
   }
 
-  reintentar(): void {
-    this.cargarOrdenesCompra();
-  }
-
-  toggleMaterialItem(material: MaterialCompra): void {
+  toggleItem(material: MaterialCompra, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
     material.COMPLETADO = !material.COMPLETADO;
-    this.toast.info(`Material ${material.COMPLETADO ? 'marcado como comprado' : 'desmarcado'}`);
   }
 
-  marcarCompraCompletada(compra: OrdenCompraChofer): void {
-    compra.ESTADO = 'Surtida en Proveedor';
-    this.toast.success(`Orden de compra #${compra.ID} surtida correctamente.`);
-    this.api.put(`/Compras/${compra.ID}`, { estado: 'Surtida' }).subscribe({
-      next: () => {},
-      error: () => {}
-    });
+  progreso(compra: OrdenCompraChofer): number {
+    if (compra.MATERIALES.length === 0) return 0;
+    const ok = compra.MATERIALES.filter(m => m.COMPLETADO).length;
+    return Math.round((ok / compra.MATERIALES.length) * 100);
+  }
+
+  checklistCompleto(compra: OrdenCompraChofer): boolean {
+    return compra.MATERIALES.length > 0 && this.progreso(compra) === 100;
+  }
+
+  // ── Mapa retráctil por proveedor/dirección ────────────────────────────────
+  claveMapa(compra: OrdenCompraChofer): string {
+    return `${compra.ID}|${compra.IDPROVEEDOR ?? 0}|${compra.PROVEEDOR_DIRECCION ?? ''}`;
+  }
+
+  mapasVisible(compra: OrdenCompraChofer): boolean {
+    return this.mapasVisibles.has(this.claveMapa(compra));
+  }
+
+  toggleMaps(compra: OrdenCompraChofer): void {
+    const clave = this.claveMapa(compra);
+    if (this.mapasVisibles.has(clave)) {
+      this.mapasVisibles.delete(clave);
+    } else {
+      this.mapasVisibles.add(clave);
+    }
+  }
+
+  mapsEmbedUrl(compra: OrdenCompraChofer): string {
+    const q = encodeURIComponent((compra.PROVEEDOR_DIRECCION || compra.PROVEEDOR_NOMBRE || '').trim());
+    return `https://www.google.com/maps?q=${q}&output=embed`;
+  }
+
+  abrirGoogleMaps(compra: OrdenCompraChofer): void {
+    const dir = (compra.PROVEEDOR_DIRECCION || '').trim();
+    if (!dir) {
+      this.toast.warning('No hay dirección registrada para abrir en el mapa.');
+      return;
+    }
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}`;
+    const target = this.env.isMobile() ? '_system' : '_blank';
+    window.open(url, target);
+  }
+
+  async confirmarRecoleccion(compra: OrdenCompraChofer, event: Event): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.confirmando.has(compra.ID)) return;
+    if (compra.ESTADO === 'Surtida en Proveedor') return;
+
+    if (!this.checklistCompleto(compra)) {
+      this.toast.warning('Marca toda la lista de materiales antes de confirmar la recolección.');
+      return;
+    }
+
+    this.confirmando.add(compra.ID);
+    try {
+      await firstValueFrom(this.api.put(`/Compras/${compra.ID}`, { estado: 'Surtida' }));
+      compra.ESTADO = 'Surtida en Proveedor';
+      compra.RECIBIDA = true;
+      this.toast.success(`Orden #${compra.ID}: recolección confirmada.`);
+    } catch (err: any) {
+      const msg = err?.error?.error || err?.error?.message;
+      if (msg) {
+        this.toast.warning(msg);
+      } else {
+        this.toast.error('No se pudo confirmar la recolección. Intenta de nuevo.');
+      }
+    } finally {
+      this.confirmando.delete(compra.ID);
+    }
   }
 }
