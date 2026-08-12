@@ -10,261 +10,351 @@
     <div class="detalle-obra__error">{{ error() }}</div>
   } @else {
     @if (obra(); as ob) {
+      <!-- ═════════ HEADER FIJO (siempre visible, datos de la antigua pestaña "General") ═════════ -->
       <header class="detalle-obra__header">
-        <div class="detalle-obra__header-texto">
-          <h1>{{ ob.NOMBREOBRA ?? ob.nombre ?? '' }}</h1>
-          <p class="detalle-obra__cliente">
-            {{ ob.NOMBRECLIENTE ?? '' }}
-            @if (ob.TELEFONOCLIENTE) {
-              <span class="detalle-obra__separador">·</span>
-              <a [href]="'tel:' + ob.TELEFONOCLIENTE">{{ ob.TELEFONOCLIENTE }}</a>
-            }
-            @if (ob.CORREOCLIENTE) {
-              <span class="detalle-obra__separador">·</span>
-              <a [href]="'mailto:' + ob.CORREOCLIENTE">{{ ob.CORREOCLIENTE }}</a>
-            }
-          </p>
+        <div class="detalle-obra__header-main">
+          <div class="detalle-obra__header-texto">
+            <h1>{{ ob.NOMBREOBRA ?? ob.nombre ?? '' }}</h1>
+            <p class="detalle-obra__cliente">
+              {{ ob.NOMBRECLIENTE ?? '' }}
+              @if (ob.TELEFONOCLIENTE) {
+                <span class="detalle-obra__separador">·</span>
+                <a [href]="'tel:' + ob.TELEFONOCLIENTE">{{ ob.TELEFONOCLIENTE }}</a>
+              }
+              @if (ob.CORREOCLIENTE) {
+                <span class="detalle-obra__separador">·</span>
+                <a [href]="'mailto:' + ob.CORREOCLIENTE">{{ ob.CORREOCLIENTE }}</a>
+              }
+            </p>
 
-          <!-- ═══ SECCIÓN ESTADO DE LA OBRA ═══ -->
-          <!-- Estado real de la obra (de la base de datos vía VW_DETALLE_OBRA),
-               nunca un valor escrito manualmente. Color e ícono según el catálogo
-               EstadosObra. -->
-          <section class="estado-obra" aria-label="Estado de la obra">
-            <span class="estado-obra__label">Estado de la obra</span>
-            <span
-              class="estado-obra__pill"
-              [style.--estado-color]="estadoActualInfo().color"
-            >
-              <span class="estado-obra__dot" aria-hidden="true"></span>
-              <span class="estado-obra__nombre">{{ estadoActualInfo().nombre }}</span>
-            </span>
-          </section>
+            <!-- Sección "Estado de la obra" con pill coloreado (estado real de BD). -->
+            <section class="estado-obra" aria-label="Estado de la obra">
+              <span class="estado-obra__label">Estado de la obra</span>
+              <span class="estado-obra__pill" [style.--estado-color]="estadoActualInfo().color">
+                <span class="estado-obra__dot" aria-hidden="true"></span>
+                <span class="estado-obra__nombre">{{ estadoActualInfo().nombre }}</span>
+              </span>
+
+              <!-- Botón "Avanzar etapa": solo Propietario. La máquina de estados
+                   del SP_CAMBIAR_ESTADO_OBRA valida la transición; si el estado
+                   actual no admite avanzar, el backend responde 400. -->
+              @if (!esTrabajador() && siguienteEtapa(); as sig) {
+                <button type="button" class="btn-avanzar" (click)="avanzarEstado()">
+                  Avanzar a &laquo;{{ sig.nombre }}&raquo;
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              }
+            </section>
+          </div>
+
+          <div class="detalle-obra__medidas">
+            <div class="medida">
+              <span class="medida__valor">{{ formatoMedida(ob.ANCHO) }}</span>
+              <span class="medida__label">Ancho</span>
+            </div>
+            <div class="medida">
+              <span class="medida__valor">{{ formatoMedida(ob.ALTO) }}</span>
+              <span class="medida__label">Alto</span>
+            </div>
+            <div class="medida">
+              <span class="medida__valor">{{ formatoMedida(ob.PROFUNDIDAD) }}</span>
+              <span class="medida__label">Prof.</span>
+            </div>
+          </div>
         </div>
-        <div class="detalle-obra__medidas">
-          <div class="medida">
-            <span class="medida__valor">{{ formatoMedida(ob.ANCHO) }}</span>
-            <span class="medida__label">Ancho</span>
-          </div>
-          <div class="medida">
-            <span class="medida__valor">{{ formatoMedida(ob.ALTO) }}</span>
-            <span class="medida__label">Alto</span>
-          </div>
-          <div class="medida">
-            <span class="medida__valor">{{ formatoMedida(ob.PROFUNDIDAD) }}</span>
-            <span class="medida__label">Prof.</span>
-          </div>
-        </div>
+
+        <!-- Datos generales (antes pestaña General): bloque fijo, siempre visible. -->
+        <section class="detalle-obra__general-fija" aria-label="Información general">
+          <dl class="detalle-obra__dl">
+            <div class="detalle-obra__dl-item">
+              <dt>Cliente</dt>
+              <dd>{{ ob.NOMBRECLIENTE ?? '—' }}</dd>
+            </div>
+            <div class="detalle-obra__dl-item">
+              <dt>Dirección de la obra</dt>
+              <dd>{{ ob.DIRECCIONOBRA ?? '—' }}</dd>
+            </div>
+            <div class="detalle-obra__dl-item">
+              <dt>Dirección del cliente</dt>
+              <dd>{{ ob.DIRECCIONCLIENTE ?? '—' }}</dd>
+            </div>
+            <div class="detalle-obra__dl-item">
+              <dt>RFC</dt>
+              <dd>{{ ob.RFC ?? '—' }}</dd>
+            </div>
+            <div class="detalle-obra__dl-item">
+              <dt>Creada</dt>
+              <dd>{{ formatearFecha(ob.FECHACREACION) }}</dd>
+            </div>
+            <div class="detalle-obra__dl-item">
+              <dt>Última actualización</dt>
+              <dd>{{ formatearFecha(ob.FECHAULTIMAACTUALIZACION) }}</dd>
+            </div>
+            <div class="detalle-obra__dl-item">
+              <dt>Medidas</dt>
+              <dd>
+                {{ formatoMedida(ob.ANCHO) }} × {{ formatoMedida(ob.ALTO) }}
+                @if (ob.PROFUNDIDAD !== null && ob.PROFUNDIDAD !== undefined) {
+                  × {{ formatoMedida(ob.PROFUNDIDAD) }}
+                }
+              </dd>
+            </div>
+          </dl>
+        </section>
       </header>
 
-      <nav class="detalle-obra__tabs">
-        <button
-          type="button"
-          class="detalle-obra__tab"
-          [class.detalle-obra__tab--active]="tab() === 'general'"
-          (click)="setTab('general')"
-        >General</button>
-        <button
-          type="button"
-          class="detalle-obra__tab"
-          [class.detalle-obra__tab--active]="tab() === 'historial'"
-          (click)="setTab('historial')"
-        >Fotos y notas <span class="tab-count">{{ fotos().length + notas().length }}</span></button>
-        <button
-          type="button"
-          class="detalle-obra__tab"
-          [class.detalle-obra__tab--active]="tab() === 'trabajadores'"
-          (click)="setTab('trabajadores')"
-        >Trabajadores <span class="tab-count">{{ trabajadores().length }}</span></button>
-        @if (!esTrabajador()) {
-          <button
-            type="button"
-            class="detalle-obra__tab"
-            [class.detalle-obra__tab--active]="tab() === 'pagos'"
-            (click)="setTab('pagos')"
-          >Pagos <span class="tab-count">{{ pagos().length }}</span></button>
-        }
-      </nav>
+      <!-- ═════════ BARRA DE PESTAÑAS POR ETAPAS (visibilidad progresiva) ═════════ -->
+      @if (etapasVisibles().length > 0) {
+        <nav class="detalle-obra__tabs" aria-label="Etapas de la obra">
+          @for (e of etapasVisibles(); track e.id) {
+            <button
+              type="button"
+              class="detalle-obra__tab"
+              [class.detalle-obra__tab--active]="tab() === e.id"
+              [style.--pill-color]="colorEstado(e.nombre)"
+              (click)="setTab(e.id)"
+            >
+              <span class="detalle-obra__tab-dot" aria-hidden="true"></span>
+              {{ e.nombre }}
+            </button>
+          }
+        </nav>
 
-      <!-- ═════════ PESTAÑA GENERAL ═════════ -->
-      @if (tab() === 'general') {
-        <div class="detalle-obra__tabbody">
-          <section class="detalle-obra__card">
-            <h2 class="detalle-obra__card-title">Información general</h2>
-            <dl class="detalle-obra__dl">
-              <div class="detalle-obra__dl-item">
-                <dt>Cliente</dt>
-                <dd>{{ ob.NOMBRECLIENTE ?? '—' }}</dd>
-              </div>
-              <div class="detalle-obra__dl-item">
-                <dt>Dirección de la obra</dt>
-                <dd>{{ ob.DIRECCIONOBRA ?? '—' }}</dd>
-              </div>
-              <div class="detalle-obra__dl-item">
-                <dt>Dirección del cliente</dt>
-                <dd>{{ ob.DIRECCIONCLIENTE ?? '—' }}</dd>
-              </div>
-              <div class="detalle-obra__dl-item">
-                <dt>RFC</dt>
-                <dd>{{ ob.RFC ?? '—' }}</dd>
-              </div>
-              <div class="detalle-obra__dl-item">
-                <dt>Creada</dt>
-                <dd>{{ formatearFecha(ob.FECHACREACION) }}</dd>
-              </div>
-              <div class="detalle-obra__dl-item">
-                <dt>Última actualización</dt>
-                <dd>{{ formatearFecha(ob.FECHAULTIMAACTUALIZACION) }}</dd>
-              </div>
-              <div class="detalle-obra__dl-item">
-                <dt>Medidas</dt>
-                <dd>
-                  {{ formatoMedida(ob.ANCHO) }} × {{ formatoMedida(ob.ALTO) }}
-                  @if (ob.PROFUNDIDAD !== null && ob.PROFUNDIDAD !== undefined) {
-                    × {{ formatoMedida(ob.PROFUNDIDAD) }}
+        <!-- ═════════ CONTENIDO POR ETAPA ═════════ -->
+        @if (tab(); as idEstadoSel) {
+          <div class="detalle-obra__tabbody">
+            <!-- Trabajadores asignados a esta etapa -->
+            <section class="detalle-obra__card">
+              <h2 class="detalle-obra__card-title">
+                Trabajadores asignados &middot; {{ nombreEstado(idEstadoSel) }}
+              </h2>
+              @if (trabajadoresDeEtapa(idEstadoSel).length === 0) {
+                <p class="muted">No hay trabajadores asignados a esta etapa.</p>
+              } @else {
+                <div class="detalle-obra__tablares">
+                  @for (t of trabajadoresDeEtapa(idEstadoSel); track t.idDetalleAsignacion) {
+                    <div class="detalle-obra__tablar">
+                      <span class="detalle-obra__tablar-nombre">{{ t.nombre }}</span>
+                      @if (t.rol) {
+                        <span class="pago-tag pago-tag--muted">{{ t.rol }}</span>
+                      }
+                      @if (t.telefono) {
+                        <a class="tablar-tel" [href]="'tel:' + t.telefono">{{ t.telefono }}</a>
+                      }
+                      <time class="muted">{{ formatearFecha(t.fechaAsignacion) }}</time>
+                    </div>
                   }
-                </dd>
-              </div>
-            </dl>
-          </section>
-        </div>
+                </div>
+              }
+            </section>
+
+            <!-- Notas y fotos de esta etapa, agrupadas por trabajador -->
+            <section class="detalle-obra__card">
+              <h2 class="detalle-obra__card-title">Actividad de la etapa &middot; {{ nombreEstado(idEstadoSel) }}</h2>
+              @if (etapaSelVacia()) {
+                <p class="muted">No hay notas ni fotos registradas en esta etapa.</p>
+              } @else {
+                <div class="detalle-obra__grupos">
+                  @for (g of gruposPorAutorDeEtapa(idEstadoSel); track g.idTrabajador) {
+                    <article class="detalle-obra__grupo">
+                      <header class="detalle-obra__grupo-header">
+                        <span class="detalle-obra__grupo-avatar" aria-hidden="true">{{ (g.nombre || '?').slice(0, 2).toUpperCase() }}</span>
+                        <div class="detalle-obra__grupo-info">
+                          <span class="detalle-obra__grupo-nombre">{{ g.nombre }}</span>
+                          @if (g.rol) {
+                            <span class="pago-tag pago-tag--muted">{{ g.rol }}</span>
+                          }
+                        </div>
+                        <span class="detalle-obra__grupo-count">
+                          {{ g.notas.length }} nota(s) &middot; {{ g.fotos.length }} foto(s)
+                        </span>
+                      </header>
+
+                      @if (g.fotos.length > 0) {
+                        <div class="detalle-obra__fotos">
+                          @for (f of g.fotos; track f.id) {
+                            <figure class="detalle-obra__foto">
+                              <img [src]="urlFoto(f)" alt="Foto de la obra" loading="lazy" />
+                              <figcaption>{{ formatearFecha(f.fecha) }}</figcaption>
+                            </figure>
+                          }
+                        </div>
+                      }
+
+                      @if (g.notas.length > 0) {
+                        <ul class="detalle-obra__notas">
+                          @for (n of g.notas; track n.id) {
+                            <li class="detalle-obra__nota">
+                              <p class="detalle-obra__nota-texto">{{ n.nota }}</p>
+                              <time class="detalle-obra__nota-fecha">{{ formatearFecha(n.fecha) }}</time>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          </div>
+        }
       }
 
-      <!-- ═════════ PESTAÑA FOTOS Y NOTAS ═════════ -->
-      @if (tab() === 'historial') {
-        <div class="detalle-obra__tabbody">
-          <section class="detalle-obra__card">
-            <h2 class="detalle-obra__card-title">Fotos</h2>
-            @if (fotos().length === 0) {
-              <p class="muted">No hay fotografías registradas.</p>
-            } @else {
-              <div class="detalle-obra__fotos">
-                @for (f of fotos(); track f.id) {
-                  <figure class="detalle-obra__foto">
-                    <img [src]="urlFoto(f)" alt="Foto de la obra" loading="lazy" />
-                    <figcaption>{{ nombreEstado(f.idEstadoObra) }}</figcaption>
-                  </figure>
-                }
-              </div>
-            }
-          </section>
-
-          <section class="detalle-obra__card">
-            <h2 class="detalle-obra__card-title">Notas</h2>
-            @if (notas().length === 0) {
-              <p class="muted">No hay notas registradas.</p>
-            } @else {
-              <ul class="detalle-obra__notas">
-                @for (n of notas(); track n.id) {
-                  <li class="detalle-obra__nota">
-                    <span class="badge badge-estado-nota">{{ nombreEstado(n.idEstadoObra) }}</span>
-                    <p class="detalle-obra__nota-texto">{{ n.nota }}</p>
-                    <time class="detalle-obra__nota-fecha">{{ formatearFecha(n.fecha) }}</time>
-                  </li>
-                }
-              </ul>
-            }
-          </section>
-        </div>
-      }
-
-      <!-- ═════════ PESTAÑA TRABAJADORES ═════════ -->
-      @if (tab() === 'trabajadores') {
-        <div class="detalle-obra__tabbody">
-          <section class="detalle-obra__card">
-            <h2 class="detalle-obra__card-title">Trabajadores asignados por etapa</h2>
-            @if (trabajadores().length === 0) {
-              <p class="muted">No hay trabajadores asignados.</p>
-            } @else {
-              <div class="detalle-obra__tablares">
-                @for (t of trabajadores(); track t.idDetalleAsignacion) {
-                  <div class="detalle-obra__tablar">
-                    <span class="detalle-obra__tablar-nombre">{{ t.nombre }}</span>
-                    <span class="badge badge-estado">{{ t.estadoObra || nombreEstado(t.idEstadoObra) }}</span>
-                    @if (t.telefono) {
-                      <a class="tablar-tel" [href]="'tel:' + t.telefono">{{ t.telefono }}</a>
-                    }
-                    <time class="muted">{{ formatearFecha(t.fechaAsignacion) }}</time>
-                  </div>
-                }
-              </div>
-            }
-          </section>
-        </div>
-      }
-
-      <!-- ═════════ PESTAÑA PAGOS ═════════ -->
-      @if (tab() === 'pagos' && !esTrabajador()) {
-        <div class="detalle-obra__tabbody">
-          <!-- Resumen financiero: tarjetas de Total pagado y Saldo pendiente.
-               Nota: el esquema actual de la BD NO define un "Total de la obra"
-               (no hay columna PresupuestoTotal en Obras); solo existen pagos
-               individuales en DetallesPagos.Monto. Por ello NO se inventa ni
-               se endurece un total en el frontend (RNF-05: no duplicar
-               cálculos inexistentes). El saldo se muestra como "N/D" en lugar
-               de forzar Saldo = -Total pagado. -->
-          <section class="pagos-resumen" aria-label="Resumen de pagos">
-            <article class="pago-card pago-card--paid">
-              <span class="pago-card__label">Total pagado</span>
-              <span class="pago-card__valor">{{ formatearMonto(totalPagos()) }}</span>
-              <span class="pago-card__sub">{{ pagos().length }} pago(s) registrado(s)</span>
-            </article>
-            <article class="pago-card pago-card--pending">
-              <span class="pago-card__label">Saldo pendiente</span>
-              <span class="pago-card__valor pago-card__valor--muted">N/D</span>
-              <span class="pago-card__sub">Sin total de obra definido</span>
-            </article>
-          </section>
-
-          <section class="detalle-obra__card">
+      <!-- ═════════ SECCIÓN DE PAGOS (solo Propietario/Admin) ═════════ -->
+      @if (!esTrabajador()) {
+        <section class="detalle-obra__pagos-seccion" aria-label="Pagos de la obra">
+          <div class="detalle-obra__card">
             <div class="detalle-obra__card-header-row">
-              <h2 class="detalle-obra__card-title">Historial de pagos</h2>
-              <span class="total-pagos">Pagado: {{ formatearMonto(totalPagos()) }}</span>
+              <h2 class="detalle-obra__card-title">Pagos</h2>
+              <div class="pagos-acciones">
+                <button type="button" class="btn-pago" (click)="abrirModalPago('Parcial')">
+                  Registrar pago parcial
+                </button>
+                <button type="button" class="btn-pago btn-pago--primary" (click)="abrirModalPago('Liquidación')">
+                  Registrar liquidación
+                </button>
+              </div>
             </div>
+
+            <!-- Total y # de pagos. NO se calcula saldo: el sistema no maneja
+                 un monto total cotizado de la obra (no existe columna
+                 PresupuestoTotal en Obras), por requerimiento explícito. -->
+            <div class="pagos-resumen">
+              <article class="pago-card pago-card--paid">
+                <span class="pago-card__label">Total pagado</span>
+                <span class="pago-card__valor">{{ formatearMonto(totalPagos()) }}</span>
+                <span class="pago-card__sub">{{ pagos().length }} pago(s) registrado(s)</span>
+              </article>
+            </div>
+
+            <h3 class="pagos-subtitle">Historial de pagos</h3>
             @if (pagos().length === 0) {
               <p class="muted">No hay pagos registrados.</p>
             } @else {
               <div class="pagos-tabla" role="table" aria-label="Historial de pagos">
                 <div class="pagos-tabla__head" role="row">
-                  <span class="pagos-tabla__col pagos-tabla__col--fecha" role="columnheader">Fecha</span>
-                  <span class="pagos-tabla__col pagos-tabla__col--concepto" role="columnheader">Concepto</span>
-                  <span class="pagos-tabla__col pagos-tabla__col--estado" role="columnheader">Estado</span>
-                  <span class="pagos-tabla__col pagos-tabla__col--autor" role="columnheader">Registrado por</span>
-                  <span class="pagos-tabla__col pagos-tabla__col--monto" role="columnheader">Monto</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--fecha"   role="columnheader">Fecha</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--tipo"    role="columnheader">Tipo</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--forma"   role="columnheader">Forma</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--autor"   role="columnheader">Recibido por</span>
+                  <span class="pagos-tabla__col pagos-tabla__col--monto"   role="columnheader">Monto</span>
                 </div>
                 @for (p of pagos(); track p.id) {
                   <div class="pagos-tabla__row" role="row">
-                    <span class="pagos-tabla__col pagos-tabla__col--fecha" role="cell">{{ formatearFecha(p.fecha) }}</span>
-                    <span class="pagos-tabla__col pagos-tabla__col--concepto" role="cell">
-                      @if (p.formaPago) {
-                        <span class="pago-tag">{{ p.formaPago }}</span>
-                      }
+                    <span class="pagos-tabla__col pagos-tabla__col--fecha"   role="cell">{{ formatearFecha(p.fecha) }}</span>
+                    <span class="pagos-tabla__col pagos-tabla__col--tipo"   role="cell">
                       @if (p.tipoPago) {
                         <span class="pago-tag pago-tag--muted">{{ p.tipoPago }}</span>
-                      }
-                      @if (!p.formaPago && !p.tipoPago) {
-                        <span class="muted">—</span>
-                      }
+                      } @else { <span class="muted">—</span> }
                     </span>
-                    <span class="pagos-tabla__col pagos-tabla__col--estado" role="cell">
-                      @if (p.estadoObra) {
-                        <span class="badge badge-estado">{{ p.estadoObra }}</span>
-                      } @else {
-                        <span class="muted">—</span>
-                      }
+                    <span class="pagos-tabla__col pagos-tabla__col--forma"   role="cell">
+                      @if (p.formaPago) {
+                        <span class="pago-tag">{{ p.formaPago }}</span>
+                      } @else { <span class="muted">—</span> }
                     </span>
-                    <span class="pagos-tabla__col pagos-tabla__col--autor" role="cell">
-                      @if (p.trabajador) {
-                        {{ p.trabajador }}
-                      } @else {
-                        <span class="muted">—</span>
-                      }
+                    <span class="pagos-tabla__col pagos-tabla__col--autor"   role="cell">
+                      @if (p.trabajador) { {{ p.trabajador }} } @else { <span class="muted">—</span> }
                     </span>
-                    <span class="pagos-tabla__col pagos-tabla__col--monto" role="cell">{{ formatearMonto(p.monto) }}</span>
+                    <span class="pagos-tabla__col pagos-tabla__col--monto"   role="cell">{{ formatearMonto(p.monto) }}</span>
                   </div>
                 }
               </div>
             }
-          </section>
+          </div>
+        </section>
+      }
+
+      <!-- ═════════ MODAL DE REGISTRO DE PAGO ═════════ -->
+      @if (modalPagoAbierto()) {
+        <div class="modal-backdrop" (click)="cerrarModalPago()" aria-hidden="true"></div>
+        <div class="modal-pago" role="dialog" aria-modal="true" aria-label="Registrar pago">
+          <header class="modal-pago__header">
+            <h2>Registrar pago</h2>
+            <button type="button" class="modal-pago__close" (click)="cerrarModalPago()" aria-label="Cerrar">&times;</button>
+          </header>
+
+          <div class="modal-pago__body">
+            <label class="modal-pago__field">
+              <span class="modal-pago__label">Monto (MXN) *</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                [value]="formPago().monto ?? ''"
+                (input)="setPagoMonto($any($event.target).value)"
+                placeholder="0.00"
+                class="modal-pago__input"
+              />
+            </label>
+
+            <fieldset class="modal-pago__field">
+              <legend class="modal-pago__label">Tipo de pago *</legend>
+              <div class="modal-pago__opciones">
+                @for (op of OPC_FORMAS_PAGO; track op.id) {
+                  <button
+                    type="button"
+                    class="modal-pago__chip"
+                    [class.modal-pago__chip--active]="formPago().idFormaPago === op.id"
+                    (click)="setPagoForma(op.id)"
+                  >{{ op.label }}</button>
+                }
+              </div>
+            </fieldset>
+
+            <fieldset class="modal-pago__field">
+              <legend class="modal-pago__label">Forma de pago *</legend>
+              <div class="modal-pago__opciones">
+                @for (op of OPC_TIPOS_PAGO; track op.id) {
+                  <button
+                    type="button"
+                    class="modal-pago__chip"
+                    [class.modal-pago__chip--active]="formPago().idTipoPago === op.id"
+                    (click)="setPagoTipo(op.id)"
+                  >{{ op.label }}</button>
+                }
+              </div>
+            </fieldset>
+
+            <label class="modal-pago__field">
+              <span class="modal-pago__label">Quién lo recibió *</span>
+              <select
+                class="modal-pago__input modal-pago__input--select"
+                [value]="formPago().idTrabajadorReceptor ?? ''"
+                (change)="setPagoReceptor(num($any($event.target).value))"
+              >
+                @if (!formPago().idTrabajadorReceptor) {
+                  <option value="" disabled>Selecciona una persona</option>
+                }
+                @for (t of trabajadoresLista(); track t.idTrabajador) {
+                  <option [value]="t.idTrabajador">
+                    {{ t.nombreCompleto }} ({{ t.rol }})
+                  </option>
+                }
+              </select>
+            </label>
+
+            <label class="modal-pago__field">
+              <span class="modal-pago__label">Fecha del pago *</span>
+              <input
+                type="date"
+                [value]="formPago().fechaPago"
+                (input)="setPagoFecha($any($event.target).value)"
+                class="modal-pago__input"
+              />
+            </label>
+
+            @if (formPago().errorValidacion) {
+              <p class="modal-pago__error" role="alert">{{ formPago().errorValidacion }}</p>
+            }
+          </div>
+
+          <footer class="modal-pago__footer">
+            <button type="button" class="btn-pago" (click)="cerrarModalPago()" [disabled]="formPago().guardando">Cancelar</button>
+            <button type="button" class="btn-pago btn-pago--primary" (click)="guardarPago()" [disabled]="formPago().guardando">
+              {{ formPago().guardando ? 'Guardando…' : 'Registrar pago' }}
+            </button>
+          </footer>
         </div>
       }
     }
