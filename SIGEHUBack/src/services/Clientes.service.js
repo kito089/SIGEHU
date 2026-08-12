@@ -190,7 +190,7 @@ const getTrabajosByCliente = async (idCliente) => {
     for (const t of trabajos ?? []) {
         const obras = await db.query(
             CON_OBRAS + ' AND o.TRABAJOS_IDTRABAJO = ? ORDER BY o.Nombre',
-            [idCliente, t.idTrabajo]
+            [idCliente, t.IDTRABAJO ?? t.idTrabajo]
         );
         trabajosConObras.push({ ...t, obras });
     }

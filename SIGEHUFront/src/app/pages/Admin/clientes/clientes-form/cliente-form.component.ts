@@ -125,55 +125,68 @@ export class ClienteFormComponent implements OnInit {
       }),
     });
 
-    this.aplicarValidacionTipo(group, this.tipo());
+    this.aplicarValidacionTipo(group);
     return group;
   }
 
-  // Validación condicional según el tipo y el estado del switch "Datos
-  // Fiscales":
-  //   - Persona: exige al menos un teléfono o un correo (validator cruzado a
-  //     nivel FormGroup). El RFC es opcional (12-13 caracteres).
-  //   - Empresa: el RFC es obligatorio SOLO cuando el switch Datos Fiscales
-  //     está activado (12-13 caracteres). Sin el switch, no se exige.
-  private aplicarValidacionTipo(group: FormGroup, tipo: ClienteTipo): void {
-    if (tipo === 'persona') {
+  // Validación condicional según el tipo:
+  //   - Persona: exige al menos un Teléfono O un Correo (validator cruzado
+  //     a nivel FormGroup, regulado por RF-03).
+  //   - Empresa: los medios de contacto se gestionan vía la lista de
+  //     Contactos (al menos 1 obligatorio, validado en onSubmit), por lo
+  //     que el FormGroup no aplica el validator Teléfono/Correo directo.
+  //   - Ambos tipos: RFC obligatorio (12-13 caracteres) SÓLO cuando el
+  //     switch "Datos Fiscales" está activado. Para empresa el switch es
+  //     activable (ON/OFF); si se desactiva, los campos fiscales se
+  //     ocultan y el RFC deja de ser obligatorio.
+  private aplicarValidacionTipo(group: FormGroup): void {
+    if (this.tipo() === 'persona') {
       group.setValidators([telefonoOcorreoRequired]);
     } else {
       group.setValidators([]);
-      // Al crear/editar una Empresa el switch se enciende por defecto (es lo
-      // habitual). En edición, aplicarEdicion lo restaura según lo que ya
-      // esté guardado una vez terminado el patchValue.
     }
-
-    this.actualizarValidacionRfc(group, tipo);
+    this.actualizarValidacionFiscal(group);
     group.updateValueAndValidity();
   }
 
-  // Aplica los validators del RFC según tipo + switch. Se re-evalúa al
-  // alternar el checkbox Datos Fiscales para no exigir RFC en empresas sin
-  // datos fiscales capturados.
-  private actualizarValidacionRfc(group: FormGroup, tipo: ClienteTipo): void {
+  // Ajusta los validadores del RFC en función del estado del switch
+  // "Datos Fiscales". Se invoca al cambiar de tipo y cada vez que el switch
+  // cambia de valor (valueChanges del control datosFiscales).
+  private actualizarValidacionFiscal(group: FormGroup): void {
     const rfc = group.get(['fiscal', 'rfc']);
-    const datosFiscales = group.get(['fiscal', 'datosFiscales'])?.value;
+    const datosFiscalesOn = !!group.get(['fiscal', 'datosFiscales'])?.value;
+
     rfc?.clearValidators();
-    const base = [Validators.minLength(12), Validators.maxLength(13), Validators.pattern(RFC_PATTERN)];
-    if (tipo === 'empresa' && datosFiscales) {
-      rfc?.addValidators([Validators.required, ...base]);
+    if (datosFiscalesOn) {
+      rfc?.addValidators([Validators.required, Validators.minLength(12), Validators.maxLength(13), Validators.pattern(RFC_PATTERN)]);
     } else {
-      rfc?.addValidators(base);
+      rfc?.addValidators([Validators.minLength(12), Validators.maxLength(13), Validators.pattern(RFC_PATTERN)]);
     }
     rfc?.updateValueAndValidity();
   }
 
+  // Cambia el tipo de cliente (Persona | Empresa) y recalibra validaciones.
   setTipo(tipo: ClienteTipo): void {
     this.tipo.set(tipo);
-    // Al elegir Empresa el switch Datos Fiscales se enciende por defecto
-    // (habitual en negocios). En edición, aplicarEdicion lo restaura según
-    // lo registrado.
-    if (tipo === 'empresa') {
-      this.form.get(['fiscal', 'datosFiscales'])?.setValue(true);
+    this.aplicarValidacionTipo(this.form);
+  }
+
+  // Reacción al switch "Datos Fiscales": recalibra la obligatoriedad del RFC
+  // según el nuevo estado del switch. Lo enlaza el HTML vía (change).
+  onDatosFiscalesToggle(): void {
+    const group = this.form;
+    const datosFiscales = group.get(['fiscal', 'datosFiscales'])?.value;
+    // Si se apaga el switch, limpiar los campos fiscales para no enviar
+    // datos parciales/huérfanos al backend (coherente con el guardado).
+    if (!datosFiscales) {
+      group.get(['fiscal', 'rfc'])?.setValue('');
+      group.get(['fiscal', 'razonSocial'])?.setValue('');
+      group.get(['fiscal', 'regimenFiscal'])?.setValue('');
+      group.get(['fiscal', 'usoCFDI'])?.setValue('');
+      group.get(['fiscal', 'codigoPostal'])?.setValue('');
+      group.get(['fiscal', 'direccionFiscal'])?.setValue('');
     }
-    this.aplicarValidacionTipo(this.form, tipo);
+    this.actualizarValidacionFiscal(group);
   }
 
   // Al alternar el switch Datos Fiscales se actualizan los validators del RFC
@@ -186,6 +199,22 @@ export class ClienteFormComponent implements OnInit {
   // requieren al menos un contacto registrado.
   get requiereContacto(): boolean {
     return this.tipo() === 'empresa';
+  }
+
+  // Validador cruzado `telefonoOcorreoRequired` (a nivel FormGroup):
+  // solo aplica a Persona. Devuelve TRUE cuando ambos medios están vacíos.
+  // NO depende de `touched`/`dirty`/`submitted`: el mensaje es visible
+  // desde el primer render (formulario recién abierto con ambos vacíos) y
+  // desaparece/reaparece de forma reactiva en cuanto cambia el contenido.
+  get telefonoOcorreoInvalido(): boolean {
+    if (this.tipo() !== 'persona') return false;
+    return this.form.errors?.['telefonoOcorreo'] === true;
+  }
+
+  // Empresa sin contactos: bandera para mostrar la leyenda y bloquear el
+  // guardado (coincide con la verificación de onSubmit).
+  get faltaContactoEmpresa(): boolean {
+    return this.tipo() === 'empresa' && this.contactos().length === 0;
   }
 
   // Catálogos del módulo Clientes ------------------------------------------
@@ -264,7 +293,7 @@ export class ClienteFormComponent implements OnInit {
     if (this.form.invalid || (this.tipo() === 'empresa' && this.contactos().length === 0)) {
       this.form.markAllAsTouched();
       this.toast.warning(this.tipo() === 'empresa' && this.contactos().length === 0
-        ? 'Registra al menos un contacto para la empresa.'
+        ? 'Es necesario mínimo 1 contacto'
         : 'Corrige los campos marcados antes de guardar.');
       return;
     }
@@ -425,8 +454,7 @@ export class ClienteFormComponent implements OnInit {
 
   private aplicarEdicion(data: ClienteForm): void {
     this.tipo.set(data.tipo);
-
-    const datosFiscalesGuardados = !!(data.rfc || data.razonSocial || data.regimenFiscal || data.codigoPostal || data.direccionFiscal);
+    this.aplicarValidacionTipo(this.form);
 
     this.form.patchValue({
       nombre: data.nombre,
@@ -445,7 +473,9 @@ export class ClienteFormComponent implements OnInit {
       },
     });
 
-    this.aplicarValidacionTipo(this.form, this.tipo());
+    // Recalibra los validadores del RFC según el estado del switch tras
+    // cargar los datos fiscales existentes (pueden venir activos).
+    this.actualizarValidacionFiscal(this.form);
 
     if (data.contactos && data.contactos.length) {
       this.contactos.set(data.contactos);

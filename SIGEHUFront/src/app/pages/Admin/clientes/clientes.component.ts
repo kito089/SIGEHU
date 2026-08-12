@@ -73,7 +73,6 @@ export class ClientesComponent implements OnInit {
     { key: 'nombre', label: 'Nombre / Razón social' },
     { key: 'telefono', label: 'Teléfono' },
     { key: 'correo', label: 'Correo' },
-    { key: 'rfc', label: 'RFC' },
     { key: 'obrasActivas', label: 'Obras activas' },
     { key: 'datosSat', label: 'Datos SAT' },
   ];
