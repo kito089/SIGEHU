@@ -12,7 +12,7 @@ import { EnvService } from '../../../services/env.service';
 import { OfflineSyncService } from '../../../services/offline-sync.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
 import { PermisosService } from '../../../core/services/permisos.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface ObraLevantamiento {
   ID: number;
@@ -37,7 +37,7 @@ interface FotoPendiente {
 @Component({
   selector: 'app-levantamientos',
   standalone: true,
-  imports: [CommonModule, IonicModule, ReactiveFormsModule, MobileHeaderComponent],
+  imports: [CommonModule, IonicModule, ReactiveFormsModule],
   templateUrl: './levantamientos.component.html',
   styleUrls: ['./levantamientos.component.scss'],
 })
@@ -59,7 +59,7 @@ export class LevantamientosComponent implements OnInit, OnDestroy {
   guardando = false;
   finalizado = false;
 
-  // Datos reales de la obra seleccionada (cargados desde /Obras/detalle/:id).
+  // Datos reales de la obra seleccionada (endpoint seguro /Obras/movil/:id).
   detalle: {
     cliente?: string;
     direccion?: string;
@@ -149,8 +149,8 @@ export class LevantamientosComponent implements OnInit, OnDestroy {
       this.permisos.cargarPermisos(obra.ID, user.idTrabajador);
     }
 
-    // Detalle para obtener teléfono/dirección fiables (VW_DETALLE_OBRA).
-    this.api.get<any>(`/Obras/detalle/${obra.ID}`).subscribe({
+    // Detalle seguro (P0.2): devuelve solo lo permitido al trabajador, sin RFC.
+    this.api.get<any>(`/Obras/movil/${obra.ID}`).subscribe({
       next: (d) => {
         if (!d) return;
         this.detalle = {

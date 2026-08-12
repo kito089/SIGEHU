@@ -1,5 +1,6 @@
 import { getConnection } from "../config/db.js";
 import audit from "./Auditoria.service.js";
+import obrasTrabajadores from "./ObrasTrabajadores.service.js";
 
 // ─── Resolución de estado de obra por nombre (app móvil) ─────────────────
 // La app móvil envía nombres amigables de etapa ("X Pendiente de Validación")
@@ -135,6 +136,79 @@ const getDetalleObra = async (id) => {
     const db = await getConnection();
     const rows = await db.query("SELECT * FROM VW_DETALLE_OBRA WHERE idObra = ?", [id]);
     return rows[0] ?? null;
+};
+
+// ─── GET Detalle de obra para vistas móviles (P0.2) ─────────────────────────
+// Endpoint SEGURO para el flujo móvil del trabajador. NUNCA devuelve RFC ni
+// información financiera/fiscal (a diferencia de VW_DETALLE_OBRA, que solo se
+// usa en administración).
+//   - Propietario: acceso a los campos seguros sin filtros granulares.
+//   - Trabajador:   exige asignación a la obra y aplica la whitelist de permisos
+//                   granulares existente (CamposPermiso: direccion_instalacion,
+//                   telefono_cliente). Reutiliza getPermisos de ObrasTrabajadores.
+// Retorna: fila con los campos seguros | { forbidden: true } | null (no existe).
+const getDetalleTrabajador = async (idObra, idTrabajador, rol) => {
+    const db = await getConnection();
+
+    if (rol !== 'Propietario') {
+        if (!idTrabajador) return { forbidden: true };
+
+        const asignacion = await db.query(
+            `SELECT 1 FROM Obras_has_Trabajadores
+             WHERE Obras_idObra = ? AND Trabajadores_idTrabajador = ?`,
+            [idObra, idTrabajador]
+        );
+        if (!asignacion || asignacion.length === 0) {
+            return { forbidden: true };
+        }
+    }
+
+    const rows = await db.query(
+        `SELECT o.idObra          AS IDOBRA,
+                o.Nombre          AS NOMBREOBRA,
+                o.Direccion       AS DIRECCIONOBRA,
+                c.NombreCompleto  AS NOMBRECLIENTE,
+                e.idEstadoObra    AS IDESTADOOBRA,
+                e.Nombre          AS ESTADOBRA
+         FROM Obras o
+         JOIN Clientes c ON c.idCliente = o.Clientes_idCliente
+         JOIN EstadosObra e ON e.idEstadoObra = o.EstadosObra_idEstadoObra
+         WHERE o.idObra = ? AND o.Activo = TRUE`,
+        [idObra]
+    );
+
+    if (!rows || rows.length === 0) return null;
+
+    const obra = rows[0];
+
+    // Permisos granulares: reutiliza la arquitectura existente (whitelist).
+    let permisos;
+    if (rol === 'Propietario') {
+        permisos = new Set(['direccion_instalacion', 'telefono_cliente']);
+    } else {
+        const lista = await obrasTrabajadores.getPermisos(idObra, idTrabajador);
+        permisos = new Set((lista || []).map(p => String(p.NOMBRECAMPO ?? p.NombreCampo)));
+    }
+
+    if (!permisos.has('direccion_instalacion')) {
+        obra.DIRECCIONOBRA = null;
+    }
+
+    if (permisos.has('telefono_cliente')) {
+        const tel = await db.query(
+            `SELECT FIRST 1 cc.Telefono AS Telefono
+             FROM ContactosClientes cc
+             JOIN Obras o ON o.Clientes_idCliente = cc.Clientes_idCliente
+             WHERE o.idObra = ? AND cc.Telefono IS NOT NULL
+             ORDER BY cc.idContactoCliente`,
+            [idObra]
+        );
+        obra.TELEFONOCLIENTE = tel?.[0]?.TELEFONO ?? null;
+    } else {
+        obra.TELEFONOCLIENTE = null;
+    }
+
+    return obra;
 };
 
 // ─── INSERT ───────────────────────────────────────────────────────────────────
@@ -581,6 +655,7 @@ export default {
     getObras,
     getObraById,
     getDetalleObra,
+    getDetalleTrabajador,
     createObra,
     updateObra,
     deleteObra,

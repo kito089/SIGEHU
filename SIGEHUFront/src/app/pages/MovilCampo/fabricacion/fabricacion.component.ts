@@ -11,7 +11,7 @@ import { EnvService } from '../../../services/env.service';
 import { OfflineSyncService } from '../../../services/offline-sync.service';
 import { WorkerLayoutService } from '../../../core/services/worker-layout.service';
 import { PermisosService } from '../../../core/services/permisos.service';
-import { WorkerHeaderComponent } from '../../../shared/components/worker-header/worker-header.component';
+import { MobileHeaderComponent } from '../../../shared/components/layout/mobile-header/mobile-header.component';
 
 interface MaterialObra {
   idMaterial?: number;

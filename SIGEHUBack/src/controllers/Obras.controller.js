@@ -41,6 +41,30 @@ const getDetalle = async (req, res) => {
     }
 };
 
+// GET /obras/movil/:id (ruta especifica antes de /:id)
+// Detalle seguro para las vistas móviles de trabajador. Reutiliza la whitelist
+// de permisos granulares existente y jamás expone RFC/fiscales (P0.2).
+const getDetalleMovil = async (req, res) => {
+    try {
+        const obra = await service.getDetalleTrabajador(
+            req.params.id,
+            req.user?.idTrabajador,
+            req.user?.rol
+        );
+
+        if (!obra) {
+            return res.status(404).json({ error: "Obra no encontrada" });
+        }
+        if (obra.forbidden) {
+            return res.status(403).json({ error: "No tienes acceso a esta obra" });
+        }
+
+        res.json(obra);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 // POST /obras
 const create = async (req, res) => {
     try {
@@ -228,4 +252,4 @@ const getEstados = async (_req, res) => {
     }
 };
 
-export default { getAll, getDetalle, create, update, remove, cambiarEstado, getById, getEstados };
+export default { getAll, getDetalle, getDetalleMovil, create, update, remove, cambiarEstado, getById, getEstados };

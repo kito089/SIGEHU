@@ -153,7 +153,7 @@ export class InstalacionComponent implements OnInit, OnDestroy {
       this.permisos.cargarPermisos(obra.ID, user.idTrabajador);
     }
 
-    this.api.get<any>(`/Obras/detalle/${obra.ID}`).subscribe({
+    this.api.get<any>(`/Obras/movil/${obra.ID}`).subscribe({
       next: (d) => {
         if (!d) return;
         this.detalle = {
