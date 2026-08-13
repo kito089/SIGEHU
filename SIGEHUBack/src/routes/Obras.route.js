@@ -20,5 +20,7 @@ router.put("/:id", controller.update);
 // y el Propietario acepta/rechaza aquí.
 router.delete("/:id", auth.requireRole('Propietario'), controller.remove);
 router.patch("/:id/estado", auth.requireRole('Propietario'), controller.cambiarEstado);
+// Fechas por etapa del Detalle de Obra (solo Propietario).
+router.patch("/:id/fechas-etapas", auth.requireRole('Propietario'), controller.cambiarFechasEtapas);
 
 export default router;

@@ -35,13 +35,20 @@
                 <span class="estado-obra__nombre">{{ estadoActualInfo().nombre }}</span>
               </span>
 
-              <!-- Botón "Avanzar etapa": solo Propietario. La máquina de estados
-                   del SP_CAMBIAR_ESTADO_OBRA valida la transición; si el estado
-                   actual no admite avanzar, el backend responde 400. -->
-              @if (!esTrabajador() && siguienteEtapa(); as sig) {
+              <!-- Botón "Avanzar etapa": solo Propietario y fuera de la etapa
+                   terminal (Instalado/Garantía), donde el cierre es Finalizar. -->
+              @if (mostrarBotonAvanzar() && siguienteEtapa(); as sig) {
                 <button type="button" class="btn-avanzar" (click)="avanzarEstado()">
                   Avanzar a &laquo;{{ sig.nombre }}&raquo;
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              }
+
+              <!-- Botón "Finalizar obra": solo Propietario cuando la obra está
+                   en Instalado (5) o Garantía (6). Acción irreversible. -->
+              @if (mostrarBotonFinalizar()) {
+                <button type="button" class="btn-pago btn-pago--finalizar" (click)="finalizarObra()" [disabled]="finalizandoObra()">
+                  {{ finalizandoObra() ? 'Finalizando…' : 'Finalizar obra' }}
                 </button>
               }
             </section>
@@ -83,6 +90,10 @@
               <dd>{{ ob.RFC ?? '—' }}</dd>
             </div>
             <div class="detalle-obra__dl-item">
+              <dt>Fecha de inicio</dt>
+              <dd>{{ formatearFecha(ob.FECHAINICIO ?? ob.FechaInicio) }}</dd>
+            </div>
+            <div class="detalle-obra__dl-item">
               <dt>Creada</dt>
               <dd>{{ formatearFecha(ob.FECHACREACION) }}</dd>
             </div>
@@ -103,99 +114,436 @@
         </section>
       </header>
 
-      <!-- ═════════ BARRA DE PESTAÑAS POR ETAPAS (visibilidad progresiva) ═════════ -->
-      @if (etapasVisibles().length > 0) {
+      <!-- ═════════ VISTA FINAL DE OBRA FINALIZADA (sin pestañas) ═════════ -->
+      @if (esFinalizada()) {
+        <section class="detalle-obra__card">
+          <div class="detalle-obra__card-header-row">
+            <h2 class="detalle-obra__card-title">Resumen final de la obra</h2>
+            <span class="pago-tag pago-tag--finalizado">Finalizada</span>
+          </div>
+          <div class="detalle-obra__resumen">
+            @for (r of resumenEtapas(); track r.id) {
+              <article class="resumen-etapa" [style.--resumen-color]="r.color">
+                <span class="resumen-etapa__dot" aria-hidden="true"></span>
+                <h3>{{ r.nombre }}</h3>
+                <dl>
+                  <dt>Fecha</dt><dd>{{ r.fecha ? formatearFecha(r.fecha) : '—' }}</dd>
+                  <dt>Trabajadores</dt><dd>{{ r.trabajadores }}</dd>
+                  <dt>Notas</dt><dd>{{ r.notas }}</dd>
+                  <dt>Fotos</dt><dd>{{ r.fotos }}</dd>
+                </dl>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section class="detalle-obra__card detalle-obra__card--placeholder">
+          <h2 class="detalle-obra__card-title">Garantías</h2>
+          <p class="muted">La gestión de garantías estará disponible próximamente.</p>
+        </section>
+      }
+
+      <!-- ═════════ BARRA DE PESTAÑAS POR ETAPAS (todas visibles) ═════════ -->
+      @if (!esFinalizada() && etapasVisibles().length > 0) {
         <nav class="detalle-obra__tabs" aria-label="Etapas de la obra">
           @for (e of etapasVisibles(); track e.id) {
             <button
               type="button"
               class="detalle-obra__tab"
-              [class.detalle-obra__tab--active]="tab() === e.id"
+              [class.detalle-obra__tab--sel]="tab() === e.id"
+              [class.detalle-obra__tab--actual]="etapaActualBarra()?.id === e.id"
+              [class.detalle-obra__tab--locked]="clasificacionEtapa(e.id) === 'futura'"
               [style.--pill-color]="colorEstado(e.nombre)"
               (click)="setTab(e.id)"
             >
               <span class="detalle-obra__tab-dot" aria-hidden="true"></span>
               {{ e.nombre }}
+              @if (clasificacionEtapa(e.id) === 'futura') {
+                <svg class="detalle-obra__tab-lock" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              }
             </button>
           }
         </nav>
 
         <!-- ═════════ CONTENIDO POR ETAPA ═════════ -->
         @if (tab(); as idEstadoSel) {
+          @let clas = clasificacionEtapa(idEstadoSel);
           <div class="detalle-obra__tabbody">
-            <!-- Trabajadores asignados a esta etapa -->
-            <section class="detalle-obra__card">
-              <h2 class="detalle-obra__card-title">
-                Trabajadores asignados &middot; {{ nombreEstado(idEstadoSel) }}
-              </h2>
-              @if (trabajadoresDeEtapa(idEstadoSel).length === 0) {
-                <p class="muted">No hay trabajadores asignados a esta etapa.</p>
-              } @else {
-                <div class="detalle-obra__tablares">
-                  @for (t of trabajadoresDeEtapa(idEstadoSel); track t.idDetalleAsignacion) {
-                    <div class="detalle-obra__tablar">
-                      <span class="detalle-obra__tablar-nombre">{{ t.nombre }}</span>
-                      @if (t.rol) {
-                        <span class="pago-tag pago-tag--muted">{{ t.rol }}</span>
+            @if (clas === 'futura') {
+              <!-- Etapa futura: bloqueada con mensaje orientativo. -->
+              <div class="detalle-obra__lock" role="note">
+                <svg class="detalle-obra__lock-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <p>{{ mensajeBloqueo() }}</p>
+              </div>
+            } @else {
+              <!-- ── Etapa Levantamiento (2) ───────────────────────────────── -->
+              @if (idEstadoSel === 2) {
+                <section class="detalle-obra__card">
+                  <h2 class="detalle-obra__card-title">Levantamiento</h2>
+                  <dl class="detalle-obra__dl">
+                    <div class="detalle-obra__dl-item">
+                      <dt>¿Quién envió las medidas?</dt>
+                      <dd>
+                        @if (trabajadoresDeEtapa(2).length === 0) {
+                          <span class="muted">—</span>
+                        } @else {
+                          {{ nombresTrabajadores(2) }}
+                        }
+                      </dd>
+                    </div>
+                    <div class="detalle-obra__dl-item">
+                      <dt>Fecha programada del levantamiento</dt>
+                      <dd>
+                        <input
+                          type="date"
+                          class="modal-pago__input detalle-obra__fecha-input"
+                          [value]="fechaEtapa('FechaLevantamiento')"
+                          (change)="guardarFechaEtapa('FechaLevantamiento', $any($event.target).value)"
+                          [disabled]="esTrabajador() || clas !== 'actual' || guardandoFecha() !== null"
+                        />
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              }
+
+              <!-- ── Etapa Fabricación (3) ─────────────────────────────────── -->
+              @if (idEstadoSel === 3) {
+                <section class="detalle-obra__card">
+                  <h2 class="detalle-obra__card-title">Fabricación</h2>
+                  <dl class="detalle-obra__dl">
+                    <div class="detalle-obra__dl-item">
+                      <dt>Fecha de inicio de fabricación</dt>
+                      <dd>
+                        <input
+                          type="date"
+                          class="modal-pago__input detalle-obra__fecha-input"
+                          [value]="fechaEtapa('FechaFabricacion')"
+                          (change)="guardarFechaEtapa('FechaFabricacion', $any($event.target).value)"
+                          [disabled]="esTrabajador() || clas !== 'actual' || guardandoFecha() !== null"
+                        />
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section class="detalle-obra__card">
+                  <div class="detalle-obra__card-header-row">
+                    <h2 class="detalle-obra__card-title">Materiales para la obra</h2>
+                  </div>
+
+                  <!-- Formulario (solo Propietario en la etapa actual). -->
+                  @if (!esTrabajador() && clas === 'actual') {
+                    <div class="detalle-obra__form">
+                      <label class="detalle-obra__form-field">
+                        <span class="modal-pago__label">Material *</span>
+                        <select
+                          class="modal-pago__input modal-pago__input--select"
+                          [value]="materialSel() ?? ''"
+                          (change)="setMaterialSel(num($any($event.target).value))"
+                        >
+                          @if (!materialSel()) {
+                            <option value="" disabled>Selecciona un material</option>
+                          }
+                          @for (m of materialesCatalogo(); track m.id) {
+                            <option [value]="m.id">{{ m.nombre }}{{ m.unidadMedida ? ' (' + m.unidadMedida + ')' : '' }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label class="detalle-obra__form-field">
+                        <span class="modal-pago__label">Cantidad</span>
+                        <input type="number" min="0" step="0.01" inputmode="decimal"
+                          class="modal-pago__input"
+                          [value]="materialCantidad()"
+                          (input)="setMaterialCantidad($any($event.target).value)"
+                          placeholder="0.00"
+                        />
+                      </label>
+                      <label class="detalle-obra__form-field">
+                        <span class="modal-pago__label">Medida</span>
+                        <input type="text"
+                          class="modal-pago__input"
+                          [value]="materialMedida()"
+                          (input)="setMaterialMedida($any($event.target).value)"
+                          placeholder="Ej. 4 m / 3 piezas"
+                        />
+                      </label>
+                      <label class="detalle-obra__form-field detalle-obra__form-field--wide">
+                        <span class="modal-pago__label">Notas</span>
+                        <input type="text"
+                          class="modal-pago__input"
+                          [value]="materialNotas()"
+                          (input)="setMaterialNotas($any($event.target).value)"
+                          placeholder="Detalles del material"
+                        />
+                      </label>
+                      <button type="button" class="btn-pago btn-pago--primary" (click)="asignarMaterial()"
+                        [disabled]="guardandoMaterial() || !materialSel()">
+                        {{ guardandoMaterial() ? 'Guardando…' : 'Agregar material' }}
+                      </button>
+                    </div>
+                  }
+
+                  @if (materialesObra().length === 0) {
+                    <p class="muted">No hay materiales asignados a la obra.</p>
+                  } @else {
+                    <div class="detalle-obra__tablares">
+                      @for (m of materialesObra(); track m.idMaterial) {
+                        <div class="detalle-obra__tablar">
+                          <span class="detalle-obra__tablar-nombre">{{ m.nombre }}</span>
+                          @if (m.unidadMedida) {
+                            <span class="pago-tag pago-tag--muted">{{ m.unidadMedida }}</span>
+                          }
+                          @if (m.cantidad != null) {
+                            <span class="muted">× {{ m.cantidad }}</span>
+                          }
+                          @if (m.medida) {
+                            <span class="muted">· {{ m.medida }}</span>
+                          }
+                          @if (m.notas) {
+                            <span class="muted">· {{ m.notas }}</span>
+                          }
+                          @if (!esTrabajador() && clas === 'actual') {
+                            <button type="button" class="btn-pago btn-pago--remover" (click)="quitarMaterial(m)">Quitar</button>
+                          }
+                        </div>
                       }
-                      @if (t.telefono) {
-                        <a class="tablar-tel" [href]="'tel:' + t.telefono">{{ t.telefono }}</a>
+                    </div>
+                  }
+                </section>
+              }
+
+              <!-- ── Etapa Instalación programada (4) ──────────────────────── -->
+              @if (idEstadoSel === 4) {
+                <section class="detalle-obra__card">
+                  <h2 class="detalle-obra__card-title">Instalación</h2>
+                  <dl class="detalle-obra__dl">
+                    <div class="detalle-obra__dl-item">
+                      <dt>Fecha de instalación</dt>
+                      <dd>
+                        <input
+                          type="date"
+                          class="modal-pago__input detalle-obra__fecha-input"
+                          [value]="fechaEtapa('FechaInstalacion')"
+                          (change)="guardarFechaEtapa('FechaInstalacion', $any($event.target).value)"
+                          [disabled]="esTrabajador() || clas !== 'actual' || guardandoFecha() !== null"
+                        />
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section class="detalle-obra__card">
+                  <div class="detalle-obra__card-header-row">
+                    <h2 class="detalle-obra__card-title">Kit de instalación</h2>
+                  </div>
+
+                  <!-- Formulario (solo Propietario en la etapa actual y sin kit). -->
+                  @if (!esTrabajador() && clas === 'actual' && !kitObra()) {
+                    <div class="detalle-obra__form">
+                      <label class="detalle-obra__form-field">
+                        <span class="modal-pago__label">Kit *</span>
+                        <select
+                          class="modal-pago__input modal-pago__input--select"
+                          [value]="kitSel() ?? ''"
+                          (change)="setKitSel(num($any($event.target).value))"
+                        >
+                          @if (!kitSel()) {
+                            <option value="" disabled>Selecciona un kit</option>
+                          }
+                          @for (k of kitsCatalogo(); track k.id) {
+                            <option [value]="k.id">{{ k.nombre }}</option>
+                          }
+                        </select>
+                      </label>
+                      <button type="button" class="btn-pago btn-pago--primary" (click)="asignarKit()"
+                        [disabled]="guardandoKit() || !kitSel()">
+                        {{ guardandoKit() ? 'Guardando…' : 'Asignar kit' }}
+                      </button>
+                    </div>
+                  }
+
+                  @if (kitObra(); as kit) {
+                    <div class="kit-info">
+                      <div class="detalle-obra__tablar">
+                        <span class="detalle-obra__tablar-nombre">{{ kit.nombre }}</span>
+                        @if (kit.asignadoPor) {
+                          <span class="muted">Asignado por {{ kit.asignadoPor }}</span>
+                        }
+                        @if (!esTrabajador() && clas === 'actual') {
+                          <button type="button" class="btn-pago btn-pago--remover" (click)="quitarKit()">Quitar kit</button>
+                        }
+                      </div>
+                      @if (kit.descripcion) {
+                        <p class="muted">{{ kit.descripcion }}</p>
                       }
-                      <time class="muted">{{ formatearFecha(t.fechaAsignacion) }}</time>
+                      <div class="kit-progreso">
+                        <span>Checklist: {{ kitMarcados(kit) }} / {{ kit.materiales.length }} ({{ porcentajeKitVerificado() }}%)</span>
+                      </div>
+                      <div class="detalle-obra__tablares">
+                        @for (item of kit.materiales; track item.idChecklistItem) {
+                          <div class="detalle-obra__tablar">
+                            <span class="kit-check" [class.kit-check--ok]="item.marcado" aria-hidden="true">{{ item.marcado ? '✓' : '○' }}</span>
+                            <span class="detalle-obra__tablar-nombre">{{ item.nombre }}</span>
+                            @if (item.cantidad != null) {
+                              <span class="muted">× {{ item.cantidad }}</span>
+                            }
+                            @if (item.notas) {
+                              <span class="muted">· {{ item.notas }}</span>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  } @else {
+                    <p class="muted">Esta obra no tiene kit de instalación asignado.</p>
+                  }
+                </section>
+              }
+
+              <!-- ── Etapa Instalado (5): resumen consolidado si es la actual ─ -->
+              @if (idEstadoSel === 5 && clas === 'actual') {
+                <section class="detalle-obra__card">
+                  <div class="detalle-obra__card-header-row">
+                    <h2 class="detalle-obra__card-title">Resumen general de la obra</h2>
+                    @if (!esTrabajador()) {
+                      <button type="button" class="btn-pago btn-pago--finalizar" (click)="finalizarObra()" [disabled]="finalizandoObra()">
+                        {{ finalizandoObra() ? 'Finalizando…' : 'Finalizar obra' }}
+                      </button>
+                    }
+                  </div>
+                  <div class="detalle-obra__resumen">
+                    @for (r of resumenEtapas(); track r.id) {
+                      <article class="resumen-etapa" [style.--resumen-color]="r.color">
+                        <span class="resumen-etapa__dot" aria-hidden="true"></span>
+                        <h3>{{ r.nombre }}</h3>
+                        <dl>
+                          <dt>Fecha</dt><dd>{{ r.fecha ? formatearFecha(r.fecha) : '—' }}</dd>
+                          <dt>Trabajadores</dt><dd>{{ r.trabajadores }}</dd>
+                          <dt>Notas</dt><dd>{{ r.notas }}</dd>
+                          <dt>Fotos</dt><dd>{{ r.fotos }}</dd>
+                        </dl>
+                      </article>
+                    }
+                  </div>
+                </section>
+              }
+
+              <!-- ── Etapa Garantías (6): placeholder ──────────────────────── -->
+              @if (idEstadoSel === 6) {
+                <section class="detalle-obra__card detalle-obra__card--placeholder">
+                  <div class="detalle-obra__card-header-row">
+                    <h2 class="detalle-obra__card-title">Garantías</h2>
+                    @if (!esTrabajador() && clas === 'actual') {
+                      <button type="button" class="btn-pago btn-pago--finalizar" (click)="finalizarObra()" [disabled]="finalizandoObra()">
+                        {{ finalizandoObra() ? 'Finalizando…' : 'Finalizar obra' }}
+                      </button>
+                    }
+                  </div>
+                  <p class="muted">La gestión de garantías estará disponible próximamente.</p>
+                </section>
+              }
+
+              <!-- Trabajadores asignados a esta etapa -->
+              <section class="detalle-obra__card">
+                <div class="detalle-obra__card-header-row">
+                  <h2 class="detalle-obra__card-title">
+                    Trabajadores asignados &middot; {{ nombreEstado(idEstadoSel) }}
+                  </h2>
+                  <!-- Asignación de trabajadores: solo Propietario en la etapa actual. -->
+                  @if (!esTrabajador() && clas === 'actual') {
+                    <div class="detalle-obra__form detalle-obra__form--row">
+                      <select
+                        class="modal-pago__input modal-pago__input--select"
+                        [value]="nuevoTrabajadorId() ?? ''"
+                        (change)="setNuevoTrabajador(num($any($event.target).value))"
+                      >
+                        @if (!nuevoTrabajadorId()) {
+                          <option value="" disabled>Selecciona un trabajador</option>
+                        }
+                        @for (t of trabajadoresDisponibles(); track t.idTrabajador) {
+                          <option [value]="t.idTrabajador">{{ t.nombreCompleto }} ({{ t.rol }})</option>
+                        }
+                      </select>
+                      <button type="button" class="btn-pago" (click)="agregarTrabajador()"
+                        [disabled]="agregandoTrabajador() || !nuevoTrabajadorId()">
+                        {{ agregandoTrabajador() ? 'Asignando…' : 'Agregar' }}
+                      </button>
                     </div>
                   }
                 </div>
-              }
-            </section>
+                @if (trabajadoresDeEtapa(idEstadoSel).length === 0) {
+                  <p class="muted">No hay trabajadores asignados a esta etapa.</p>
+                } @else {
+                  <div class="detalle-obra__tablares">
+                    @for (t of trabajadoresDeEtapa(idEstadoSel); track t.idDetalleAsignacion) {
+                      <div class="detalle-obra__tablar">
+                        <span class="detalle-obra__tablar-nombre">{{ t.nombre }}</span>
+                        @if (t.rol) {
+                          <span class="pago-tag pago-tag--muted">{{ t.rol }}</span>
+                        }
+                        @if (t.telefono) {
+                          <a class="tablar-tel" [href]="'tel:' + t.telefono">{{ t.telefono }}</a>
+                        }
+                        <time class="muted">{{ formatearFecha(t.fechaAsignacion) }}</time>
+                        @if (!esTrabajador() && clas === 'actual') {
+                          <button type="button" class="btn-pago btn-pago--remover" (click)="quitarTrabajador(t)">Quitar</button>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </section>
 
-            <!-- Notas y fotos de esta etapa, agrupadas por trabajador -->
-            <section class="detalle-obra__card">
-              <h2 class="detalle-obra__card-title">Actividad de la etapa &middot; {{ nombreEstado(idEstadoSel) }}</h2>
-              @if (etapaSelVacia()) {
-                <p class="muted">No hay notas ni fotos registradas en esta etapa.</p>
-              } @else {
-                <div class="detalle-obra__grupos">
-                  @for (g of gruposPorAutorDeEtapa(idEstadoSel); track g.idTrabajador) {
-                    <article class="detalle-obra__grupo">
-                      <header class="detalle-obra__grupo-header">
-                        <span class="detalle-obra__grupo-avatar" aria-hidden="true">{{ (g.nombre || '?').slice(0, 2).toUpperCase() }}</span>
-                        <div class="detalle-obra__grupo-info">
-                          <span class="detalle-obra__grupo-nombre">{{ g.nombre }}</span>
-                          @if (g.rol) {
-                            <span class="pago-tag pago-tag--muted">{{ g.rol }}</span>
-                          }
-                        </div>
-                        <span class="detalle-obra__grupo-count">
-                          {{ g.notas.length }} nota(s) &middot; {{ g.fotos.length }} foto(s)
-                        </span>
-                      </header>
+              <!-- Notas y fotos de esta etapa, agrupadas por trabajador -->
+              <section class="detalle-obra__card">
+                <h2 class="detalle-obra__card-title">Actividad de la etapa &middot; {{ nombreEstado(idEstadoSel) }}</h2>
+                @if (etapaSelVacia()) {
+                  <p class="muted">No hay notas ni fotos registradas en esta etapa.</p>
+                } @else {
+                  <div class="detalle-obra__grupos">
+                    @for (g of gruposPorAutorDeEtapa(idEstadoSel); track g.idTrabajador) {
+                      <article class="detalle-obra__grupo">
+                        <header class="detalle-obra__grupo-header">
+                          <span class="detalle-obra__grupo-avatar" aria-hidden="true">{{ (g.nombre || '?').slice(0, 2).toUpperCase() }}</span>
+                          <div class="detalle-obra__grupo-info">
+                            <span class="detalle-obra__grupo-nombre">{{ g.nombre }}</span>
+                            @if (g.rol) {
+                              <span class="pago-tag pago-tag--muted">{{ g.rol }}</span>
+                            }
+                          </div>
+                          <span class="detalle-obra__grupo-count">
+                            {{ g.notas.length }} nota(s) &middot; {{ g.fotos.length }} foto(s)
+                          </span>
+                        </header>
 
-                      @if (g.fotos.length > 0) {
-                        <div class="detalle-obra__fotos">
-                          @for (f of g.fotos; track f.id) {
-                            <figure class="detalle-obra__foto">
-                              <img [src]="urlFoto(f)" alt="Foto de la obra" loading="lazy" />
-                              <figcaption>{{ formatearFecha(f.fecha) }}</figcaption>
-                            </figure>
-                          }
-                        </div>
-                      }
+                        @if (g.fotos.length > 0) {
+                          <div class="detalle-obra__fotos">
+                            @for (f of g.fotos; track f.id) {
+                              <figure class="detalle-obra__foto">
+                                <img [src]="urlFoto(f)" alt="Foto de la obra" loading="lazy" />
+                                <figcaption>{{ formatearFecha(f.fecha) }}</figcaption>
+                              </figure>
+                            }
+                          </div>
+                        }
 
-                      @if (g.notas.length > 0) {
-                        <ul class="detalle-obra__notas">
-                          @for (n of g.notas; track n.id) {
-                            <li class="detalle-obra__nota">
-                              <p class="detalle-obra__nota-texto">{{ n.nota }}</p>
-                              <time class="detalle-obra__nota-fecha">{{ formatearFecha(n.fecha) }}</time>
-                            </li>
-                          }
-                        </ul>
-                      }
-                    </article>
-                  }
-                </div>
-              }
-            </section>
+                        @if (g.notas.length > 0) {
+                          <ul class="detalle-obra__notas">
+                            @for (n of g.notas; track n.id) {
+                              <li class="detalle-obra__nota">
+                                <p class="detalle-obra__nota-texto">{{ n.nota }}</p>
+                                <time class="detalle-obra__nota-fecha">{{ formatearFecha(n.fecha) }}</time>
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </article>
+                    }
+                  </div>
+                }
+              </section>
+            }
           </div>
         }
       }

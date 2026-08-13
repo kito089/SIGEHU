@@ -252,4 +252,39 @@ const getEstados = async (_req, res) => {
     }
 };
 
-export default { getAll, getDetalle, getDetalleMovil, create, update, remove, cambiarEstado, getById, getEstados };
+// PATCH /obras/:id/fechas-etapas
+// Actualiza solo las fechas por etapa enviadas (Levantamiento / Fabricación /
+// Instalación). Solo Propietario (la ruta está protegida en Obras.route.js).
+const cambiarFechasEtapas = async (req, res) => {
+    try {
+        const { FechaLevantamiento, FechaFabricacion, FechaInstalacion } = req.body ?? {};
+
+        const alguno =
+            FechaLevantamiento !== undefined ||
+            FechaFabricacion !== undefined ||
+            FechaInstalacion !== undefined;
+
+        if (!alguno) {
+            return res.status(400).json({
+                error: "Se requiere al menos una fecha (FechaLevantamiento, FechaFabricacion o FechaInstalacion)"
+            });
+        }
+
+        const actualizado = await service.actualizarFechasEtapas(req.params.id, {
+            FechaLevantamiento,
+            FechaFabricacion,
+            FechaInstalacion,
+            idTrabajadorCtx: req.user?.idTrabajador
+        });
+
+        if (actualizado === null) {
+            return res.status(404).json({ error: "Obra no encontrada o inactiva" });
+        }
+
+        res.json({ message: "Fechas de etapa actualizadas" });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+export default { getAll, getDetalle, getDetalleMovil, create, update, remove, cambiarEstado, getById, getEstados, cambiarFechasEtapas };

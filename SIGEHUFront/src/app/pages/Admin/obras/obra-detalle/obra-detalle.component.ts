@@ -16,8 +16,17 @@ import { ToastService } from '../../../../core/services/toast.service';
      - Cabecera fija (siempre visible): nombre de la obra, cliente, contacto,
        estado actual con color, datos generales (direcciones, RFC, fechas,
        medidas). Reemplaza la antigua pestaña "General" como pestaña.
-     - Barra de pestañas por ETAPAS del flujo operativo (visibilidad
-       progresiva: solo etapas alcanzadas hasta el estado actual inclusive).
+     - Barra de pestañas por ETAPAS del flujo operativo (Levantamiento,
+       Fabricación, Instalación, Instalado, Garantías). TODAS las etapas se
+       muestran: la actual es editable, las pasadas son de solo consulta y las
+       futuras se bloquean con un mensaje orientativo.
+     - Contenido específico por etapa: fecha programada y quién envió las
+       medidas (Levantamiento); fecha de inicio + formulario de materiales
+       (Fabricación); fecha de instalación + kit de instalación con checklist
+       (Instalación); resumen consolidado + botón "Finalizar Obra" (Instalado);
+       placeholder (Garantías).
+     - Vista final cuando la obra está finalizada: resumen consolidado de todas
+       las etapas incluyendo Garantías.
      - Control para avanzar al siguiente estado de la obra.
      - Por cada pestaña de etapa: trabajadores asignados a esa etapa + notas
        y fotos de esa etapa agrupadas por trabajador (incluye al admin).
@@ -81,6 +90,49 @@ interface PagoDetalle {
   trabajador?: string; // Quién recibió el pago
 }
 
+interface MaterialObraItem {
+  idMaterial: number;
+  nombre: string;
+  unidadMedida?: string;
+  cantidad?: number | null;
+  medida?: string | null;
+  notas?: string | null;
+}
+
+interface KitChecklistItem {
+  idChecklistItem: number;
+  idMaterial: number;
+  nombre: string;
+  cantidad?: number | null;
+  notas?: string | null;
+  marcado: boolean;
+}
+
+interface KitObra {
+  idObraKit: number;
+  idKit: number;
+  nombre: string;
+  descripcion?: string;
+  asignadoPor?: string;
+  materiales: KitChecklistItem[];
+}
+
+interface CatalogoItem {
+  id: number;
+  nombre: string;
+  unidadMedida?: string;
+}
+
+interface ResumenEtapa {
+  id: number;
+  nombre: string;
+  color: string;
+  fecha: string;         // fecha programada de la etapa (o '—')
+  trabajadores: string;  // nombres separados por coma
+  notas: number;
+  fotos: number;
+}
+
 // Agrupación de notas/fotos por autor en una etapa.
 interface AutorGrupo {
   idTrabajador: number;
@@ -130,6 +182,12 @@ export class ObraDetalleComponent implements OnInit {
   pagos = signal<PagoDetalle[]>([]);
   trabajadoresLista = signal<TrabajadorListItem[]>([]);
 
+  // Datos por etapa.
+  materialesObra = signal<MaterialObraItem[]>([]);
+  kitObra = signal<KitObra | null>(null);
+  materialesCatalogo = signal<CatalogoItem[]>([]);
+  kitsCatalogo = signal<CatalogoItem[]>([]);
+
   // Pestaña activa: idEstadoObra de la etapa seleccionada.
   tab = signal<number | null>(null);
 
@@ -144,6 +202,22 @@ export class ObraDetalleComponent implements OnInit {
     guardando: false,
     errorValidacion: null,
   });
+
+  // Formularios de la etapa actual (solo Propietario).
+  nuevoTrabajadorId = signal<number | null>(null);
+  agregandoTrabajador = signal(false);
+
+  materialSel = signal<number | null>(null);
+  materialCantidad = signal('');
+  materialMedida = signal('');
+  materialNotas = signal('');
+  guardandoMaterial = signal(false);
+
+  kitSel = signal<number | null>(null);
+  guardandoKit = signal(false);
+
+  guardandoFecha = signal<string | null>(null); // nombre de la columna en guarda
+  finalizandoObra = signal(false);
 
   // Opciones de los catálogos (hardcodeadas: SIGEHU.sql define 2+3 filas
   // fijas y la BD no expone endpoints de listado; sería innecesario crear
@@ -180,22 +254,18 @@ export class ObraDetalleComponent implements OnInit {
     { nombre: 'Pendiente de aceptación', color: '#3B82F6' },
   ];
 
-  // Catálogo ordenado de etapas OFICIALES del flujo (excluye el estado
-  // intermedio "Pendiente de aceptación" id=8 — no es una etapa que se muestra
-  // al usuario como una pestaña operativa; es un estado intermedio de doble
-  // validación). Lo construemos a partir de `estados()` para respetar el
-  // orden que venga de BD.
+  // Etapas OFICIALES navegables del flujo: excluye "Solicitud recibida" (1,
+  // no es una etapa navegable: es la condición transitoria de una obra nueva)
+  // y "Pendiente de aceptación" (8, estado intermedio de doble validación).
   etapasOficiales = computed<EstadoDetalle[]>(() =>
     this.estados()
-      .filter((e) => e.id !== 8)
+      .filter((e) => e.id !== 1 && e.id !== 8)
       .sort((a, b) => a.orden - b.orden)
   );
 
-  // Estado actual de la obra. Si la obra está en "Pendiente de aceptación"
-  // (id=8, estado intermedio del flujo de doble validación), lo resolvemos a
-  // la etapa origen real (levantamiento / fabricación / instalación) usando
-  // la última nota registrada — ese es el estado que debe ilustrar la barra
-  // de etapas al usuario, no el intermedio de validación.
+  // Estado actual REAL de la obra (lo que ilustra el badge). Si la obra está
+  // en "Pendiente de aceptación" (8), se resuelve a la etapa origen real
+  // usando la última nota registrada.
   estadoActual = computed<EstadoDetalle | null>(() => {
     const ob = this.obra();
     const id = Number(ob?.IDESTADOOBRA ?? ob?.idEstadoObra ?? 0);
@@ -217,8 +287,7 @@ export class ObraDetalleComponent implements OnInit {
         if (etapa) return etapa;
       }
       // Sin notas: flooring conservador a "Levantamiento pendiente" (ord=2),
-      // el primer estado realista desde el que se puede invocar 8. Si la BD
-      // no tiene notas, nunca revelamos etapas posteriores.
+      // el primer estado realista desde el que se puede invocar 8.
       const fallback = this.estados().find((e) => e.id === 2);
       return fallback ?? encontrado;
     }
@@ -238,19 +307,27 @@ export class ObraDetalleComponent implements OnInit {
     return { nombre, color, id: e?.id ?? 0, orden: e?.orden ?? 0 };
   });
 
-  // Etapas visibles en la barra: solo las alcanzadas hasta el estado actual
-  // inclusive. Si la obra está en un estado intermedio (id=8 "Pendiente de
-  // aceptación"), mostramos hasta la etapa origen (levantamiento / fabricación
-  // / instalación) que ya estaba cumplida.
-  etapasVisibles = computed<EstadoDetalle[]>(() => {
+  // Etapa que la barra considera "actual". Diferencia clave con estadoActual:
+  // una obra en "Solicitud recibida" (1) no tiene etapa navegable propia, así
+  // que su etapa actual para la barra es "Levantamiento pendiente" (2).
+  etapaActualBarra = computed<EstadoDetalle | null>(() => {
     const actual = this.estadoActual();
-    if (!actual) return [];
-    const ordenActual = actual.orden;
-    return this.etapasOficiales().filter((e) => e.orden <= ordenActual);
+    if (!actual) return null;
+    if (actual.id === 1) {
+      return this.estados().find((e) => e.id === 2) ?? null;
+    }
+    return this.etapasOficiales().find((e) => e.id === actual.id) ?? null;
   });
 
-  // Próxima etapa oficial a la que se puede avanzar (siguiente orden). Sirve
-  // para el botón "Avanzar etapa".
+  // La obra está finalizada: se muestra la vista consolidada en lugar de las
+  // pestañas de etapas (no existe pestaña "Finalizado").
+  esFinalizada = computed(() => this.estadoActual()?.id === 7);
+
+  // La barra muestra TODAS las etapas oficiales (pasadas y futuras), para
+  // poder bloquear con mensaje las que aún no se han alcanzado.
+  etapasVisibles = computed<EstadoDetalle[]>(() => this.etapasOficiales());
+
+  // Próxima etapa oficial a la que se puede avanzar (siguiente orden).
   siguienteEtapa = computed<EstadoDetalle | null>(() => {
     const actual = this.estadoActual();
     if (!actual) return null;
@@ -259,15 +336,39 @@ export class ObraDetalleComponent implements OnInit {
     if (idx >= 0 && idx < oficiales.length - 1) {
       return oficiales[idx + 1];
     }
-    // Si estadoActual es intermedio (8), encontrar siguiente por orden.
+    // Si estadoActual es intermedio (8) o inicial (1), encontrar por orden.
     const siguientes = oficiales.filter((e) => e.orden > actual.orden);
     return siguientes.length > 0 ? siguientes[0] : null;
   });
 
+  // El botón "Avanzar etapa" solo aplica mientras la obra no esté en la etapa
+  // terminal de operación (Instalado/Garantía): ahí el cierre se hace con
+  // "Finalizar Obra", no avanzando a Garantía.
+  mostrarBotonAvanzar = computed(() =>
+    !this.esTrabajador() &&
+    !!this.siguienteEtapa() &&
+    this.etapaActualBarra()?.id !== 5 &&
+    !this.esFinalizada()
+  );
+
+  // "Finalizar Obra" está disponible cuando la obra está en "Instalado" (5) o
+  // "Garantía" (6): ambos admiten la transición a "Finalizado" (7) en el SP.
+  mostrarBotonFinalizar = computed(() =>
+    !this.esTrabajador() &&
+    !this.esFinalizada() &&
+    (this.etapaActualBarra()?.id === 5 || this.etapaActualBarra()?.id === 6)
+  );
+
+  // Mensaje orientativo de las etapas futuras bloqueadas.
+  mensajeBloqueo = computed(() => {
+    const etapa = this.etapaActualBarra();
+    return etapa
+      ? `La obra actual se encuentra en «${etapa.nombre}». Termine la fase antes de acceder.`
+      : '';
+  });
+
   // Indica si la pestaña de etapa seleccionada tiene o no actividad (notas,
-  // fotos o trabajadores asignados). Es una signal para evitar_invitar
-  // evaluaciones complejas desde el template (Angular no permite asignaciones
-  // ni llamadas a `.every()` con predicados dinámicos dentro de @if.
+  // fotos o trabajadores asignados).
   etapaSelVacia = computed(() => {
     const id = this.tab();
     if (id == null) return true;
@@ -275,6 +376,43 @@ export class ObraDetalleComponent implements OnInit {
     if (grupos.length === 0) return true;
     return grupos.every((g) => g.notas.length === 0 && g.fotos.length === 0);
   });
+
+  // Porcentaje de checklist del kit verificado.
+  porcentajeKitVerificado = computed(() => {
+    const kit = this.kitObra();
+    if (!kit || kit.materiales.length === 0) return 0;
+    const ok = kit.materiales.filter((m) => m.marcado).length;
+    return Math.round((ok / kit.materiales.length) * 100);
+  });
+
+  // Trabajadores del catálogo aún no asignados a la etapa actual (selector).
+  trabajadoresDisponibles = computed(() => {
+    const etapa = this.etapaActualBarra();
+    const asignados = etapa
+      ? this.trabajadoresDeEtapa(etapa.id).map((t) => t.idTrabajador)
+      : [];
+    return this.trabajadoresLista().filter((t) => !asignados.includes(t.idTrabajador));
+  });
+
+  // Resumen consolidado por etapa (usado en la vista Instalado y en la vista
+  // final de obra finalizada).
+  resumenEtapas = computed<ResumenEtapa[]>(() =>
+    [2, 3, 4, 5].map((id) => {
+      const etapa = this.estados().find((e) => e.id === id);
+      const nombre = etapa?.nombre ?? this.nombreEstado(id);
+      return {
+        id,
+        nombre,
+        color: this.colorEstado(nombre),
+        fecha: this.fechaEtapa(
+          id === 2 ? 'FechaLevantamiento' : id === 3 ? 'FechaFabricacion' : 'FechaInstalacion'
+        ),
+        trabajadores: this.trabajadoresDeEtapa(id).map((t) => t.nombre).filter(Boolean).join(', ') || '—',
+        notas: this.notas().filter((n) => n.idEstadoObra === id).length,
+        fotos: this.fotos().filter((f) => f.idEstadoObra === id).length,
+      };
+    })
+  );
 
   async ngOnInit(): Promise<void> {
     this.idObra = Number(this.route.snapshot.paramMap.get('id')) || null;
@@ -284,9 +422,9 @@ export class ObraDetalleComponent implements OnInit {
       return;
     }
     await this.cargarTodo();
-    // Pestaña inicial: el estado actual de la obra.
-    const actual = this.estadoActual();
-    if (actual) this.tab.set(actual.id);
+    // Pestaña inicial: el estado actual de la obra (o la primera navegable).
+    const actual = this.etapaActualBarra() ?? this.estadoActual();
+    if (actual && !this.esFinalizada()) this.tab.set(actual.id);
   }
 
   private async cargarTodo(): Promise<void> {
@@ -299,7 +437,8 @@ export class ObraDetalleComponent implements OnInit {
     };
 
     try {
-      const [detalle, estadosRaw, notasRaw, fotosRaw, trabajadoresRaw, pagosRaw, trabajadoresListaRaw] =
+      const [detalle, estadosRaw, notasRaw, fotosRaw, trabajadoresRaw, pagosRaw, trabajadoresListaRaw,
+        materialesObraRaw, kitObraRaw, materialesCatalogoRaw, kitsCatalogoRaw] =
         await Promise.all([
           q(firstValueFrom(this.api.get<any>('/Obras/detalle/' + this.idObra))),
           q(firstValueFrom(this.api.get<any[]>('/Obras/estados'))),
@@ -314,6 +453,11 @@ export class ObraDetalleComponent implements OnInit {
           this.auth.isWorker()
             ? Promise.resolve(null)
             : q(firstValueFrom(this.api.get<any[]>('/Trabajadores'))),
+          // Datos por etapa.
+          q(firstValueFrom(this.api.get<any[]>('/Obras/' + this.idObra + '/materiales'))),
+          q(firstValueFrom(this.api.get<any>('/Obras/' + this.idObra + '/kit'))),
+          q(firstValueFrom(this.api.get<any[]>('/Materiales'))),
+          q(firstValueFrom(this.api.get<any[]>('/Kits'))),
         ]);
 
       if (detalle) {
@@ -398,6 +542,61 @@ export class ObraDetalleComponent implements OnInit {
         }))
       );
 
+      // ── Datos por etapa ────────────────────────────────────────────────────
+      const listaMatObra: any[] = (materialesObraRaw as any[]) || [];
+      this.materialesObra.set(
+        listaMatObra.map((m) => ({
+          idMaterial: Number(m.MATERIALES_IDMATERIAL ?? m.Materiales_idMaterial ?? m.idMaterial),
+          nombre: String(m.NOMBRE ?? m.Nombre ?? ''),
+          unidadMedida: String(m.UNIDADMEDIDA ?? m.UnidadMedida ?? ''),
+          cantidad: m.CANTIDAD ?? m.Cantidad ?? null,
+          medida: m.MEDIDA ?? m.Medida ?? null,
+          notas: m.NOTAS ?? m.Notas ?? null,
+        }))
+      );
+
+      const kitRaw: any = kitObraRaw as any;
+      if (kitRaw && (kitRaw.IDOBRAKIT != null || kitRaw.idObraKit != null)) {
+        this.kitObra.set({
+          idObraKit: Number(kitRaw.IDOBRAKIT ?? kitRaw.idObraKit),
+          idKit: Number(kitRaw.IDKIT ?? kitRaw.idKit),
+          nombre: String(kitRaw.NOMBRE ?? kitRaw.Nombre ?? ''),
+          descripcion: String(kitRaw.DESCRIPCION ?? kitRaw.Descripcion ?? ''),
+          asignadoPor: String(kitRaw.ASIGNADOPOR ?? kitRaw.AsignadoPor ?? ''),
+          materiales: ((kitRaw.Materiales ?? kitRaw.materiales ?? []) as any[]).map((i) => ({
+            idChecklistItem: Number(i.IDCHECKLISTITEM ?? i.idChecklistItem),
+            idMaterial: Number(i.IDMATERIAL ?? i.idMaterial),
+            nombre: String(i.NOMBREMATERIAL ?? i.NombreMaterial ?? ''),
+            cantidad: i.CANTIDAD ?? i.Cantidad ?? null,
+            notas: i.NOTASKIT ?? i.NotasKit ?? null,
+            marcado: Boolean(i.MARCADO ?? i.Marcado),
+          })),
+        });
+      } else {
+        this.kitObra.set(null);
+      }
+
+      const listaMatCat: any[] = (materialesCatalogoRaw as any[]) || [];
+      this.materialesCatalogo.set(
+        listaMatCat
+          .map((m) => ({
+            id: Number(m.IDMATERIAL ?? m.idMaterial),
+            nombre: String(m.NOMBRE ?? m.Nombre ?? ''),
+            unidadMedida: String(m.UNIDADMEDIDA ?? m.UnidadMedida ?? ''),
+          }))
+          .filter((m) => m.id)
+      );
+
+      const listaKitsCat: any[] = (kitsCatalogoRaw as any[]) || [];
+      this.kitsCatalogo.set(
+        listaKitsCat
+          .map((k) => ({
+            id: Number(k.IDKIT ?? k.idKit),
+            nombre: String(k.NOMBRE ?? k.Nombre ?? ''),
+          }))
+          .filter((k) => k.id)
+      );
+
       // Si el usuario actual es admin, lo preselecciona como receptor del pago.
       const u = this.auth.getUser();
       if (u && !this.auth.isWorker() && u.idTrabajador) {
@@ -439,8 +638,20 @@ export class ObraDetalleComponent implements OnInit {
 
   formatearFecha(valor: string | Date | undefined | null): string {
     if (!valor) return '—';
-    const fecha = new Date(String(valor));
-    if (isNaN(fecha.getTime())) return String(valor);
+    const s = String(valor);
+    // Fecha "yyyy-mm-dd" (input date): construir con componentes locales para
+    // evitar el corrimiento de zona horaria al interpretarla como UTC.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      const [y, m, d] = s.split('-').map(Number);
+      const fechaLocal = new Date(y, m - 1, d);
+      return fechaLocal.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+    const fecha = new Date(s);
+    if (isNaN(fecha.getTime())) return s;
     return fecha.toLocaleDateString('es-MX', {
       day: '2-digit',
       month: 'short',
@@ -485,10 +696,32 @@ export class ObraDetalleComponent implements OnInit {
     return valor != null && !isNaN(n) && n > 0 ? `${n} m` : '—';
   }
 
+  // Valor de una fecha por etapa de la obra, como "yyyy-mm-dd" (input date).
+  fechaEtapa(campo: 'FechaInicio' | 'FechaLevantamiento' | 'FechaFabricacion' | 'FechaInstalacion'): string {
+    const ob = this.obra() ?? {};
+    const v = ob[campo.toUpperCase()] ?? ob[campo] ?? '';
+    if (!v) return '';
+    const d = new Date(String(v));
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dia}`;
+  }
+
   // ---- Navegación de pestañas / estado -------------------------------------
 
   setTab(idEstado: number): void {
     this.tab.set(idEstado);
+  }
+
+  // Clasifica una etapa según la etapa actual de la obra (para la barra).
+  clasificacionEtapa(id: number): 'actual' | 'pasada' | 'futura' {
+    const barra = this.etapaActualBarra();
+    const etapa = this.etapasOficiales().find((e) => e.id === id);
+    if (!barra || !etapa) return 'futura';
+    if (etapa.id === barra.id) return 'actual';
+    return etapa.orden < barra.orden ? 'pasada' : 'futura';
   }
 
   // Avanza al siguiente estado oficial de la obra vía SP_CAMBIAR_ESTADO_OBRA.
@@ -517,11 +750,48 @@ export class ObraDetalleComponent implements OnInit {
     }
   }
 
+  // Finaliza la obra por completo: transición 5/6 → 7 (SP_CAMBIAR_ESTADO_OBRA).
+  // Confirmación explícita (requisito de la UI: acción irreversible).
+  async finalizarObra(): Promise<void> {
+    if (this.auth.isWorker() || this.finalizandoObra()) return;
+    const confirmado = window.confirm(
+      'Al finalizar la obra ya no se podrán editar sus datos ni registrar garantías. ¿Está seguro?'
+    );
+    if (!confirmado) return;
+
+    this.finalizandoObra.set(true);
+    try {
+      await firstValueFrom(this.api.patch<any>(`/Obras/${this.idObra}/estado`, { idEstado: 7 }));
+      this.toast.success('Obra finalizada correctamente.');
+      await this.cargarTodo();
+      this.tab.set(null); // la vista consolidada no usa pestañas
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo finalizar la obra.';
+      this.toast.error(msg);
+    } finally {
+      this.finalizandoObra.set(false);
+    }
+  }
+
   // ---- Datos por etapa (pestaña) -------------------------------------------
 
   // Trabajadores asignados a UNA etapa concreta.
   trabajadoresDeEtapa(idEstado: number): TrabajadorAsignado[] {
     return this.trabajadores().filter((t) => t.idEstadoObra === idEstado);
+  }
+
+  // Nombres (coma) de los trabajadores asignados a una etapa, para la vista
+  // de Levantamiento y los resúmenes consolidados.
+  nombresTrabajadores(idEstado: number): string {
+    const nombres = this.trabajadoresDeEtapa(idEstado)
+      .map((t) => t.nombre)
+      .filter(Boolean);
+    return nombres.length > 0 ? nombres.join(', ') : '—';
+  }
+
+  // Ítems del checklist del kit ya marcados.
+  kitMarcados(kit: KitObra): number {
+    return kit.materiales.filter((m) => m.marcado).length;
   }
 
   // Notas y fotos de una etapa concreta, agrupadas por autor.
@@ -563,6 +833,148 @@ export class ObraDetalleComponent implements OnInit {
       const bAdmin = b.rol === 'Propietario' ? 1 : 0;
       return aAdmin - bAdmin || a.nombre.localeCompare(b.nombre);
     });
+  }
+
+  // ---- Formularios de la etapa actual (Propietario) ------------------------
+
+  setNuevoTrabajador(id: number): void { this.nuevoTrabajadorId.set(id); }
+  setMaterialSel(id: number): void { this.materialSel.set(id); }
+  setMaterialCantidad(v: string): void { this.materialCantidad.set(v); }
+  setMaterialMedida(v: string): void { this.materialMedida.set(v); }
+  setMaterialNotas(v: string): void { this.materialNotas.set(v); }
+  setKitSel(id: number): void { this.kitSel.set(id); }
+
+  // Guarda una fecha programada de etapa (PATCH /Obras/:id/fechas-etapas).
+  async guardarFechaEtapa(
+    campo: 'FechaLevantamiento' | 'FechaFabricacion' | 'FechaInstalacion',
+    valor: string
+  ): Promise<void> {
+    if (this.auth.isWorker() || this.guardandoFecha()) return;
+    if (this.fechaEtapa(campo) === valor) return; // sin cambios
+
+    this.guardandoFecha.set(campo);
+    try {
+      await firstValueFrom(this.api.patch<any>(`/Obras/${this.idObra}/fechas-etapas`, { [campo]: valor }));
+      this.toast.success('Fecha guardada correctamente.');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo guardar la fecha.';
+      this.toast.error(msg);
+    } finally {
+      this.guardandoFecha.set(null);
+    }
+  }
+
+  // Asigna un trabajador a la etapa actual de la obra.
+  async agregarTrabajador(): Promise<void> {
+    const idTrabajador = this.nuevoTrabajadorId();
+    const etapa = this.etapaActualBarra();
+    if (this.auth.isWorker() || idTrabajador == null || !etapa || this.agregandoTrabajador()) return;
+
+    this.agregandoTrabajador.set(true);
+    try {
+      await firstValueFrom(this.api.post<any>(`/Obras/${this.idObra}/trabajadores`, {
+        idTrabajador,
+        idEstadoObra: etapa.id,
+      }));
+      this.toast.success('Trabajador asignado a la etapa.');
+      this.nuevoTrabajadorId.set(null);
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo asignar el trabajador.';
+      this.toast.error(msg);
+    } finally {
+      this.agregandoTrabajador.set(false);
+    }
+  }
+
+  // Quita un trabajador de la etapa (confirmación explícita: acción reversible
+  // pero con impacto en el histórico de asignaciones).
+  async quitarTrabajador(t: TrabajadorAsignado): Promise<void> {
+    if (this.auth.isWorker()) return;
+    if (!confirm(`¿Quitar a "${t.nombre}" de esta etapa?`)) return;
+    try {
+      await firstValueFrom(this.api.delete<any>(`/Obras/trabajadores/${t.idDetalleAsignacion}`));
+      this.toast.success('Trabajador removido de la etapa.');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo quitar el trabajador.';
+      this.toast.error(msg);
+    }
+  }
+
+  // Asigna un material del catálogo a la obra (etapa Fabricación).
+  async asignarMaterial(): Promise<void> {
+    const idMaterial = this.materialSel();
+    if (this.auth.isWorker() || idMaterial == null || this.guardandoMaterial()) return;
+
+    this.guardandoMaterial.set(true);
+    try {
+      await firstValueFrom(this.api.post<any>(`/Obras/${this.idObra}/materiales`, {
+        idMaterial,
+        cantidad: this.materialCantidad() ? Number(this.materialCantidad()) : null,
+        medida: this.materialMedida() || null,
+        notas: this.materialNotas() || null,
+      }));
+      this.toast.success('Material asignado a la obra.');
+      this.materialSel.set(null);
+      this.materialCantidad.set('');
+      this.materialMedida.set('');
+      this.materialNotas.set('');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo asignar el material.';
+      this.toast.error(msg);
+    } finally {
+      this.guardandoMaterial.set(false);
+    }
+  }
+
+  // Quita un material de la obra.
+  async quitarMaterial(m: MaterialObraItem): Promise<void> {
+    if (this.auth.isWorker()) return;
+    if (!confirm(`¿Quitar el material "${m.nombre}" de la obra?`)) return;
+    try {
+      await firstValueFrom(this.api.delete<any>(`/Obras/${this.idObra}/materiales/${m.idMaterial}`));
+      this.toast.success('Material removido de la obra.');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo quitar el material.';
+      this.toast.error(msg);
+    }
+  }
+
+  // Asigna un kit de instalación a la obra (etapa Instalación).
+  async asignarKit(): Promise<void> {
+    const idKit = this.kitSel();
+    if (this.auth.isWorker() || idKit == null || this.guardandoKit()) return;
+
+    this.guardandoKit.set(true);
+    try {
+      await firstValueFrom(this.api.post<any>(`/Obras/${this.idObra}/kit`, { idKit }));
+      this.toast.success('Kit asignado a la obra.');
+      this.kitSel.set(null);
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo asignar el kit.';
+      this.toast.error(msg);
+    } finally {
+      this.guardandoKit.set(false);
+    }
+  }
+
+  // Quita el kit asignado a la obra.
+  async quitarKit(): Promise<void> {
+    if (this.auth.isWorker() || !this.kitObra()) return;
+    if (!confirm('¿Quitar el kit asignado a la obra?')) return;
+    try {
+      await firstValueFrom(this.api.delete<any>(`/Obras/${this.idObra}/kit`));
+      this.toast.success('Kit removido de la obra.');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo quitar el kit.';
+      this.toast.error(msg);
+    }
   }
 
   // ---- Modal de registro de pago -------------------------------------------
