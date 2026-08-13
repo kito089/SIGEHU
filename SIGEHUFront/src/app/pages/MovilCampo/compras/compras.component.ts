@@ -50,9 +50,20 @@ export class ComprasComponent implements OnInit {
   confirmando = new Set<number>();
   mapasVisibles = new Set<string>();
 
+  // Orden tocada desde "Actividades" (history.state.actividadId): al cargar se
+  // desplaza hasta su tarjeta y la resalta brevemente.
+  compraDestinoId: number | null = null;
+  destacadoId = 0;
+
   ngOnInit(): void {
     this.layout.setPageTitle('Orden de Compra');
+    this.compraDestinoId = this.leerDestino();
     this.cargarOrdenesCompra();
+  }
+
+  private leerDestino(): number | null {
+    const id = (history.state as { actividadId?: number } | null)?.actividadId;
+    return typeof id === 'number' && Number.isFinite(id) ? id : null;
   }
 
   volver(): void {
@@ -78,12 +89,24 @@ export class ComprasComponent implements OnInit {
           ID: Number(c.ID),
           MATERIALES: (c.MATERIALES || []).map(m => ({ ...m, COMPLETADO: false }))
         }));
+        this.desplazarADestino();
       },
       error: () => {
         this.loading = false;
         this.error = true;
       }
     });
+  }
+
+  private desplazarADestino(): void {
+    if (this.compraDestinoId == null) return;
+    this.destacadoId = this.compraDestinoId;
+    // Espera al render de las tarjetas antes de hacer scroll (RF-18).
+    setTimeout(() => {
+      document.getElementById('compra-' + this.compraDestinoId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 60);
+    setTimeout(() => { this.destacadoId = 0; }, 4000);
   }
 
   toggleItem(material: MaterialCompra, event: Event): void {

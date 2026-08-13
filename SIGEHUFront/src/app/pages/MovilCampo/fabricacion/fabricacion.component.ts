@@ -84,6 +84,10 @@ export class FabricacionComponent implements OnInit, OnDestroy {
   guardando = false;
   finalizado = false;
 
+  // Obra tocada desde "Actividades" (history.state.actividadId): se preselecciona
+  // en lugar de quedarse en la primera de la lista.
+  obraDestinoId: number | null = null;
+
   materiales: MaterialObra[] = [];
   fotos: FotoObra[] = [];
   fotoPrincipal: FotoObra | null = null;
@@ -99,7 +103,13 @@ export class FabricacionComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.layout.setPageTitle('Fabricación');
+    this.obraDestinoId = this.leerDestino();
     this.cargarObrasFabricacion();
+  }
+
+  private leerDestino(): number | null {
+    const id = (history.state as { actividadId?: number } | null)?.actividadId;
+    return typeof id === 'number' && Number.isFinite(id) ? id : null;
   }
 
   ngOnDestroy(): void {
@@ -140,7 +150,10 @@ export class FabricacionComponent implements OnInit, OnDestroy {
           !o.ESTADO?.toLowerCase().includes('pendiente de acept')
         );
         if (this.obras.length > 0) {
-          this.seleccionarObra(this.obras[0]);
+          const objetivo = this.obraDestinoId != null
+            ? this.obras.find(o => o.ID === this.obraDestinoId)
+            : undefined;
+          this.seleccionarObra(objetivo ?? this.obras[0]);
         } else {
           this.selectedObra = null;
         }

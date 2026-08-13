@@ -74,6 +74,10 @@ export class InstalacionComponent implements OnInit, OnDestroy {
   confirmando = false;
   finalizado = false;
 
+  // Obra tocada desde "Actividades" (history.state.actividadId): se preselecciona
+  // en lugar de quedarse en la primera de la lista.
+  obraDestinoId: number | null = null;
+
   kit: KitAsignado | null = null;
   items: KitItem[] = [];
   detalle: { cliente?: string; direccion?: string; telefono?: string } = {};
@@ -85,7 +89,13 @@ export class InstalacionComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.layout.setPageTitle('Instalación');
+    this.obraDestinoId = this.leerDestino();
     this.cargarInstalaciones();
+  }
+
+  private leerDestino(): number | null {
+    const id = (history.state as { actividadId?: number } | null)?.actividadId;
+    return typeof id === 'number' && Number.isFinite(id) ? id : null;
   }
 
   ngOnDestroy(): void {
@@ -121,7 +131,10 @@ export class InstalacionComponent implements OnInit, OnDestroy {
           !o.ESTADO?.toLowerCase().includes('pendiente de acept')
         );
         if (this.obrasInstalacion.length > 0) {
-          this.seleccionarObra(this.obrasInstalacion[0]);
+          const objetivo = this.obraDestinoId != null
+            ? this.obrasInstalacion.find(o => o.ID === this.obraDestinoId)
+            : undefined;
+          this.seleccionarObra(objetivo ?? this.obrasInstalacion[0]);
         } else {
           this.selectedObra = null;
         }

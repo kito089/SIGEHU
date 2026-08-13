@@ -6,6 +6,7 @@ import { ButtonComponent } from '../button/button.component';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import type { Contacto } from '../../../core/models/cliente.model';
 import { TELEFONO_REACTIVO_PATTERN, filtrarTelefonoInput } from '../../../core/utils/telefono.util';
+import { contactoRequiereMedio } from '../../validators/custom-validators';
 
 @Component({
   selector: 'app-contact-list',
@@ -58,6 +59,17 @@ export class ContactListComponent {
 
   mostrarErrorTel(i: number, c: Contacto): boolean {
     return this.telTocado().includes(i) && this.telInvalido(c);
+  }
+
+  // Un contacto con datos (nombre/observaciones) debe tener teléfono o correo.
+  sinMedio(c: Contacto): boolean {
+    return contactoRequiereMedio(c);
+  }
+
+  // Emite el estado actual de la lista (para el autoguardado en línea del
+  // detalle de cliente: agregar/editar/eliminar).
+  emitirCambios(): void {
+    this.contactosChange.emit(this.contactos);
   }
 
   // Eliminación de contactos ya registrados (requiere confirmación).

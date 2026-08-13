@@ -65,7 +65,7 @@
   <!-- Lista de Garantías Asignadas (RF-25 / RF-26) -->
   <h3 class="section-title">Tickets de Garantía Asignados</h3>
 
-  <div *ngFor="let t of tickets" class="ticket-card-wrap">
+  <div *ngFor="let t of tickets" class="ticket-card-wrap" [id]="'garantia-' + garantiaId(t)" [class.destacada]="garantiaId(t) === destacadoId">
     <ion-card class="sigehu-card">
       <ion-card-header>
         <div class="card-top">

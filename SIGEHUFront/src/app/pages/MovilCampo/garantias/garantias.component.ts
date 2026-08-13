@@ -50,6 +50,11 @@ export class GarantiasCampoComponent implements OnInit {
   error = false;
   guardando = false;
 
+  // Garantía tocada desde "Actividades" (history.state.actividadId): al cargar
+  // se desplaza hasta su tarjeta y la resalta brevemente.
+  garantiaDestinoId: number | null = null;
+  destacadoId: number | null = null;
+
   // Formulario para nuevo reporte (RF-24)
   nuevoProblema = '';
   selectedObraNombre = 'OB-0014 · Portón Corredizo Residencial';
@@ -57,7 +62,13 @@ export class GarantiasCampoComponent implements OnInit {
 
   ngOnInit(): void {
     this.layout.setPageTitle('Garantías');
+    this.garantiaDestinoId = this.leerDestino();
     this.cargarGarantias();
+  }
+
+  private leerDestino(): number | null {
+    const id = (history.state as { actividadId?: number } | null)?.actividadId;
+    return typeof id === 'number' && Number.isFinite(id) ? id : null;
   }
 
   cargarGarantias(): void {
@@ -85,6 +96,7 @@ export class GarantiasCampoComponent implements OnInit {
         if (this.tickets.length > 0) {
           this.cargarPermisosGarantia(this.tickets[0]);
         }
+        this.desplazarADestino();
       },
       error: () => {
         this.loading = false;
@@ -95,6 +107,22 @@ export class GarantiasCampoComponent implements OnInit {
 
   reintentar(): void {
     this.cargarGarantias();
+  }
+
+  /** Id numérico usado como ancla para scroll/resaltado. */
+  garantiaId(ticket: TicketGarantia): number {
+    return Number(ticket.ID ?? ticket.IDGARANTIA ?? 0);
+  }
+
+  private desplazarADestino(): void {
+    if (this.garantiaDestinoId == null) return;
+    this.destacadoId = this.garantiaDestinoId;
+    // Espera al render de las tarjetas antes de hacer scroll (RF-25).
+    setTimeout(() => {
+      document.getElementById('garantia-' + this.garantiaDestinoId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 60);
+    setTimeout(() => { this.destacadoId = null; }, 4000);
   }
 
   private cargarPermisosGarantia(ticket: TicketGarantia): void {

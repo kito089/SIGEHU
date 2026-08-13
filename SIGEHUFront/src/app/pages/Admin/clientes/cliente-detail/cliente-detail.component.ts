@@ -6,6 +6,8 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../../services/api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
+import { ContactListComponent } from '../../../../shared/components/contact-list/contact-list.component';
+import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal/confirm-modal.component';
 import { NuevaObraModalComponent } from './nueva-obra-modal/nueva-obra-modal.component';
 import { NuevoTrabajoModalComponent } from './nuevo-trabajo-modal/nuevo-trabajo-modal.component';
 import { AgruparObrasModalComponent } from './agrupar-obras-modal/agrupar-obras-modal.component';
@@ -51,6 +53,10 @@ type CampoEditable =
   | 'codigoPostal'
   | 'direccionFiscal';
 
+/** Campos del grupo fiscal (RFC y relación SAT), usados para habilitar/
+    deshabilitar el formulario "Agregar Datos Fiscales". */
+const CAMPOS_FISCALES: CampoEditable[] = ['rfc', 'razonSocial', 'regimenFiscal', 'usoCFDI', 'codigoPostal', 'direccionFiscal'];
+
 interface OpcionCatalogo {
   value: string;
   label: string;
@@ -76,7 +82,7 @@ interface TrabajoDetalle {
 @Component({
   selector: 'app-cliente-detail',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SkeletonComponent, NuevaObraModalComponent, NuevoTrabajoModalComponent, AgruparObrasModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, SkeletonComponent, ContactListComponent, ConfirmModalComponent, NuevaObraModalComponent, NuevoTrabajoModalComponent, AgruparObrasModalComponent],
   templateUrl: './cliente-detail.component.html',
   styleUrl: './cliente-detail.component.scss',
 })
@@ -102,6 +108,12 @@ export class ClienteDetailComponent implements OnInit {
 
   // Campo actualmente en edición (su botón muestra "Guardar").
   campoEditando = signal<CampoEditable | null>(null);
+
+  // Registro inicial de datos fiscales (cliente aún sin datos fiscales).
+  agregandoFiscales = signal(false);
+  guardandoFiscales = signal(false);
+  // Confirmación modal para eliminar todos los datos fiscales.
+  confirmarEliminarFiscales = signal(false);
 
   contactos = signal<Contacto[]>([]);
 
@@ -459,6 +471,170 @@ export class ClienteDetailComponent implements OnInit {
       // Recarga el detalle para reflejar el estado canónico en BD.
       await this.cargarDetalle();
       this.toast.success('Campo actualizado correctamente');
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.guardando.set(false);
+    }
+  }
+
+  // --- Datos fiscales: registro inicial (cliente sin datos) ------------------
+  // Mismo diseño que cliente-form: switch ON/OFF que despliega el formulario.
+
+  /** Activa/cancela el formulario "Agregar Datos Fiscales". */
+  toggleAgregarFiscales(): void {
+    if (this.guardando() || this.guardandoFiscales()) return;
+    const activar = !this.agregandoFiscales();
+    this.agregandoFiscales.set(activar);
+    if (activar) {
+      CAMPOS_FISCALES.forEach((campo) => {
+        this.control(campo).setValue('');
+        this.control(campo).enable();
+      });
+    } else {
+      this.cancelarAgregarFiscales();
+    }
+  }
+
+  cancelarAgregarFiscales(): void {
+    CAMPOS_FISCALES.forEach((campo) => {
+      this.control(campo).reset();
+      this.control(campo).disable();
+    });
+    this.busquedaRegimen.set('');
+    this.busquedaUso.set('');
+    this.comboAbierto.set(null);
+    this.agregandoFiscales.set(false);
+  }
+
+  async guardarFiscales(): Promise<void> {
+    if (this.guardandoFiscales()) return;
+
+    // Regla de cliente-form: el RFC es obligatorio cuando el switch está ON.
+    const rfc = String(this.valor('rfc')).trim();
+    if (!rfc) {
+      this.toast.warning('El RFC es obligatorio para registrar los datos fiscales.');
+      return;
+    }
+
+    CAMPOS_FISCALES.forEach((campo) => this.control(campo).markAsTouched());
+    const invalido = CAMPOS_FISCALES.find((campo) => this.control(campo).invalid);
+    if (invalido) {
+      this.toast.warning(this.mensajeError(invalido));
+      return;
+    }
+
+    this.guardandoFiscales.set(true);
+    try {
+      await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, this.buildPayload()));
+      CAMPOS_FISCALES.forEach((campo) => this.control(campo).disable());
+      this.agregandoFiscales.set(false);
+      await this.cargarDetalle();
+      this.toast.success('Datos fiscales registrados correctamente');
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.guardandoFiscales.set(false);
+    }
+  }
+
+  // --- Datos fiscales: eliminación (requiere confirmación modal) -------------
+
+  solicitarEliminarFiscales(): void {
+    if (this.guardando() || this.guardandoFiscales()) return;
+    this.confirmarEliminarFiscales.set(true);
+  }
+
+  cancelarEliminarFiscales(): void {
+    this.confirmarEliminarFiscales.set(false);
+  }
+
+  async eliminarFiscales(): Promise<void> {
+    this.confirmarEliminarFiscales.set(false);
+    if (this.guardando() || this.guardandoFiscales()) return;
+
+    this.guardandoFiscales.set(true);
+    try {
+      const payload = this.buildPayload();
+      payload['RFC'] = null;
+      payload['RazonSocial'] = null;
+      payload['idRegimenFiscal'] = null;
+      payload['idUsoCFDI'] = null;
+      payload['CodigoPostal'] = null;
+      payload['DireccionFiscal'] = null;
+      await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, payload));
+      await this.cargarDetalle();
+      this.toast.success('Datos fiscales eliminados');
+    } catch {
+      // El interceptor de errores ya notifica el fallo vía toast.
+    } finally {
+      this.guardandoFiscales.set(false);
+    }
+  }
+
+  // --- Contactos (empresa): edición en línea con autoguardado -----------------
+
+  private _debounceContactos: ReturnType<typeof setTimeout> | null = null;
+
+  onContactosChange(lista: Contacto[]): void {
+    this.contactos.set(lista);
+    if (this.guardando() || this.guardandoFiscales()) return;
+    if (this._debounceContactos) clearTimeout(this._debounceContactos);
+    this._debounceContactos = setTimeout(() => void this.guardarContactos(), 900);
+  }
+
+  private async guardarContactos(): Promise<void> {
+    if (this.guardando() || this.guardandoFiscales()) return;
+
+    const lista = this.contactos();
+
+    // Regla de negocio (backend): una empresa requiere al menos un contacto.
+    if (lista.length === 0) {
+      this.toast.warning('Para una empresa se requiere al menos un contacto.');
+      await this.cargarDetalle();
+      return;
+    }
+
+    // Validación del medio de contacto: un contacto con datos requiere
+    // al menos un teléfono o un correo (misma regla que el alta).
+    for (const c of lista) {
+      const conDatos =
+        String(c.nombreCompleto ?? '').trim() !== '' ||
+        String(c.observaciones ?? '').trim() !== '';
+      if (conDatos && !String(c.telefono ?? '').trim() && !String(c.correo ?? '').trim()) {
+        this.toast.warning(`El contacto "${c.nombreCompleto || 'sin nombre'}" requiere al menos un teléfono o un correo.`);
+        await this.cargarDetalle();
+        return;
+      }
+    }
+
+    // Filas vacías (añadidas y sin datos) se descartan, igual que en cliente-form.
+    const contactosPayload = lista
+      .filter((c) =>
+        String(c.nombreCompleto ?? '').trim() !== '' ||
+        String(c.telefono ?? '').trim() !== '' ||
+        String(c.correo ?? '').trim() !== ''
+      )
+      .map((c) => ({
+        idContactoCliente: c.id ?? null,
+        NombreCompleto: c.nombreCompleto,
+        Telefono: c.telefono ? sanitizarTelefono(c.telefono) : null,
+        Correo: c.correo || null,
+        Observaciones: c.observaciones || null,
+      }));
+
+    if (contactosPayload.length === 0) {
+      this.toast.warning('Para una empresa se requiere al menos un contacto.');
+      await this.cargarDetalle();
+      return;
+    }
+
+    this.guardando.set(true);
+    try {
+      const payload = this.buildPayload();
+      payload['contactos'] = contactosPayload;
+      await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, payload));
+      await this.cargarDetalle();
     } catch {
       // El interceptor de errores ya notifica el fallo vía toast.
     } finally {

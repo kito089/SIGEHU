@@ -491,6 +491,115 @@ input::placeholder, textarea::placeholder{ color: var(--text-tertiary); }
   color: var(--text-tertiary);
 }
 
+/* ---------- Switch slider (Datos Fiscales) ---------- */
+/* Mismo patrón de cliente-form: checkbox nativo accesible + track/thumb. */
+.switch{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.switch input[type="checkbox"]{
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.switch__track{
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--field-border);
+  transition: background-color .18s ease;
+}
+
+.switch__thumb{
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--text-secondary);
+  transition: transform .18s ease, background-color .18s ease;
+}
+
+.switch input[type="checkbox"]:checked + .switch__track{ background: var(--accent); }
+.switch input[type="checkbox"]:checked + .switch__track .switch__thumb{
+  transform: translateX(18px);
+  background: #fff;
+}
+.switch input[type="checkbox"]:focus-visible + .switch__track{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.switch input[type="checkbox"]:disabled + .switch__track{ opacity: .5; }
+
+.switch__label{
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.switch__hint{
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 0;
+  flex-basis: 100%;
+}
+
+/* ---------- Acciones del apartado fiscal ---------- */
+.fiscal-actions{
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-fiscal{
+  padding: 9px 16px;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease, opacity .15s ease;
+}
+.btn-fiscal:hover{ color: var(--accent); border-color: var(--accent); }
+.btn-fiscal:disabled{ opacity: .5; cursor: not-allowed; }
+
+.btn-fiscal--primary{
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #071022;
+}
+.btn-fiscal--primary:hover{ filter: brightness(1.08); color: #071022; }
+
+.btn-fiscal--danger{
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn-fiscal--danger:hover{ background: var(--danger); color: #fff; }
+
+/* ---------- Combo vacío ---------- */
+.combo-empty{
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
 .skeleton-block{ display: block; margin-top: 4px; }
 
 /* ---------- Responsive ---------- */

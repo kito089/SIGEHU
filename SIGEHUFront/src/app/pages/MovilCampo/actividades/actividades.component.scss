@@ -1,6 +1,19 @@
+/* Host a altura de viewport: el header se mantiene fijo y solo el ion-content
+   (flex:1, min-height:0) maneja el scroll de la lista. Sin esta restricción el
+   ion-content no recibe altura definida y la lista no se desplaza. */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .sigehu-content {
   --background: #0f172a;
   color: #f8fafc;
+  flex: 1;
+  min-height: 0;
+  --ion-background-color: #0f172a;
 }
 
 .mobile-header {

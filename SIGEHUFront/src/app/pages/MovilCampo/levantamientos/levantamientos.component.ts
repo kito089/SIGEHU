@@ -59,6 +59,10 @@ export class LevantamientosComponent implements OnInit, OnDestroy {
   guardando = false;
   finalizado = false;
 
+  // Obra tocada desde "Actividades" (history.state.actividadId): se preselecciona
+  // en lugar de quedarse en la primera de la lista.
+  obraDestinoId: number | null = null;
+
   // Datos reales de la obra seleccionada (endpoint seguro /Obras/movil/:id).
   detalle: {
     cliente?: string;
@@ -83,7 +87,13 @@ export class LevantamientosComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.layout.setPageTitle('Levantamiento');
+    this.obraDestinoId = this.leerDestino();
     this.cargarObras();
+  }
+
+  private leerDestino(): number | null {
+    const id = (history.state as { actividadId?: number } | null)?.actividadId;
+    return typeof id === 'number' && Number.isFinite(id) ? id : null;
   }
 
   ngOnDestroy(): void {
@@ -115,7 +125,10 @@ export class LevantamientosComponent implements OnInit, OnDestroy {
           o.ESTADO?.toLowerCase().includes('levantamiento')
         );
         if (this.obras.length > 0) {
-          this.seleccionarObra(this.obras[0]);
+          const objetivo = this.obraDestinoId != null
+            ? this.obras.find(o => o.ID === this.obraDestinoId)
+            : undefined;
+          this.seleccionarObra(objetivo ?? this.obras[0]);
         } else {
           this.selectedObra = null;
         }

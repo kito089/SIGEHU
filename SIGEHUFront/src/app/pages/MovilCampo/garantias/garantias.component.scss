@@ -50,6 +50,12 @@
   letter-spacing: 0.04em;
 }
 
+/* Resaltado temporal de la garantía tocada desde "Actividades". */
+.ticket-card-wrap.destacada .sigehu-card {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
 .sigehu-card {
   background: #1e293b;
   border: 1px solid #334155;
@@ -71,8 +77,7 @@
   .ticket-id {
     font-size: 0.8rem;
     color: #64748b;
-    font-weight: 600;
-  }
+    font-weight: 600;  }
   ion-card-title {
     font-size: 1.1rem;
     font-weight: 700;
