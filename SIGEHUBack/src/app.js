@@ -145,6 +145,7 @@ app.use('/Trabajadores', TrabajadoresRoutes);
 app.use('/Clientes', ClientesRoutes);
 app.use('/Materiales', MaterialesRoutes);
 app.use('/Proveedores', ProveedoresRoutes);
+app.use('/Obras', ObrasTrabajadores);
 app.use('/Obras', ObrasRoutes);
 app.use('/Obras', FotosObras)
 app.use('/Obras', NotasObras)
@@ -153,7 +154,6 @@ app.use('/Garantias', GarantiasRoutes);
 app.use('/Garantias', FotosGarantias);
 app.use('/Garantias', NotasGarantias);
 app.use('/Garantias', GarantiasTrabajadores);
-app.use('/Obras', ObrasTrabajadores);
 app.use('/Obras', ObrasKits);
 app.use('/Obras', TrabajosRoutes);
 app.use('/Clientes', ClientesContactosRoutes);

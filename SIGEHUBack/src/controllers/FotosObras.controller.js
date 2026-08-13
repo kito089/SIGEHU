@@ -31,6 +31,18 @@ const upload = async (req, res) => {
             return res.status(400).json({ error: "idEstadoObra e idTrabajador son requeridos (o tipo)" });
         }
 
+        // Defensa en profundidad: obra/estado/trabajador deben existir. Si algo
+        // falla se borra el archivo temporal subido por Multer.
+        const errorValidacion = await service.validarContextoFoto({
+            idObra: req.params.idObra,
+            idEstadoObra,
+            idTrabajador
+        });
+        if (errorValidacion) {
+            await fs.unlink(req.file.path).catch(() => {});
+            return res.status(400).json({ error: errorValidacion });
+        }
+
         // Lee el buffer para guardar el BLOB binario en la BD (además de la
         // ruta relativa para el servido estático vía /uploads).
         let buffer = null;

@@ -20,7 +20,7 @@ const asignar = async (req, res) => {
         res.status(201).json({ message: "Material asignado a la obra" });
 
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(e?.status || 500).json({ error: e.message });
     }
 };
 
@@ -29,6 +29,39 @@ const getByObra = async (req, res) => {
     try {
         const materiales = await service.getMaterialesByObra(req.params.idObra);
         res.json(materiales);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+// POST /obras/:idObra/materiales/batch
+// Aplica un lote de materiales pendientes (agregar/actualizar/quitar) en una
+// sola transacción, usado por el Detalle de Obra al pulsar "Guardar".
+const aplicarBatch = async (req, res) => {
+    try {
+        const { agregar, actualizar, quitar } = req.body ?? {};
+
+        const alguno =
+            (Array.isArray(agregar) && agregar.length > 0) ||
+            (Array.isArray(actualizar) && actualizar.length > 0) ||
+            (Array.isArray(quitar) && quitar.length > 0);
+
+        if (!alguno) {
+            return res.status(400).json({
+                error: "El lote no contiene operaciones (agregar, actualizar o quitar)"
+            });
+        }
+
+        const resultados = await service.aplicarBatchMateriales({
+            idObra: req.params.idObra,
+            agregar: agregar ?? [],
+            actualizar: actualizar ?? [],
+            quitar: quitar ?? [],
+            idTrabajadorCtx: req.user?.idTrabajador
+        });
+
+        res.json({ message: "Lote de materiales aplicado", ...resultados });
+
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -72,4 +105,4 @@ const quitar = async (req, res) => {
     }
 };
 
-export default { asignar, getByObra, actualizar, quitar };
+export default { asignar, getByObra, actualizar, quitar, aplicarBatch };

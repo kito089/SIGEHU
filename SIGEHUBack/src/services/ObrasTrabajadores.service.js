@@ -1,8 +1,28 @@
 import { getConnection } from "../config/db.js";
 
 // ─── CREATE: asignar trabajador a obra ───────────────────────────────────────
+// Evita duplicados por (Obra, Trabajador, Etapa) y valida que el trabajador
+// exista, esté activo y NO sea Propietario (el admin jamás se asigna como
+// trabajador de obra). Devuelve:
+//   - número  → idDetalleAsignacion (asignado correctamente)
+//   - { duplicado: true } → ya estaba asignado a esa etapa
+//   - { invalido: true }  → trabajador inactivo/inexistente o con rol Propietario
 const asignarTrabajador = async ({ idObra, idTrabajador, idEstadoObra }) => {
     const db = await getConnection();
+
+    const existe = await db.query(
+        `SELECT 1 FROM Obras_has_Trabajadores
+         WHERE Obras_idObra = ? AND Trabajadores_idTrabajador = ? AND EstadosObra_idEstadoObra = ?`,
+        [idObra, idTrabajador, idEstadoObra]
+    );
+    if (existe && existe.length > 0) return { duplicado: true };
+
+    const trabajador = await db.query(
+        `SELECT 1 FROM Trabajadores
+         WHERE idTrabajador = ? AND Activo = TRUE AND TiposUsuarios_idTipoUsuario <> 1`,
+        [idTrabajador]
+    );
+    if (!trabajador || trabajador.length === 0) return { invalido: true };
 
     const rows = await db.query(
         `INSERT INTO Obras_has_Trabajadores (Obras_idObra, Trabajadores_idTrabajador, EstadosObra_idEstadoObra)
@@ -12,6 +32,80 @@ const asignarTrabajador = async ({ idObra, idTrabajador, idEstadoObra }) => {
     );
 
     return rows[0]?.IDDETALLEASIGNACION;
+};
+
+// ─── CREATE (lote): asignar varios trabajadores con sus permisos granulares ──
+// Alta por lotes desde el modal del Detalle de Obra. En una sola transacción:
+//   - si el trabajador ya está asignado a la etapa, NO se duplica la fila pero
+//     SÍ se actualizan sus permisos granulares (reflejo de los checkboxes)
+//   - valida que cada trabajador nuevo sea activo y no Propietario
+//   - reemplaza los permisos granulares del trabajador en la obra por los
+//     marcados en el modal (reflejo exacto de los checkboxes)
+const asignarTrabajadoresBatch = async ({ idObra, idEstadoObra, trabajadores, idTrabajadorCtx = 1 }) => {
+    const db = await getConnection();
+    const tx = await db.transaction();
+
+    try {
+        await tx.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            [String(idTrabajadorCtx)]
+        );
+
+        const resultados = [];
+
+        for (const item of trabajadores ?? []) {
+            const idTrabajador = Number(item?.idTrabajador);
+            if (!idTrabajador) continue;
+
+            const existe = await tx.query(
+                `SELECT 1 FROM Obras_has_Trabajadores
+                 WHERE Obras_idObra = ? AND Trabajadores_idTrabajador = ? AND EstadosObra_idEstadoObra = ?`,
+                [idObra, idTrabajador, idEstadoObra]
+            );
+            const yaAsignado = existe && existe.length > 0;
+
+            if (!yaAsignado) {
+                const trabajador = await tx.query(
+                    `SELECT 1 FROM Trabajadores
+                     WHERE idTrabajador = ? AND Activo = TRUE AND TiposUsuarios_idTipoUsuario <> 1`,
+                    [idTrabajador]
+                );
+                if (!trabajador || trabajador.length === 0) {
+                    resultados.push({ idTrabajador, asignado: false, motivo: 'trabajador_invalido' });
+                    continue;
+                }
+
+                const rows = await tx.query(
+                    `INSERT INTO Obras_has_Trabajadores (Obras_idObra, Trabajadores_idTrabajador, EstadosObra_idEstadoObra)
+                     VALUES (?, ?, ?) RETURNING idDetalleAsignacion`,
+                    [idObra, idTrabajador, idEstadoObra]
+                );
+                resultados.push({ idTrabajador, asignado: true, yaAsignado: false, idDetalleAsignacion: rows[0]?.IDDETALLEASIGNACION });
+            } else {
+                resultados.push({ idTrabajador, asignado: false, yaAsignado: true });
+            }
+
+            const permisos = Array.isArray(item?.permisos) ? item.permisos : [];
+            await tx.execute(
+                "DELETE FROM PermisosGranularesObras WHERE Obras_idObra = ? AND Trabajadores_idTrabajador = ?",
+                [idObra, idTrabajador]
+            );
+            for (const idCampoPermiso of permisos) {
+                await tx.execute(
+                    `INSERT INTO PermisosGranularesObras (CamposPermiso_idCampoPermiso, Obras_idObra, Trabajadores_idTrabajador)
+                     VALUES (?, ?, ?)`,
+                    [idCampoPermiso, idObra, idTrabajador]
+                );
+            }
+            resultados[resultados.length - 1].permisos = permisos;
+        }
+
+        await tx.commit();
+        return resultados;
+    } catch (err) {
+        await tx.rollback();
+        throw err;
+    }
 };
 
 // ─── GET trabajadores asignados a una obra ───────────────────────────────────
@@ -68,6 +162,18 @@ const asignarPermisos = async ({ idObra, idTrabajador, camposPermiso }) => {
     }
 
     return resultados;
+};
+
+// ─── PERMISOS: catálogo de campos de permiso disponibles ────────────────────
+const getCamposPermiso = async () => {
+    const db = await getConnection();
+
+    return await db.query(
+        `SELECT idCampoPermiso, NombreCampo, Descripcion
+         FROM CamposPermiso
+         ORDER BY idCampoPermiso`,
+        []
+    );
 };
 
 // ─── PERMISOS: obtener permisos de un trabajador en una obra ────────────────
@@ -148,11 +254,13 @@ const getPagosByObra = async (idObra) => {
 
 export default {
     asignarTrabajador,
+    asignarTrabajadoresBatch,
     getTrabajadoresByObra,
     quitarTrabajador,
     asignarPermisos,
     getPermisos,
     revocarPermisos,
+    getCamposPermiso,
     registrarPago,
     getPagosByObra
 };

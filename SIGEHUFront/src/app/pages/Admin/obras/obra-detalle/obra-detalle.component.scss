@@ -964,3 +964,141 @@
   border-color: var(--success, #10B981);
   color: var(--success, #10B981);
 }
+
+/* ---------- Tags de estado (Enviada / Pendiente) ---------- */
+.pago-tag--ok{
+  background: color-mix(in srgb, var(--success, #10B981) 12%, transparent);
+  color: var(--success, #10B981);
+  border-color: color-mix(in srgb, var(--success, #10B981) 35%, transparent);
+}
+.pago-tag--warning{
+  background: color-mix(in srgb, #F59E0B 12%, transparent);
+  color: #F59E0B;
+  border-color: color-mix(in srgb, #F59E0B 35%, transparent);
+}
+
+/* ---------- Materiales: edición por lote ---------- */
+.detalle-obra__card-title--sm{
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.detalle-obra__form--pendientes{
+  padding: 12px;
+  background: var(--sigehu-active-bg, rgba(59,130,246,.05));
+  border: 1px dashed var(--sigehu-border-divider, #2a3552);
+  border-radius: 8px;
+}
+.detalle-obra__tablar--pendiente{
+  border-color: color-mix(in srgb, var(--accent, #3B82F6) 40%, transparent);
+}
+.detalle-obra__tablar--quitar{
+  opacity: .55;
+}
+.detalle-obra__inline-input{
+  max-width: 110px;
+  padding: 4px 8px;
+  font-size: 12.5px;
+}
+.detalle-obra__inline-input--wide{
+  max-width: 200px;
+}
+.detalle-obra__form-actions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ---------- Nota del Propietario ---------- */
+.detalle-obra__nota-input{
+  width: 100%;
+  resize: vertical;
+}
+.detalle-obra__fotos-pendientes{
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.detalle-obra__fotos-pendientes li{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  background: var(--sigehu-surface-input, #1a2338);
+  border: 1px solid var(--sigehu-border-subtle, #2a3552);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+/* ---------- Modal de asignación de trabajadores (lote + permisos) ---------- */
+.modal-pago--trabajadores{
+  width: min(680px, 96vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+.modal-pago--trabajadores .modal-pago__body{
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-trabajadores__hint{
+  font-size: 12px;
+  margin: 4px 0 10px;
+}
+.modal-trabajadores__lista{
+  display: grid;
+  gap: 8px;
+}
+.modal-trabajadores__row{
+  padding: 10px 12px;
+  background: var(--sigehu-surface-input, #1a2338);
+  border: 1px solid var(--sigehu-border-subtle, #2a3552);
+  border-radius: 8px;
+}
+.modal-trabajadores__row--asignado{
+  border-color: color-mix(in srgb, var(--success, #10B981) 35%, transparent);
+}
+.modal-trabajadores__row-head{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.modal-trabajadores__check{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  cursor: pointer;
+}
+.modal-trabajadores__check input[type="checkbox"]{
+  accent-color: var(--accent, #3B82F6);
+  width: 16px;
+  height: 16px;
+}
+.modal-trabajadores__permisos{
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--sigehu-border-divider, #2a3552);
+}
+.modal-trabajadores__permiso{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.modal-trabajadores__permiso input[type="checkbox"]{
+  accent-color: var(--accent, #3B82F6);
+  width: 15px;
+  height: 15px;
+}

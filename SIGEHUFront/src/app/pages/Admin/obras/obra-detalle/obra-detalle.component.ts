@@ -155,6 +155,13 @@ interface FormPagoState {
   errorValidacion: string | null;
 }
 
+// Campo de permiso granular (catálogo CamposPermiso).
+interface CampoPermisoItem {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+}
+
 @Component({
   selector: 'app-obra-detalle',
   standalone: true,
@@ -218,6 +225,32 @@ export class ObraDetalleComponent implements OnInit {
 
   guardandoFecha = signal<string | null>(null); // nombre de la columna en guarda
   finalizandoObra = signal(false);
+
+  // ── Notas y fotos del administrador (por etapa) ──────────────────────────
+  nuevaNota = signal('');
+  guardandoNota = signal(false);
+  fotosNuevas = signal<File[]>([]);
+  subiendoFoto = signal(false);
+
+  // ── Modal de asignación de trabajadores (lote + permisos granulares) ─────
+  modalTrabajadoresAbierto = signal(false);
+  busquedaTrabajador = signal('');
+  guardandoLoteTrabajadores = signal(false);
+  camposPermisoCatalogo = signal<CampoPermisoItem[]>([]);
+  trabajadoresAsignables = signal<TrabajadorListItem[]>([]);
+  // Ya asignados a la etapa actual (fijos en el modal; no se desasignan ahí).
+  trabajadoresEtapaSel = signal<Set<number>>(new Set());
+  // Trabajadores nuevos marcados para asignar.
+  trabajadoresSel = signal<Set<number>>(new Set());
+  // Permisos granulares marcados por trabajador (id → Set de idCampoPermiso).
+  permisosSel = signal<Map<number, Set<number>>>(new Map());
+
+  // ── Materiales: edición por lote antes de guardar ────────────────────────
+  materialesPendientesAgregar = signal<MaterialObraItem[]>([]);
+  // Valores actuales editables de los materiales ya asignados (id → borrador).
+  materialesDraft = signal<Record<number, MaterialObraItem>>({});
+  materialesPendientesQuitar = signal<Set<number>>(new Set());
+  guardandoLoteMateriales = signal(false);
 
   // Opciones de los catálogos (hardcodeadas: SIGEHU.sql define 2+3 filas
   // fijas y la BD no expone endpoints de listado; sería innecesario crear
@@ -555,6 +588,23 @@ export class ObraDetalleComponent implements OnInit {
         }))
       );
 
+      // Inicializa el borrador editable de materiales con los valores actuales
+      // (la edición por lote compara este borrador contra el original al guardar).
+      const draftInicial: Record<number, MaterialObraItem> = {};
+      for (const m of listaMatObra) {
+        const idMat = Number(m.MATERIALES_IDMATERIAL ?? m.Materiales_idMaterial ?? m.idMaterial);
+        if (!idMat) continue;
+        draftInicial[idMat] = {
+          idMaterial: idMat,
+          nombre: String(m.NOMBRE ?? m.Nombre ?? ''),
+          unidadMedida: String(m.UNIDADMEDIDA ?? m.UnidadMedida ?? ''),
+          cantidad: m.CANTIDAD ?? m.Cantidad ?? null,
+          medida: m.MEDIDA ?? m.Medida ?? null,
+          notas: m.NOTAS ?? m.Notas ?? null,
+        };
+      }
+      this.materialesDraft.set(draftInicial);
+
       const kitRaw: any = kitObraRaw as any;
       if (kitRaw && (kitRaw.IDOBRAKIT != null || kitRaw.idObraKit != null)) {
         this.kitObra.set({
@@ -617,6 +667,36 @@ export class ObraDetalleComponent implements OnInit {
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
   }
+
+  // Convierte BOOLEAN de Firebird (true/false o 1/0) a boolean seguro.
+  booleanOf(v: any): boolean {
+    return v === true || v === 1 || v === '1' || String(v).toLowerCase() === 'true';
+  }
+
+  // ── Estado de medidas (Enviada/Pendiente + responsable único) ─────────────
+  medidasInfo = computed(() => {
+    const ob = this.obra() ?? {};
+    const responsableId = this.num(ob.MEDIDASRESPONSABLEIDTRABAJADOR ?? ob.MedidasResponsableIdTrabajador ?? 0);
+    const enviadasPor = this.num(ob.MEDIDASENVIADASPOR ?? ob.MedidasEnviadasPor ?? 0);
+    const fecha = ob.MEDIDASENVIADASFECHA ?? ob.MedidasEnviadasFecha ?? '';
+    const nombreDe = (id: number): string => {
+      if (!id) return '';
+      const t = this.trabajadoresLista().find((x) => x.idTrabajador === id);
+      return t?.nombreCompleto ?? ('#' + id);
+    };
+    return {
+      enviada: this.booleanOf(ob.MEDIDASENVIADAS ?? ob.MedidasEnviadas ?? false),
+      responsable: nombreDe(responsableId),
+      enviadasPor: nombreDe(enviadasPor),
+      fecha: fecha ? this.formatearFecha(fecha) : '—',
+      tieneResponsable: !!responsableId,
+      tieneMedidas:
+        this.booleanOf(ob.MEDIDASENVIADAS ?? ob.MedidasEnviadas ?? false) ||
+        !!String(ob.ANCHO ?? ob.Ancho ?? '') ||
+        !!String(ob.ALTO ?? ob.Alto ?? '') ||
+        !!String(ob.PROFUNDIDAD ?? ob.Profundidad ?? ''),
+    };
+  });
 
   colorEstado(nombre: string): string {
     const found = this.MAPA_ESTADOS_COLOR.find(
@@ -974,6 +1054,380 @@ export class ObraDetalleComponent implements OnInit {
     } catch (e: any) {
       const msg = e?.error?.error || e?.message || 'No se pudo quitar el kit.';
       this.toast.error(msg);
+    }
+  }
+
+  // ---- Notas y fotos del administrador (por etapa) -------------------------
+
+  setNuevaNota(v: string): void { this.nuevaNota.set(v); }
+
+  // Registra una nota del Propietario asociada a la etapa seleccionada.
+  async agregarNotaAdmin(): Promise<void> {
+    const idEstadoObra = this.tab();
+    const nota = this.nuevaNota().trim();
+    const u = this.auth.getUser();
+    if (this.auth.isWorker() || idEstadoObra == null || !nota || this.guardandoNota()) return;
+    if (!u?.idTrabajador) {
+      this.toast.error('No se pudo identificar al usuario.');
+      return;
+    }
+
+    this.guardandoNota.set(true);
+    try {
+      await firstValueFrom(this.api.post<any>(`/Obras/${this.idObra}/notas`, {
+        idEstadoObra,
+        idTrabajador: u.idTrabajador,
+        nota,
+      }));
+      this.toast.success('Nota registrada.');
+      this.nuevaNota.set('');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo registrar la nota.';
+      this.toast.error(msg);
+    } finally {
+      this.guardandoNota.set(false);
+    }
+  }
+
+  // Selección múltiple de fotos (cola de archivos pendientes de subir).
+  onFotosAdmin(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files || files.length === 0) return;
+    this.fotosNuevas.update((lista) => [...lista, ...Array.from(files)]);
+    input.value = '';
+  }
+
+  quitarFotoAdmin(idx: number): void {
+    this.fotosNuevas.update((lista) => lista.filter((_, i) => i !== idx));
+  }
+
+  // Sube todas las fotos pendientes asociadas a la etapa seleccionada.
+  async subirFotosAdmin(): Promise<void> {
+    const idEstadoObra = this.tab();
+    const u = this.auth.getUser();
+    if (this.auth.isWorker() || idEstadoObra == null || this.fotosNuevas().length === 0 || this.subiendoFoto()) return;
+    if (!u?.idTrabajador) {
+      this.toast.error('No se pudo identificar al usuario.');
+      return;
+    }
+
+    this.subiendoFoto.set(true);
+    try {
+      for (const file of this.fotosNuevas()) {
+        const fd = new FormData();
+        fd.append('foto', file);
+        fd.append('idEstadoObra', String(idEstadoObra));
+        fd.append('idTrabajador', String(u.idTrabajador));
+        await firstValueFrom(this.api.uploadFile(`/Obras/${this.idObra}/fotos`, fd));
+      }
+      this.toast.success('Fotos subidas correctamente.');
+      this.fotosNuevas.set([]);
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudieron subir las fotos.';
+      this.toast.error(msg);
+    } finally {
+      this.subiendoFoto.set(false);
+    }
+  }
+
+  // ---- Modal de asignación de trabajadores (lote + permisos) ----------------
+
+  async abrirModalTrabajadores(): Promise<void> {
+    if (this.auth.isWorker() || this.guardandoLoteTrabajadores()) return;
+    const etapa = this.etapaActualBarra();
+    if (!etapa) return;
+
+    // Carga catálogo de permisos granulares y trabajadores asignables
+    // (excluye al Propietario: el backend lo filtra con ?asignables=true).
+    try {
+      const [campos, asignables] = await Promise.all([
+        firstValueFrom(this.api.get<any[]>('/Obras/campos-permiso')),
+        firstValueFrom(this.api.get<any[]>('/Trabajadores?asignables=true')),
+      ]);
+      this.camposPermisoCatalogo.set(
+        ((campos as any[]) ?? []).map((c) => ({
+          id: Number(c.IDCAMPOPERMISO ?? c.idCampoPermiso),
+          nombre: String(c.NOMBRECAMPO ?? c.NombreCampo ?? c.nombre ?? ''),
+          descripcion: c.DESCRIPCION ?? c.Descripcion ?? '',
+        })).filter((c) => c.id)
+      );
+      this.trabajadoresAsignables.set(
+        ((asignables as any[]) ?? []).map((t) => ({
+          idTrabajador: Number(t.IDTRABAJADOR ?? t.idTrabajador),
+          nombreCompleto: String(t.NOMBRECOMPLETO ?? t.NombreCompleto ?? t.nombreCompleto ?? ''),
+          rol: String(t.TIPONOMBRE ?? t.TipoNombre ?? (t.TIPOSUSUARIOS_IDTIPOUSUARIO === 1 ? 'Propietario' : 'Trabajador')),
+        }))
+      );
+    } catch {
+      this.camposPermisoCatalogo.set([]);
+      this.trabajadoresAsignables.set([]);
+    }
+
+    // Estado previo: ya asignados a la etapa (fijos) + sus permisos actuales.
+    const yaAsignados = new Set<number>();
+    const permisos = new Map<number, Set<number>>();
+    for (const t of this.trabajadoresDeEtapa(etapa.id)) {
+      yaAsignados.add(t.idTrabajador);
+      try {
+        const perms = await firstValueFrom(this.api.get<any[]>(`/Obras/${this.idObra}/trabajadores/${t.idTrabajador}/permisos`));
+        permisos.set(
+          t.idTrabajador,
+          new Set((perms ?? []).map((p) => Number(p.IDCAMPOPERMISO ?? p.idCampoPermiso)).filter(Boolean))
+        );
+      } catch {
+        permisos.set(t.idTrabajador, new Set());
+      }
+    }
+
+    this.trabajadoresEtapaSel.set(yaAsignados);
+    this.trabajadoresSel.set(new Set());
+    this.permisosSel.set(permisos);
+    this.busquedaTrabajador.set('');
+    this.modalTrabajadoresAbierto.set(true);
+  }
+
+  cerrarModalTrabajadores(): void {
+    if (this.guardandoLoteTrabajadores()) return;
+    this.modalTrabajadoresAbierto.set(false);
+  }
+
+  setBusquedaTrabajador(v: string): void { this.busquedaTrabajador.set(v); }
+
+  // Trabajadores asignables filtrados por la búsqueda del modal.
+  trabajadoresModalFiltrados(): TrabajadorListItem[] {
+    const q = this.busquedaTrabajador().trim().toLowerCase();
+    return this.trabajadoresAsignables().filter(
+      (t) => !q || t.nombreCompleto.toLowerCase().includes(q)
+    );
+  }
+
+  yaAsignadoEnEtapa(idTrabajador: number): boolean {
+    return this.trabajadoresEtapaSel().has(idTrabajador);
+  }
+
+  estaSeleccionadoNuevo(idTrabajador: number): boolean {
+    return this.trabajadoresSel().has(idTrabajador);
+  }
+
+  toggleTrabajadorNuevo(idTrabajador: number): void {
+    this.trabajadoresSel.update((s) => {
+      const n = new Set(s);
+      if (n.has(idTrabajador)) {
+        n.delete(idTrabajador);
+      } else {
+        n.add(idTrabajador);
+      }
+      return n;
+    });
+  }
+
+  tienePermisoMarcado(idTrabajador: number, idCampoPermiso: number): boolean {
+    return this.permisosSel().get(idTrabajador)?.has(idCampoPermiso) ?? false;
+  }
+
+  togglePermisoMarcado(idTrabajador: number, idCampoPermiso: number): void {
+    this.permisosSel.update((map) => {
+      const m = new Map(map);
+      const actual = new Set(m.get(idTrabajador) ?? []);
+      if (actual.has(idCampoPermiso)) {
+        actual.delete(idCampoPermiso);
+      } else {
+        actual.add(idCampoPermiso);
+      }
+      m.set(idTrabajador, actual);
+      return m;
+    });
+  }
+
+  // Guarda el lote: nuevos asignados + permisos de ya asignados (una sola
+  // transacción en backend vía POST /obras/:id/trabajadores/batch).
+  async guardarLoteTrabajadores(): Promise<void> {
+    if (this.guardandoLoteTrabajadores()) return;
+    const etapa = this.etapaActualBarra();
+    const idEstadoObra = etapa?.id ?? this.tab();
+    if (idEstadoObra == null) return;
+
+    const ids = new Set<number>([...this.trabajadoresEtapaSel(), ...this.trabajadoresSel()]);
+    const trabajadores = Array.from(ids).map((idTrabajador) => ({
+      idTrabajador,
+      permisos: Array.from(this.permisosSel().get(idTrabajador) ?? new Set<number>()),
+    }));
+
+    this.guardandoLoteTrabajadores.set(true);
+    try {
+      const res: any = await firstValueFrom(this.api.post<any>(`/Obras/${this.idObra}/trabajadores/batch`, {
+        idEstadoObra,
+        trabajadores,
+      }));
+      this.toast.success(
+        `Lote guardado (${res?.asignados ?? 0} asignados, ${res?.actualizados ?? 0} actualizados).`
+      );
+      this.modalTrabajadoresAbierto.set(false);
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo guardar el lote de trabajadores.';
+      this.toast.error(msg);
+    } finally {
+      this.guardandoLoteTrabajadores.set(false);
+    }
+  }
+
+  // ---- Materiales: edición por lote antes de guardar -----------------------
+
+  // Marca pendiente de agregar el material seleccionado en el formulario.
+  agregarMaterialPendiente(): void {
+    const idMaterial = this.materialSel();
+    if (this.auth.isWorker() || idMaterial == null) return;
+    if (
+      this.materialesObra().some((m) => m.idMaterial === idMaterial) ||
+      this.materialesPendientesAgregar().some((m) => m.idMaterial === idMaterial)
+    ) {
+      this.toast.warning('Ese material ya está en la obra o en la lista pendiente.');
+      return;
+    }
+    const cat = this.materialesCatalogo().find((m) => m.id === idMaterial);
+    this.materialesPendientesAgregar.update((lista) => [
+      ...lista,
+      {
+        idMaterial,
+        nombre: cat?.nombre ?? `Material #${idMaterial}`,
+        unidadMedida: cat?.unidadMedida ?? '',
+        cantidad: this.materialCantidad() ? Number(this.materialCantidad()) : null,
+        medida: this.materialMedida() || null,
+        notas: this.materialNotas() || null,
+      },
+    ]);
+    this.materialSel.set(null);
+    this.materialCantidad.set('');
+    this.materialMedida.set('');
+    this.materialNotas.set('');
+  }
+
+  quitarMaterialPendiente(idx: number): void {
+    this.materialesPendientesAgregar.update((lista) => lista.filter((_, i) => i !== idx));
+  }
+
+  setMaterialPendienteCantidad(idx: number, v: string): void {
+    this.materialesPendientesAgregar.update((lista) =>
+      lista.map((m, i) => (i === idx ? { ...m, cantidad: v === '' ? null : Number(v) } : m))
+    );
+  }
+  setMaterialPendienteMedida(idx: number, v: string): void {
+    this.materialesPendientesAgregar.update((lista) =>
+      lista.map((m, i) => (i === idx ? { ...m, medida: v } : m))
+    );
+  }
+  setMaterialPendienteNotas(idx: number, v: string): void {
+    this.materialesPendientesAgregar.update((lista) =>
+      lista.map((m, i) => (i === idx ? { ...m, notas: v } : m))
+    );
+  }
+
+  // Valor editable de un material ya asignado.
+  materialDraft(idMaterial: number): MaterialObraItem {
+    return this.materialesDraft()[idMaterial] ?? { idMaterial, nombre: '', unidadMedida: '' };
+  }
+
+  setMaterialDraft(idMaterial: number, campo: 'cantidad' | 'medida' | 'notas', v: string): void {
+    this.materialesDraft.update((d) => {
+      const actual = { ...(d[idMaterial] ?? { idMaterial, nombre: '', unidadMedida: '' }) };
+      if (campo === 'cantidad') actual.cantidad = v === '' ? null : Number(v);
+      if (campo === 'medida') actual.medida = v;
+      if (campo === 'notas') actual.notas = v;
+      return { ...d, [idMaterial]: actual };
+    });
+  }
+
+  esPendienteQuitar(idMaterial: number): boolean {
+    return this.materialesPendientesQuitar().has(idMaterial);
+  }
+
+  // Cantidad de materiales marcados para quitar (mensaje del resumen).
+  materialesQuitarCount(): number {
+    return this.materialesPendientesQuitar().size;
+  }
+
+  togglePendienteQuitar(idMaterial: number): void {
+    this.materialesPendientesQuitar.update((s) => {
+      const n = new Set(s);
+      if (n.has(idMaterial)) {
+        n.delete(idMaterial);
+      } else {
+        n.add(idMaterial);
+      }
+      return n;
+    });
+  }
+
+  // Indica si hay cambios de materiales pendientes de guardar.
+  materialesHayCambios(): boolean {
+    if (this.materialesPendientesAgregar().length > 0 || this.materialesPendientesQuitar().size > 0) return true;
+
+    const originales = new Map(this.materialesObra().map((m) => [m.idMaterial, m]));
+    for (const [idMaterial, d] of Object.entries(this.materialesDraft())) {
+      const orig = originales.get(Number(idMaterial));
+      if (!orig) continue;
+      const igual =
+        String(orig.cantidad ?? '') === String(d.cantidad ?? '') &&
+        String(orig.medida ?? '') === String(d.medida ?? '') &&
+        String(orig.notas ?? '') === String(d.notas ?? '');
+      if (!igual) return true;
+    }
+    return false;
+  }
+
+  // Guarda todos los cambios de materiales en una sola transacción
+  // (POST /obras/:id/materiales/batch con agregar/actualizar/quitar).
+  async guardarLoteMateriales(): Promise<void> {
+    if (this.guardandoLoteMateriales()) return;
+
+    const agregar = this.materialesPendientesAgregar().map((m) => ({
+      idMaterial: m.idMaterial,
+      cantidad: m.cantidad ?? null,
+      medida: m.medida ?? null,
+      notas: m.notas ?? null,
+    }));
+
+    const quitar = Array.from(this.materialesPendientesQuitar());
+
+    const originales = new Map(this.materialesObra().map((m) => [m.idMaterial, m]));
+    const actualizar: { idMaterial: number; cantidad: number | null; medida: string | null; notas: string | null }[] = [];
+    for (const [idMaterial, d] of Object.entries(this.materialesDraft())) {
+      const id = Number(idMaterial);
+      const orig = originales.get(id);
+      if (!orig || quitar.includes(id)) continue;
+      const nuevo = { cantidad: d.cantidad ?? null, medida: d.medida ?? null, notas: d.notas ?? null };
+      const igual =
+        String(orig.cantidad ?? '') === String(nuevo.cantidad ?? '') &&
+        String(orig.medida ?? '') === String(nuevo.medida ?? '') &&
+        String(orig.notas ?? '') === String(nuevo.notas ?? '');
+      if (!igual) actualizar.push({ idMaterial: id, ...nuevo });
+    }
+
+    if (agregar.length === 0 && actualizar.length === 0 && quitar.length === 0) {
+      this.toast.info('No hay cambios de materiales pendientes.');
+      return;
+    }
+
+    this.guardandoLoteMateriales.set(true);
+    try {
+      await firstValueFrom(this.api.post<any>(`/Obras/${this.idObra}/materiales/batch`, {
+        agregar,
+        actualizar,
+        quitar,
+      }));
+      this.toast.success('Materiales guardados correctamente.');
+      this.materialesPendientesAgregar.set([]);
+      this.materialesPendientesQuitar.set(new Set());
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudieron guardar los materiales.';
+      this.toast.error(msg);
+    } finally {
+      this.guardandoLoteMateriales.set(false);
     }
   }
 

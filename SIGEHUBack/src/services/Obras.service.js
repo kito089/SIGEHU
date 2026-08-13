@@ -141,7 +141,9 @@ const getDetalleObra = async (id) => {
     // FechaLevantamiento, FechaFabricacion, FechaInstalacion): se fusionan desde
     // la tabla Obras para que el Detalle de Obra las muestre/edite por etapa.
     const fechas = await db.query(
-        `SELECT FechaInicio, FechaLevantamiento, FechaFabricacion, FechaInstalacion
+        `SELECT FechaInicio, FechaLevantamiento, FechaFabricacion, FechaInstalacion,
+                MedidasEnviadas, MedidasResponsableIdTrabajador,
+                MedidasEnviadasPor, MedidasEnviadasFecha
          FROM Obras WHERE idObra = ?`,
         [id]
     );
@@ -558,16 +560,44 @@ const completarEtapa = async (id, {
             }
         };
 
+        // Estado real de medidas (RF: Pendiente / Enviada). Solo se marca como
+        // "Enviada" cuando la obra está en la etapa de Levantamiento (2) y el
+        // trabajador aporta al menos una medida. El responsable único se fija
+        // con COALESCE (el primero que envía); quién/cuándo siempre reflejan el
+        // último envío.
+        const medidasPresentes =
+            (Ancho != null && String(Ancho).trim() !== '') ||
+            (Alto != null && String(Alto).trim() !== '') ||
+            (Profundidad != null && String(Profundidad).trim() !== '');
+        const esLevantamiento =
+            (finalizacion && finalizacion.etapa === 2) || Number(estadoActual) === 2;
+
         agregar('Nombre', Nombre);
         agregar('Direccion', Direccion != null ? Buffer.from(String(Direccion), "utf8") : null);
         agregar('Ancho', Ancho);
         agregar('Alto', Alto);
         agregar('Profundidad', Profundidad);
 
+        if (medidasPresentes && esLevantamiento) {
+            agregar('MedidasEnviadas', true);
+            agregar('MedidasEnviadasPor', idTrabajadorCtx);
+            agregar('MedidasEnviadasFecha', new Date());
+        }
+
         if (campos.length > 0) {
             await tx.execute(
                 `UPDATE Obras SET ${campos.map(c => `${c} = ?`).join(', ')} WHERE idObra = ?`,
                 [...valores, id]
+            );
+        }
+
+        // Responsable único de las medidas: se conserva el primer trabajador
+        // que las envió (nunca se sobreescribe por envíos posteriores).
+        if (medidasPresentes && esLevantamiento) {
+            await tx.execute(
+                `UPDATE Obras SET MedidasResponsableIdTrabajador = COALESCE(MedidasResponsableIdTrabajador, ?)
+                 WHERE idObra = ? AND MedidasResponsableIdTrabajador IS NULL`,
+                [idTrabajadorCtx, id]
             );
         }
 
