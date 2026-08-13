@@ -35,14 +35,19 @@
 
 .detalle-obra__header{
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-direction: column;
+  gap: 14px;
   padding: 20px;
   background: var(--sigehu-card-bg, #0f172a);
   border: 1px solid var(--sigehu-border-divider, #1f2b44);
   border-radius: 10px;
+}
+.detalle-obra__header-main{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 .detalle-obra__header-texto{ min-width: 0; }
 .detalle-obra__header-texto h1{
@@ -59,6 +64,13 @@
 .detalle-obra__cliente a{ color: var(--accent); text-decoration: none; }
 .detalle-obra__cliente a:hover{ text-decoration: underline; }
 .detalle-obra__separador{ margin: 0 6px; color: var(--text-tertiary); }
+
+/* Bloque "Información general" (datos de la antigua pestaña General):
+   se fija dentro del header, siempre visible por encima de la barra de etapas. */
+.detalle-obra__general-fija{
+  border-top: 1px solid var(--sigehu-border-divider, #1f2b44);
+  padding-top: 14px;
+}
 
 .detalle-obra__estado{ display: flex; }
 
@@ -173,11 +185,39 @@
   transition: color .15s ease, background-color .15s ease, border-color .15s ease;
 }
 .detalle-obra__tab:hover{ color: var(--text-primary); background: var(--sigehu-hover-bg, rgba(148,163,184,.08)); }
-.detalle-obra__tab--active{
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--sigehu-active-bg, rgba(59,130,246,.08));
+/* Etapa SELECCIONADA (la que se está viendo): contorno sutil. */
+.detalle-obra__tab--sel{
+  color: var(--text-primary);
+  border-color: var(--sigehu-border-divider, #1f2b44);
+  background: var(--sigehu-surface-input, #1a2338);
 }
+/* Etapa ACTUAL (la etapa real de la obra): glow de color por estado. Es la
+   señal primaria de la barra; el badge superior y esta pestaña siempre
+   coinciden con el estado real de la obra (no con la pestaña seleccionada). */
+.detalle-obra__tab--actual{
+  color: var(--pill-color, var(--accent));
+  border-color: var(--pill-color, var(--accent));
+  background: color-mix(in srgb, var(--pill-color, var(--accent)) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pill-color, var(--accent)) 16%, transparent);
+}
+.detalle-obra__tab--actual:hover{
+  color: var(--pill-color, var(--accent));
+  background: color-mix(in srgb, var(--pill-color, var(--accent)) 14%, transparent);
+}
+.detalle-obra__tab--actual .detalle-obra__tab-dot{
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pill-color, var(--accent)) 30%, transparent);
+}
+/* Etapa FUTURA: bloqueada (se muestra con candado, sin navegación útil). */
+.detalle-obra__tab--locked{
+  color: var(--text-tertiary);
+  border-color: var(--sigehu-border-subtle, #2a3552);
+  cursor: not-allowed;
+}
+.detalle-obra__tab--locked:hover{
+  color: var(--text-tertiary);
+  background: transparent;
+}
+.detalle-obra__tab-lock{ opacity: .7; flex-shrink: 0; }
 .tab-count{
   padding: 1px 7px;
   border-radius: 999px;
@@ -472,9 +512,455 @@
   color: var(--text-secondary);
 }
 
+/* ---------- Botón avanzar etapa ---------- */
+.btn-avanzar{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--sigehu-active-bg, rgba(59,130,246,.1));
+  color: var(--accent, #3B82F6);
+  border: 1px solid var(--accent, #3B82F6);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+.btn-avanzar:hover{ background: var(--accent, #3B82F6); color: #fff; }
+
+/* ---------- Tabs por etapas (dot color del estado) ---------- */
+.detalle-obra__tab-dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pill-color, var(--text-secondary));
+  flex-shrink: 0;
+}
+
+/* ---------- Sección Pagos (botones + subtitulos + modal) ---------- */
+.detalle-obra__pagos-seccion{
+  margin-top: 8px;
+}
+.pagos-acciones{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn-pago{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--sigehu-card-bg, #0f172a);
+  color: var(--text-secondary);
+  border: 1px solid var(--sigehu-border-divider, #1f2b44);
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.btn-pago:hover{ color: var(--text-primary); border-color: var(--accent, #3B82F6); }
+.btn-pago--primary{
+  background: var(--sigehu-active-bg, rgba(59,130,246,.1));
+  color: var(--accent, #3B82F6);
+  border-color: var(--accent, #3B82F6);
+}
+.btn-pago--primary:hover{
+  background: var(--accent, #3B82F6);
+  color: #fff;
+}
+.btn-pago:disabled{ opacity: 0.6; cursor: not-allowed; }
+.pagos-subtitle{
+  margin: 18px 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Tabla de pagos: 5 columnas (Fecha / Tipo / Forma / Autor / Monto). */
+.pagos-tabla__head,
+.pagos-tabla__row{
+  grid-template-columns:
+    minmax(110px, 1fr)     /* Fecha */
+    minmax(120px, 1fr)     /* Tipo */
+    minmax(120px, 1fr)     /* Forma */
+    minmax(140px, 1fr)     /* Autor */
+    minmax(110px, 0.9fr);  /* Monto (alineado a la derecha) */
+}
+.pagos-tabla__col--tipo,
+.pagos-tabla__col--forma{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Grupos por autor (notas/fotos de una etapa) ---------- */
+.detalle-obra__grupos{
+  display: grid;
+  gap: 14px;
+}
+.detalle-obra__grupo{
+  padding: 14px;
+  background: var(--sigehu-surface-input, #1a2338);
+  border: 1px solid var(--sigehu-border-subtle, #2a3552);
+  border-radius: 10px;
+}
+.detalle-obra__grupo-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--sigehu-border-subtle, #2a3552);
+}
+.detalle-obra__grupo-avatar{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sigehu-avatar-bg, #3B82F6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.detalle-obra__grupo-info{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.detalle-obra__grupo-nombre{
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.detalle-obra__grupo-count{
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* Fotos dentro del grupo: grid de thumbnails. */
+.detalle-obra__grupo .detalle-obra__fotos{
+  margin: 0 0 12px;
+}
+.detalle-obra__grupo .detalle-obra__notas{
+  margin: 0;
+}
+
+/* ---------- Modal de registro de pago ---------- */
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 100;
+}
+.modal-pago{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--sigehu-card-bg, #0f172a);
+  border: 1px solid var(--sigehu-border-divider, #1f2b44);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.5);
+}
+.modal-pago__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--sigehu-border-divider, #1f2b44);
+}
+.modal-pago__header h2{
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.modal-pago__close{
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.modal-pago__close:hover{ color: var(--text-primary); background: var(--sigehu-hover-bg, rgba(148,163,184,.08)); }
+.modal-pago__body{
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal-pago__field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.modal-pago__label{
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.modal-pago__input{
+  padding: 9px 12px;
+  background: var(--sigehu-surface-input, #1a2338);
+  border: 1px solid var(--sigehu-border-subtle, #2a3552);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13.5px;
+}
+.modal-pago__input:focus{
+  outline: 0;
+  border-color: var(--accent, #3B82F6);
+}
+.modal-pago__input--select{
+  cursor: pointer;
+}
+.modal-pago__opciones{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.modal-pago__chip{
+  padding: 8px 14px;
+  background: var(--sigehu-surface-input, #1a2338);
+  color: var(--text-secondary);
+  border: 1px solid var(--sigehu-border-subtle, #2a3552);
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.modal-pago__chip:hover{ color: var(--text-primary); border-color: var(--accent, #3B82F6); }
+.modal-pago__chip--active{
+  background: var(--sigehu-active-bg, rgba(59,130,246,.15));
+  color: var(--accent, #3B82F6);
+  border-color: var(--accent, #3B82F6);
+}
+.modal-pago__error{
+  margin: 0;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--sigehu-danger, #EF4444) 14%, transparent);
+  color: var(--sigehu-danger, #EF4444);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+.modal-pago__footer{
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--sigehu-border-divider, #1f2b44);
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 640px){
-  .detalle-obra__header{ flex-direction: column; }
+  .detalle-obra__header-main{ flex-direction: column; }
   .detalle-obra__pago{ align-items: flex-start; }
   .detalle-obra__pago-meta{ align-items: flex-start; }
+  .pagos-tabla__head,
+  .pagos-tabla__row{ grid-template-columns: 1fr; gap: 4px; }
+  .pagos-tabla__head{ display: none; }
+  .pagos-tabla__row{ padding: 10px 12px; }
+  .pagos-tabla__col--monto{ text-align: left; }
+  .detalle-obra__grupo-header{ flex-wrap: wrap; }
+  .detalle-obra__form{ grid-template-columns: 1fr; }
+  .detalle-obra__resumen{ grid-template-columns: 1fr; }
+}
+
+/* ---------- Etapa futura (bloqueada) ---------- */
+.detalle-obra__lock{
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 20px;
+  background: var(--sigehu-surface-input, #1a2338);
+  border: 1px dashed var(--sigehu-border-divider, #1f2b44);
+  border-radius: 10px;
+}
+.detalle-obra__lock p{
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.detalle-obra__lock-ico{
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--text-tertiary);
+}
+
+/* ---------- Formularios de la etapa actual ---------- */
+.detalle-obra__form{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+  padding: 14px;
+  background: var(--sigehu-surface-input, #1a2338);
+  border: 1px solid var(--sigehu-border-subtle, #2a3552);
+  border-radius: 10px;
+}
+.detalle-obra__form--row{
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.detalle-obra__form-field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.detalle-obra__form-field--wide{ grid-column: 1 / -1; }
+.detalle-obra__fecha-input{
+  width: fit-content;
+  min-width: 180px;
+}
+.detalle-obra__fecha-input:disabled{
+  opacity: .75;
+  cursor: not-allowed;
+}
+
+/* ---------- Resumen consolidado por etapa ---------- */
+.detalle-obra__resumen{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+.resumen-etapa{
+  position: relative;
+  padding: 16px;
+  background: var(--sigehu-surface-input, #1a2338);
+  border: 1px solid var(--sigehu-border-subtle, #2a3552);
+  border-radius: 10px;
+}
+.resumen-etapa h3{
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--resumen-color, var(--text-primary));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.resumen-etapa__dot{
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--resumen-color, var(--text-secondary));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--resumen-color, var(--text-secondary)) 22%, transparent);
+  flex-shrink: 0;
+}
+.resumen-etapa dl{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+.resumen-etapa dt{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.resumen-etapa dd{
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ---------- Botones específicos ---------- */
+.btn-pago--finalizar{
+  background: color-mix(in srgb, var(--sigehu-danger, #EF4444) 12%, transparent);
+  color: var(--sigehu-danger, #EF4444);
+  border-color: var(--sigehu-danger, #EF4444);
+}
+.btn-pago--finalizar:hover{
+  background: var(--sigehu-danger, #EF4444);
+  color: #fff;
+}
+.btn-pago--remover{
+  background: color-mix(in srgb, var(--sigehu-danger, #EF4444) 8%, transparent);
+  color: var(--sigehu-danger, #EF4444);
+  border-color: color-mix(in srgb, var(--sigehu-danger, #EF4444) 45%, transparent);
+  font-size: 11.5px;
+  padding: 4px 10px;
+}
+.btn-pago--remover:hover{
+  background: var(--sigehu-danger, #EF4444);
+  color: #fff;
+}
+.pago-tag--finalizado{
+  background: color-mix(in srgb, var(--text-secondary, #94A3B8) 12%, transparent);
+  color: var(--text-secondary, #94A3B8);
+  border-color: color-mix(in srgb, var(--text-secondary, #94A3B8) 35%, transparent);
+}
+
+/* ---------- Tarjeta placeholder (Garantías) ---------- */
+.detalle-obra__card--placeholder{
+  border-style: dashed;
+}
+
+/* ---------- Kit de instalación ---------- */
+.kit-info{ display: grid; gap: 12px; }
+.kit-progreso{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  background: var(--sigehu-active-bg, rgba(59,130,246,.08));
+  border-radius: 8px;
+  width: fit-content;
+}
+.kit-check{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--sigehu-border-divider, #1f2b44);
+  color: var(--text-tertiary);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.kit-check--ok{
+  background: color-mix(in srgb, var(--success, #10B981) 15%, transparent);
+  border-color: var(--success, #10B981);
+  color: var(--success, #10B981);
 }

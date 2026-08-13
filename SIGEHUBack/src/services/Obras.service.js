@@ -135,7 +135,18 @@ const getObraById = async (id) => {
 const getDetalleObra = async (id) => {
     const db = await getConnection();
     const rows = await db.query("SELECT * FROM VW_DETALLE_OBRA WHERE idObra = ?", [id]);
-    return rows[0] ?? null;
+    if (!rows || rows.length === 0) return null;
+
+    // VW_DETALLE_OBRA no expone las fechas por etapa (FechaInicio,
+    // FechaLevantamiento, FechaFabricacion, FechaInstalacion): se fusionan desde
+    // la tabla Obras para que el Detalle de Obra las muestre/edite por etapa.
+    const fechas = await db.query(
+        `SELECT FechaInicio, FechaLevantamiento, FechaFabricacion, FechaInstalacion
+         FROM Obras WHERE idObra = ?`,
+        [id]
+    );
+
+    return { ...rows[0], ...(fechas?.[0] ?? {}) };
 };
 
 // ─── GET Detalle de obra para vistas móviles (P0.2) ─────────────────────────
@@ -641,6 +652,71 @@ const cambiarEstado = async (idObra, idEstado, idTrabajadorCtx = 1) => {
     return result;
 };
 
+// ─── UPDATE de fechas por etapa (Detalle de Obra) ───────────────────────────
+// PATCH /Obras/:id/fechas-etapas. Actualiza solo las fechas que lleguen en el
+// cuerpo (nunca pisa las demás): FechaLevantamiento, FechaFabricacion,
+// FechaInstalacion. Usa transacción explícita con contexto de sesión para que
+// los triggers de auditoría de Obras funcionen (regla Firebird del proyecto).
+const actualizarFechasEtapas = async (idObra, { FechaLevantamiento, FechaFabricacion, FechaInstalacion, idTrabajadorCtx = 1 }) => {
+    const db = await getConnection();
+    const tx = await db.transaction();
+
+    try {
+        const toDate = (v) => {
+            if (v == null || v === '') return null;
+            if (v instanceof Date) return v;
+            // Fecha "yyyy-mm-dd" desde <input type="date">: se ancla al mediodía
+            // local para que la lectura (con offset del driver) conserve el
+            // mismo día calendario, sin corrimiento por zona horaria.
+            if (/^\d{4}-\d{2}-\d{2}$/.test(String(v))) {
+                return new Date(`${String(v)}T12:00:00`);
+            }
+            return new Date(v);
+        };
+
+        const campos = [];
+        const valores = [];
+        const push = (columna, valor) => {
+            campos.push(`${columna} = ?`);
+            valores.push(toDate(valor));
+        };
+
+        if (FechaLevantamiento !== undefined) push('FechaLevantamiento', FechaLevantamiento);
+        if (FechaFabricacion !== undefined) push('FechaFabricacion', FechaFabricacion);
+        if (FechaInstalacion !== undefined) push('FechaInstalacion', FechaInstalacion);
+
+        if (campos.length === 0) {
+            await tx.rollback();
+            return null;
+        }
+
+        const existe = await tx.query(
+            "SELECT 1 FROM Obras WHERE idObra = ? AND Activo = TRUE",
+            [idObra]
+        );
+        if (!existe || existe.length === 0) {
+            await tx.rollback();
+            return null;
+        }
+
+        await tx.execute(
+            "SELECT RDB$SET_CONTEXT('USER_SESSION', 'CURRENT_USER_ID', ?) FROM RDB$DATABASE",
+            [String(idTrabajadorCtx)]
+        );
+
+        await tx.execute(
+            `UPDATE Obras SET ${campos.join(', ')} WHERE idObra = ?`,
+            [...valores, idObra]
+        );
+
+        await tx.commit();
+        return true;
+    } catch (err) {
+        await tx.rollback();
+        throw err;
+    }
+};
+
 // ─── GET catálogo de estados de obra ────────────────────────────────────
 const getEstados = async () => {
     const db = await getConnection();
@@ -659,6 +735,7 @@ export default {
     createObra,
     updateObra,
     deleteObra,
+    actualizarFechasEtapas,
     cambiarEstado,
     completarEtapa,
     resolverEstadoObra,
