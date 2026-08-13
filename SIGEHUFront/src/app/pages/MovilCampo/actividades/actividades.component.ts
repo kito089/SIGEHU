@@ -289,7 +289,11 @@ export class ActividadesComponent implements OnInit {
   }
 
   abrir(actividad: Actividad): void {
-    this.router.navigateByUrl(actividad.ruta);
+    // Pasa el destino (tipo + id) a la página de campo para que preseleccione
+    // la obra/compra/garantía tocada en lugar de quedarse en la primera.
+    this.router.navigateByUrl(actividad.ruta, {
+      state: { actividadTipo: actividad.tipo, actividadId: actividad.id },
+    });
   }
 
   reintentar(): void {

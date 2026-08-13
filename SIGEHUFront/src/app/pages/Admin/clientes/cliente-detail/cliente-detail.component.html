@@ -155,26 +155,132 @@
           </div>
         </section>
 
-        @if (!esPersona && contactos().length > 0) {
+        @if (!esPersona) {
           <section class="card">
             <h2>Contactos</h2>
-            <div class="contact-list">
-              @for (c of contactos(); track $index) {
-                <div class="contact-item">
-                  <strong>{{ c.nombreCompleto || '[Sin nombre]' }}</strong>
-                  @if (metaContacto(c)) {
-                    <span class="muted">{{ metaContacto(c) }}</span>
-                  }
-                  @if (c.observaciones) {
-                    <span class="muted">{{ c.observaciones }}</span>
-                  }
-                </div>
-              }
-            </div>
+            <app-contact-list
+              [contactos]="contactos()"
+              (contactosChange)="onContactosChange($event)">
+            </app-contact-list>
           </section>
         }
 
-        @if (tieneDatosFiscales()) {
+        @if (!tieneDatosFiscales()) {
+          <section class="card">
+            <h2>Información fiscal</h2>
+
+            <label class="switch" for="agregarFiscales">
+              <input
+                id="agregarFiscales"
+                type="checkbox"
+                [checked]="agregandoFiscales()"
+                (change)="toggleAgregarFiscales()"
+                [disabled]="guardando() || guardandoFiscales()">
+              <span class="switch__track" aria-hidden="true">
+                <span class="switch__thumb"></span>
+              </span>
+              <span class="switch__label">Datos Fiscales</span>
+              <span class="switch__hint">Registrar información de facturación SAT (RFC, régimen, CFDI…)</span>
+            </label>
+
+            @if (agregandoFiscales()) {
+              <div class="field-grid">
+                <div class="field">
+                  <label>RFC</label>
+                  <input type="text" [formControl]="control('rfc')" maxlength="13" placeholder="Ej. UTCA850101AB1" />
+                  @if (invalidarCampo('rfc')) {
+                    <span class="field-error">{{ mensajeError('rfc') }}</span>
+                  }
+                </div>
+
+                <div class="field">
+                  <label>Razón social</label>
+                  <input type="text" [formControl]="control('razonSocial')" maxlength="150" />
+                </div>
+
+                <div class="field">
+                  <label>Régimen fiscal</label>
+                  <div class="combo-wrap">
+                    <input type="text"
+                           autocomplete="off"
+                           [value]="labelCatalogo('regimenFiscal')"
+                           (focus)="abrirCombo('regimenFiscal')"
+                           (click)="abrirCombo('regimenFiscal')"
+                           (blur)="cerrarCombo()"
+                           (input)="busquedaRegimen.set($any($event.target).value)"
+                           placeholder="Busca un régimen…" />
+                    @if (mostrarListaRegimen()) {
+                      <div class="combo-list">
+                        @for (o of listadoRegimen(); track o.value) {
+                          <button type="button" class="combo-item" (mousedown)="seleccionarRegimen(o)">
+                            {{ o.label }}
+                          </button>
+                        }
+                        @if (listadoRegimen().length === 0) {
+                          <div class="combo-empty">Sin resultados</div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Uso CFDI</label>
+                  <div class="combo-wrap">
+                    <input type="text"
+                           autocomplete="off"
+                           [value]="labelCatalogo('usoCFDI')"
+                           (focus)="abrirCombo('usoCFDI')"
+                           (click)="abrirCombo('usoCFDI')"
+                           (blur)="cerrarCombo()"
+                           (input)="busquedaUso.set($any($event.target).value)"
+                           placeholder="Selecciona un uso…" />
+                    @if (mostrarListaUso()) {
+                      <div class="combo-list">
+                        @for (o of listadoUso(); track o.value) {
+                          <button type="button" class="combo-item" (mousedown)="seleccionarUso(o)">
+                            {{ o.label }}
+                          </button>
+                        }
+                        @if (listadoUso().length === 0) {
+                          <div class="combo-empty">Sin resultados</div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div class="field">
+                  <label>Código postal</label>
+                  <input type="text" [formControl]="control('codigoPostal')" maxlength="5" />
+                  @if (invalidarCampo('codigoPostal')) {
+                    <span class="field-error">{{ mensajeError('codigoPostal') }}</span>
+                  }
+                </div>
+
+                <div class="field field-full">
+                  <label>Dirección fiscal</label>
+                  <input type="text" [formControl]="control('direccionFiscal')" maxlength="400" />
+                </div>
+              </div>
+
+              <div class="fiscal-actions">
+                <button type="button"
+                        class="btn-fiscal btn-fiscal--primary"
+                        (click)="guardarFiscales()"
+                        [disabled]="guardandoFiscales()">
+                  {{ guardandoFiscales() ? 'Guardando…' : 'Guardar datos fiscales' }}
+                </button>
+                <button type="button"
+                        class="btn-fiscal"
+                        (click)="cancelarAgregarFiscales()"
+                        [disabled]="guardandoFiscales()">
+                  Cancelar
+                </button>
+              </div>
+            }
+          </section>
+        } @else {
           <section class="card">
             <h2>Información fiscal</h2>
 
@@ -343,8 +449,17 @@
             </div>
 
             <p class="field-note">
-              Para editar varios campos a la vez o la lista de contactos, usa el formulario de edición.
+              Los datos fiscales se editan campo por campo con su botón Editar.
             </p>
+
+            <div class="fiscal-actions">
+              <button type="button"
+                      class="btn-fiscal btn-fiscal--danger"
+                      (click)="solicitarEliminarFiscales()"
+                      [disabled]="guardando() || guardandoFiscales()">
+                Eliminar datos fiscales
+              </button>
+            </div>
           </section>
         }
       </div>
@@ -553,5 +668,16 @@
       (agrupadas)="onObrasAgrupadas()"
       (cancelar)="cerrarAgruparObras()">
     </app-agrupar-obras-modal>
+  }
+
+  @if (confirmarEliminarFiscales()) {
+    <app-confirm-modal
+      variant="danger"
+      title="Eliminar datos fiscales"
+      message="Se eliminarán todos los datos fiscales (RFC, régimen, uso CFDI, código postal y dirección fiscal) de este cliente. Esta acción es irreversible."
+      confirmLabel="Eliminar"
+      (confirmed)="eliminarFiscales()"
+      (cancelled)="cancelarEliminarFiscales()">
+    </app-confirm-modal>
   }
 </div>

@@ -58,6 +58,14 @@
 
 .compra-card-wrap {
   margin-bottom: 16px;
+  border-radius: 12px;
+  transition: box-shadow 0.3s ease;
+}
+
+/* Resaltado temporal de la orden tocada desde "Actividades". */
+.compra-card-wrap.destacada .sigehu-card {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
 .sigehu-card {

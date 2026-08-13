@@ -93,6 +93,15 @@
   color: var(--sigehu-danger, #f4574f);
 }
 
+.cl__medio-error {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--sigehu-font-size-xs, 11px);
+  color: var(--sigehu-danger, #f4574f);
+}
+
+.cl__table tbody tr.cl__row-invalid td { background: var(--sigehu-danger-soft, rgba(244, 87, 79, 0.07)); }
+
 .cl__input.invalid {
   border-color: var(--sigehu-danger, #f4574f);
 }
@@ -156,4 +165,44 @@
 
 @media (max-width: 560px) {
   .cl { padding: var(--sigehu-space-3, 12px); }
+}
+
+/* Móvil: cada fila de la tabla se apila como tarjeta con sus etiquetas.
+   Reutiliza la misma tabla (accesible), solo cambia su presentación. */
+@media (max-width: 640px) {
+  .cl__table-wrap { border: none; overflow: visible; }
+
+  .cl__table { min-width: 0; }
+
+  .cl__table thead { display: none; }
+
+  .cl__table, .cl__table tbody, .cl__table tr, .cl__table td { display: block; width: 100%; }
+
+  .cl__table tr {
+    border: 1px solid var(--sigehu-border-subtle, #1c2438);
+    border-radius: var(--sigehu-radius-md, 8px);
+    padding: var(--sigehu-space-3, 12px);
+    margin-bottom: var(--sigehu-space-3, 12px);
+  }
+
+  .cl__table tbody tr.cl__row-invalid { border-color: var(--sigehu-danger, #f4574f); }
+  .cl__table tbody tr.cl__row-invalid td { background: transparent; }
+
+  .cl__table td {
+    border-bottom: none;
+    padding: var(--sigehu-space-2, 8px) 0;
+  }
+
+  .cl__table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sigehu-text-tertiary, #5c6580);
+    margin-bottom: 4px;
+  }
+
+  .cl__col-actions { text-align: right; padding-top: var(--sigehu-space-2, 8px); }
 }

@@ -20,23 +20,25 @@
         </thead>
         <tbody>
           @for (c of contactos; track $index; let i = $index) {
-            <tr>
-              <td>
+            <tr [class.cl__row-invalid]="sinMedio(c)">
+              <td data-label="Nombre">
                 <input
                   class="cl__input"
                   type="text"
                   name="c-nombre-{{ i }}"
                   [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="c.nombreCompleto"
+                  (ngModelChange)="emitirCambios()"
                   placeholder="Nombre y apellido">
               </td>
-              <td>
+              <td data-label="Teléfono">
                 <input
                   class="cl__input"
                   type="tel"
                   name="c-telefono-{{ i }}"
                   [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="c.telefono"
+                  (ngModelChange)="emitirCambios()"
                   inputmode="tel"
                   maxlength="16"
                   placeholder="+52 449 000000"
@@ -47,26 +49,31 @@
                 @if (mostrarErrorTel(i, c)) {
                   <span class="cl__tel-error">Teléfono inválido: usa "+52" y el número (máx. 16 incluyendo espacios)</span>
                 }
+                @if (sinMedio(c)) {
+                  <span class="cl__medio-error">Requiere al menos un teléfono o un correo</span>
+                }
               </td>
-              <td>
+              <td data-label="Correo">
                 <input
                   class="cl__input"
                   type="email"
                   name="c-correo-{{ i }}"
                   [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="c.correo"
+                  (ngModelChange)="emitirCambios()"
                   placeholder="correo@ejemplo.com">
               </td>
-              <td>
+              <td data-label="Notas">
                 <input
                   class="cl__input"
                   type="text"
                   name="c-notas-{{ i }}"
                   [ngModelOptions]="{ standalone: true }"
                   [(ngModel)]="c.observaciones"
+                  (ngModelChange)="emitirCambios()"
                   placeholder="Notas opcionales">
               </td>
-              <td class="cl__col-actions">
+              <td class="cl__col-actions" data-label="Acciones">
                 <button
                   class="cl__remove"
                   (click)="solicitarEliminar(i)"

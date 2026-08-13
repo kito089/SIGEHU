@@ -25,7 +25,7 @@
   </div>
 
   <!-- Tarjetas por proveedor / dirección (RF-18) -->
-  <div *ngFor="let c of compras" class="compra-card-wrap">
+  <div *ngFor="let c of compras" class="compra-card-wrap" [id]="'compra-' + c.ID" [class.destacada]="c.ID === destacadoId">
     <ion-card class="sigehu-card">
       <ion-card-header>
         <div class="card-top">
