@@ -8,6 +8,8 @@ const router = Router();
 // Asignación de trabajadores, permisos granulares y pagos: SOLO Propietario
 // (RF-33). Los trabajadores solo leen su detalle vía /Obras/movil/:id y
 // finalizan etapas vía PUT /Obras/:id.
+router.get("/campos-permiso", controller.getCamposPermiso);
+router.post("/:idObra/trabajadores/batch", auth.requireRole('Propietario'), controller.asignarBatch);
 router.post("/:idObra/trabajadores", auth.requireRole('Propietario'), controller.asignar);
 router.get("/:idObra/trabajadores", controller.getByObra);
 router.delete("/trabajadores/:idDetalleAsignacion", auth.requireRole('Propietario'), controller.quitar);

@@ -21,7 +21,7 @@ const create = async (req, res) => {
         res.status(201).json({ message: "Nota creada", idNotaObra });
 
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        res.status(e?.status || 500).json({ error: e.message });
     }
 };
 

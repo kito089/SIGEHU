@@ -4,8 +4,45 @@ import { getConnection } from "../config/db.js";
 // Nota es BLOB SUB_TYPE TEXT: el driver exige Buffer, no string (igual que
 // Observaciones en Trabajadores). El INSERT usa executeReturning porque query()
 // abre un cursor, inválido para INSERT...RETURNING.
+// Valida que la obra, el estado y el trabajador existan (defensa en profundidad).
 const createNota = async ({ idObra, idEstadoObra, idTrabajador, nota }) => {
     const db = await getConnection();
+
+    const validaciones = [
+        {
+            tabla: 'Obras',
+            columna: 'idObra',
+            valor: idObra,
+            activo: true,
+            mensaje: 'La obra no existe o está inactiva'
+        },
+        {
+            tabla: 'EstadosObra',
+            columna: 'idEstadoObra',
+            valor: idEstadoObra,
+            activo: false,
+            mensaje: 'El estado de obra no existe'
+        },
+        {
+            tabla: 'Trabajadores',
+            columna: 'idTrabajador',
+            valor: idTrabajador,
+            activo: true,
+            mensaje: 'El trabajador no existe o está inactivo'
+        }
+    ];
+
+    for (const v of validaciones) {
+        const fila = await db.query(
+            `SELECT 1 FROM ${v.tabla} WHERE ${v.columna} = ?${v.activo ? ' AND Activo = TRUE' : ''}`,
+            [v.valor]
+        );
+        if (!fila || fila.length === 0) {
+            const err = new Error(v.mensaje);
+            err.status = 400;
+            throw err;
+        }
+    }
 
     const notaBuffer = nota != null ? Buffer.from(String(nota), "utf8") : null;
 

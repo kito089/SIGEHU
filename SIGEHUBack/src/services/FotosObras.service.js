@@ -14,6 +14,34 @@ const extractReturningValue = (rows, alias) => {
     return raw;
 };
 
+// ─── VALIDACIÓN de contexto (defensa en profundidad) ─────────────────────────
+// Devuelve un mensaje de error si la obra, el estado o el trabajador no
+// existen/válidos; null si todo es correcto. Se usa ANTES de persistir la foto
+// para poder borrar el archivo temporal subido por Multer en caso de fallo.
+const validarContextoFoto = async ({ idObra, idEstadoObra, idTrabajador }) => {
+    const db = await getConnection();
+
+    const obra = await db.query(
+        "SELECT 1 FROM Obras WHERE idObra = ? AND Activo = TRUE",
+        [idObra]
+    );
+    if (!obra || obra.length === 0) return 'La obra no existe o está inactiva';
+
+    const estado = await db.query(
+        "SELECT 1 FROM EstadosObra WHERE idEstadoObra = ?",
+        [idEstadoObra]
+    );
+    if (!estado || estado.length === 0) return 'El estado de obra no existe';
+
+    const trabajador = await db.query(
+        "SELECT 1 FROM Trabajadores WHERE idTrabajador = ? AND Activo = TRUE",
+        [idTrabajador]
+    );
+    if (!trabajador || trabajador.length === 0) return 'El trabajador no existe o está inactivo';
+
+    return null;
+};
+
 // ─── INSERT: guardar el registro de la foto ya subida por Multer ─────────────
 // La imagen se persiste como BLOB binario en la columna Foto (permitido por
 // decisión explícita) y además se conserva RutaArchivo con la ruta relativa
@@ -53,7 +81,9 @@ const getFotosByObra = async (idObra) => {
     const db = await getConnection();
 
     return await db.query(
-        `SELECT f.*, t.NombreCompleto AS SubioNombre, tu.Nombre AS RolSubio
+        `SELECT f.idFotoObra, f.Obras_idObra, f.EstadosObra_idEstadoObra,
+                f.Trabajadores_idTrabajador, f.RutaArchivo, f.ContentType,
+                f.FechaCreacion, t.NombreCompleto AS SubioNombre, tu.Nombre AS RolSubio
          FROM FotosObras f
          JOIN Trabajadores t ON t.idTrabajador = f.Trabajadores_idTrabajador
          LEFT JOIN TiposUsuarios tu ON tu.idTipoUsuario = t.TiposUsuarios_idTipoUsuario
@@ -117,6 +147,7 @@ const deleteFotoObra = async (idFotoObra) => {
 };
 
 export default {
+    validarContextoFoto,
     createFotoObra,
     getFotosByObra,
     getFotoById,

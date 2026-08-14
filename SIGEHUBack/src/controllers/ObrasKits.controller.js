@@ -19,7 +19,7 @@ const asignar = async (req, res) => {
             return res.status(400).json({ error: "La obra ya tiene un kit asignado" });
         }
 
-        res.status(201).json({ message: "Kit asignado a la obra" });
+        res.status(201).json({ message: "Kit asignado a la obra", ...resultado });
 
     } catch (e) {
         res.status(500).json({ error: e.message });

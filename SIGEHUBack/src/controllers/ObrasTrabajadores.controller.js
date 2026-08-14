@@ -9,13 +9,54 @@ const asignar = async (req, res) => {
             return res.status(400).json({ error: "idTrabajador e idEstadoObra son requeridos" });
         }
 
-        const idDetalleAsignacion = await service.asignarTrabajador({
+        const resultado = await service.asignarTrabajador({
             idObra: req.params.idObra,
             idTrabajador,
             idEstadoObra
         });
 
-        res.status(201).json({ message: "Trabajador asignado a la obra", idDetalleAsignacion });
+        if (resultado && resultado.duplicado) {
+            return res.status(400).json({ error: "El trabajador ya está asignado a esta etapa" });
+        }
+        if (resultado && resultado.invalido) {
+            return res.status(400).json({ error: "El trabajador no existe, está inactivo o es el Propietario" });
+        }
+        if (resultado == null) {
+            return res.status(400).json({ error: "No se pudo asignar el trabajador" });
+        }
+
+        res.status(201).json({ message: "Trabajador asignado a la obra", idDetalleAsignacion: resultado });
+
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+// POST /obras/:idObra/trabajadores/batch
+// Alta por lotes desde el modal del Detalle de Obra (requisito: varios
+// trabajadores + permisos antes de guardar). El servicio omite duplicados.
+const asignarBatch = async (req, res) => {
+    try {
+        const { idEstadoObra, trabajadores } = req.body;
+
+        if (!idEstadoObra) {
+            return res.status(400).json({ error: "idEstadoObra es requerido" });
+        }
+        if (!Array.isArray(trabajadores) || trabajadores.length === 0) {
+            return res.status(400).json({ error: "trabajadores debe ser un array con al menos un elemento" });
+        }
+
+        const resultados = await service.asignarTrabajadoresBatch({
+            idObra: req.params.idObra,
+            idEstadoObra,
+            trabajadores,
+            idTrabajadorCtx: req.user?.idTrabajador
+        });
+
+        const asignados = (resultados || []).filter(r => r.asignado).length;
+        const actualizados = (resultados || []).filter(r => r.yaAsignado).length;
+
+        res.status(201).json({ message: "Lote de trabajadores procesado", asignados, actualizados, resultados });
 
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -65,6 +106,16 @@ const asignarPermisos = async (req, res) => {
 
         res.status(201).json({ message: "Permisos procesados", resultados });
 
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+// GET /obras/campos-permiso
+const getCamposPermiso = async (_req, res) => {
+    try {
+        const campos = await service.getCamposPermiso();
+        res.json(campos);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -146,11 +197,13 @@ const getPagos = async (req, res) => {
 
 export default {
     asignar,
+    asignarBatch,
     getByObra,
     quitar,
     asignarPermisos,
     getPermisos,
     revocarPermisos,
+    getCamposPermiso,
     registrarPago,
     getPagos
 };

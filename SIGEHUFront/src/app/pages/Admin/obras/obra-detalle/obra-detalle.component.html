@@ -182,15 +182,39 @@
                   <h2 class="detalle-obra__card-title">Levantamiento</h2>
                   <dl class="detalle-obra__dl">
                     <div class="detalle-obra__dl-item">
-                      <dt>¿Quién envió las medidas?</dt>
+                      <dt>Estado de las medidas</dt>
                       <dd>
-                        @if (trabajadoresDeEtapa(2).length === 0) {
-                          <span class="muted">—</span>
+                        @if (medidasInfo().enviada) {
+                          <span class="pago-tag pago-tag--ok">Enviada</span>
                         } @else {
-                          {{ nombresTrabajadores(2) }}
+                          <span class="pago-tag pago-tag--warning">Pendiente</span>
                         }
                       </dd>
                     </div>
+                    @if (medidasInfo().tieneResponsable) {
+                      <div class="detalle-obra__dl-item">
+                        <dt>Responsable (envío inicial)</dt>
+                        <dd>{{ medidasInfo().responsable }}</dd>
+                      </div>
+                    }
+                    @if (medidasInfo().enviada) {
+                      <div class="detalle-obra__dl-item">
+                        <dt>Enviada por</dt>
+                        <dd>{{ medidasInfo().enviadasPor }} <span class="muted">&middot; {{ medidasInfo().fecha }}</span></dd>
+                      </div>
+                    }
+                    @if (medidasInfo().enviada) {
+                      <div class="detalle-obra__dl-item">
+                        <dt>¿Quién envió las medidas?</dt>
+                        <dd>
+                          @if (trabajadoresDeEtapa(2).length === 0) {
+                            <span class="muted">—</span>
+                          } @else {
+                            {{ nombresTrabajadores(2) }}
+                          }
+                        </dd>
+                      </div>
+                    }
                     <div class="detalle-obra__dl-item">
                       <dt>Fecha programada del levantamiento</dt>
                       <dd>
@@ -232,7 +256,8 @@
                     <h2 class="detalle-obra__card-title">Materiales para la obra</h2>
                   </div>
 
-                  <!-- Formulario (solo Propietario en la etapa actual). -->
+                  <!-- Formulario (solo Propietario en la etapa actual). Añade a la lista
+                      pendiente; el guardado masivo ocurre con "Guardar cambios". -->
                   @if (!esTrabajador() && clas === 'actual') {
                     <div class="detalle-obra__form">
                       <label class="detalle-obra__form-field">
@@ -277,37 +302,116 @@
                           placeholder="Detalles del material"
                         />
                       </label>
-                      <button type="button" class="btn-pago btn-pago--primary" (click)="asignarMaterial()"
-                        [disabled]="guardandoMaterial() || !materialSel()">
-                        {{ guardandoMaterial() ? 'Guardando…' : 'Agregar material' }}
+                      <button type="button" class="btn-pago btn-pago--primary" (click)="agregarMaterialPendiente()"
+                        [disabled]="!materialSel()">
+                        Agregar a la lista
                       </button>
                     </div>
                   }
 
-                  @if (materialesObra().length === 0) {
-                    <p class="muted">No hay materiales asignados a la obra.</p>
-                  } @else {
-                    <div class="detalle-obra__tablares">
-                      @for (m of materialesObra(); track m.idMaterial) {
-                        <div class="detalle-obra__tablar">
+                  <!-- Lista de materiales por agregar (aún no guardada en BD). -->
+                  @if (materialesPendientesAgregar().length > 0) {
+                    <div class="detalle-obra__form detalle-obra__form--pendientes">
+                      <h3 class="detalle-obra__card-title detalle-obra__card-title--sm">
+                        Por agregar ({{ materialesPendientesAgregar().length }})
+                      </h3>
+                      @for (m of materialesPendientesAgregar(); track $index) {
+                        <div class="detalle-obra__tablar detalle-obra__tablar--pendiente">
                           <span class="detalle-obra__tablar-nombre">{{ m.nombre }}</span>
-                          @if (m.unidadMedida) {
-                            <span class="pago-tag pago-tag--muted">{{ m.unidadMedida }}</span>
-                          }
-                          @if (m.cantidad != null) {
-                            <span class="muted">× {{ m.cantidad }}</span>
-                          }
-                          @if (m.medida) {
-                            <span class="muted">· {{ m.medida }}</span>
-                          }
-                          @if (m.notas) {
-                            <span class="muted">· {{ m.notas }}</span>
-                          }
-                          @if (!esTrabajador() && clas === 'actual') {
-                            <button type="button" class="btn-pago btn-pago--remover" (click)="quitarMaterial(m)">Quitar</button>
-                          }
+                          <input type="number" min="0" step="0.01" inputmode="decimal"
+                            class="modal-pago__input detalle-obra__inline-input"
+                            [value]="m.cantidad ?? ''"
+                            (input)="setMaterialPendienteCantidad($index, $any($event.target).value)"
+                            placeholder="Cant."
+                          />
+                          <input type="text"
+                            class="modal-pago__input detalle-obra__inline-input"
+                            [value]="m.medida ?? ''"
+                            (input)="setMaterialPendienteMedida($index, $any($event.target).value)"
+                            placeholder="Medida"
+                          />
+                          <input type="text"
+                            class="modal-pago__input detalle-obra__inline-input detalle-obra__inline-input--wide"
+                            [value]="m.notas ?? ''"
+                            (input)="setMaterialPendienteNotas($index, $any($event.target).value)"
+                            placeholder="Notas"
+                          />
+                          <button type="button" class="btn-pago btn-pago--remover" (click)="quitarMaterialPendiente($index)">Quitar</button>
                         </div>
                       }
+                    </div>
+                  }
+
+                  @if (materialesObra().length === 0 && materialesPendientesAgregar().length === 0) {
+                    <p class="muted">No hay materiales asignados a la obra.</p>
+                  } @else {
+                    @if (materialesObra().length > 0) {
+                      <div class="detalle-obra__tablares">
+                        @for (m of materialesObra(); track m.idMaterial) {
+                          @let d = materialDraft(m.idMaterial);
+                          <div class="detalle-obra__tablar" [class.detalle-obra__tablar--quitar]="esPendienteQuitar(m.idMaterial)">
+                            <span class="detalle-obra__tablar-nombre">{{ m.nombre }}</span>
+                            @if (m.unidadMedida) {
+                              <span class="pago-tag pago-tag--muted">{{ m.unidadMedida }}</span>
+                            }
+                            @if (!esTrabajador() && clas === 'actual') {
+                              <input type="number" min="0" step="0.01" inputmode="decimal"
+                                class="modal-pago__input detalle-obra__inline-input"
+                                [value]="d.cantidad ?? ''"
+                                (input)="setMaterialDraft(m.idMaterial, 'cantidad', $any($event.target).value)"
+                                placeholder="Cant."
+                                title="Cantidad"
+                              />
+                              <input type="text"
+                                class="modal-pago__input detalle-obra__inline-input"
+                                [value]="d.medida ?? ''"
+                                (input)="setMaterialDraft(m.idMaterial, 'medida', $any($event.target).value)"
+                                placeholder="Medida"
+                                title="Medida"
+                              />
+                              <input type="text"
+                                class="modal-pago__input detalle-obra__inline-input detalle-obra__inline-input--wide"
+                                [value]="d.notas ?? ''"
+                                (input)="setMaterialDraft(m.idMaterial, 'notas', $any($event.target).value)"
+                                placeholder="Notas"
+                                title="Notas"
+                              />
+                              <button type="button" class="btn-pago"
+                                [class.btn-pago--remover]="esPendienteQuitar(m.idMaterial)"
+                                [class.btn-pago--primary]="!esPendienteQuitar(m.idMaterial)"
+                                (click)="togglePendienteQuitar(m.idMaterial)">
+                                {{ esPendienteQuitar(m.idMaterial) ? 'Quitar' : 'Marca quitar' }}
+                              </button>
+                            } @else {
+                              @if (m.cantidad !== null && m.cantidad !== undefined) {
+                                <span class="muted">× {{ m.cantidad }}</span>
+                              }
+                              @if (m.medida) {
+                                <span class="muted">· {{ m.medida }}</span>
+                              }
+                              @if (m.notas) {
+                                <span class="muted">· {{ m.notas }}</span>
+                              }
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (materialesQuitarCount() > 0 || materialesPendientesAgregar().length > 0) {
+                      <p class="muted">
+                        {{ materialesPendientesAgregar().length > 0 ? 'Se agregarán ' + materialesPendientesAgregar().length + ' material(es). ' : '' }}
+                        {{ materialesQuitarCount() > 0 ? 'Se quitarán ' + materialesQuitarCount() + ' material(es).' : '' }}
+                        Los cambios se aplican al pulsar "Guardar cambios".
+                      </p>
+                    }
+                  }
+
+                  @if (!esTrabajador() && clas === 'actual') {
+                    <div class="detalle-obra__form-actions">
+                      <button type="button" class="btn-pago btn-pago--primary" (click)="guardarLoteMateriales()"
+                        [disabled]="guardandoLoteMateriales() || !materialesHayCambios()">
+                        {{ guardandoLoteMateriales() ? 'Guardando…' : 'Guardar cambios' }}
+                      </button>
                     </div>
                   }
                 </section>
@@ -338,8 +442,10 @@
                     <h2 class="detalle-obra__card-title">Kit de instalación</h2>
                   </div>
 
-                  <!-- Formulario (solo Propietario en la etapa actual y sin kit). -->
-                  @if (!esTrabajador() && clas === 'actual' && !kitObra()) {
+                  <!-- Formulario (solo Propietario en la etapa actual). Se muestra también
+                      cuando ya hay kit asignado: el backend reemplaza el existente
+                      (fix "editar kit en detalles de obras"). -->
+                  @if (!esTrabajador() && clas === 'actual') {
                     <div class="detalle-obra__form">
                       <label class="detalle-obra__form-field">
                         <span class="modal-pago__label">Kit *</span>
@@ -358,7 +464,7 @@
                       </label>
                       <button type="button" class="btn-pago btn-pago--primary" (click)="asignarKit()"
                         [disabled]="guardandoKit() || !kitSel()">
-                        {{ guardandoKit() ? 'Guardando…' : 'Asignar kit' }}
+                        {{ guardandoKit() ? 'Guardando…' : (kitObra() ? 'Cambiar kit' : 'Asignar kit') }}
                       </button>
                     </div>
                   }
@@ -385,7 +491,7 @@
                           <div class="detalle-obra__tablar">
                             <span class="kit-check" [class.kit-check--ok]="item.marcado" aria-hidden="true">{{ item.marcado ? '✓' : '○' }}</span>
                             <span class="detalle-obra__tablar-nombre">{{ item.nombre }}</span>
-                            @if (item.cantidad != null) {
+                            @if (item.cantidad !== null && item.cantidad !== undefined) {
                               <span class="muted">× {{ item.cantidad }}</span>
                             }
                             @if (item.notas) {
@@ -406,11 +512,18 @@
                 <section class="detalle-obra__card">
                   <div class="detalle-obra__card-header-row">
                     <h2 class="detalle-obra__card-title">Resumen general de la obra</h2>
-                    @if (!esTrabajador()) {
-                      <button type="button" class="btn-pago btn-pago--finalizar" (click)="finalizarObra()" [disabled]="finalizandoObra()">
-                        {{ finalizandoObra() ? 'Finalizando…' : 'Finalizar obra' }}
-                      </button>
-                    }
+                    <div class="pagos-acciones">
+                      @if (!esTrabajador()) {
+                        <button type="button" class="btn-pago" (click)="registrarGarantia()" [disabled]="finalizandoObra()">
+                          {{ finalizandoObra() ? 'Procesando…' : 'Registrar garantía' }}
+                        </button>
+                      }
+                      @if (!esTrabajador()) {
+                        <button type="button" class="btn-pago btn-pago--finalizar" (click)="finalizarObra()" [disabled]="finalizandoObra()">
+                          {{ finalizandoObra() ? 'Finalizando…' : 'Finalizar obra' }}
+                        </button>
+                      }
+                    </div>
                   </div>
                   <div class="detalle-obra__resumen">
                     @for (r of resumenEtapas(); track r.id) {
@@ -450,26 +563,14 @@
                   <h2 class="detalle-obra__card-title">
                     Trabajadores asignados &middot; {{ nombreEstado(idEstadoSel) }}
                   </h2>
-                  <!-- Asignación de trabajadores: solo Propietario en la etapa actual. -->
-                  @if (!esTrabajador() && clas === 'actual') {
-                    <div class="detalle-obra__form detalle-obra__form--row">
-                      <select
-                        class="modal-pago__input modal-pago__input--select"
-                        [value]="nuevoTrabajadorId() ?? ''"
-                        (change)="setNuevoTrabajador(num($any($event.target).value))"
-                      >
-                        @if (!nuevoTrabajadorId()) {
-                          <option value="" disabled>Selecciona un trabajador</option>
-                        }
-                        @for (t of trabajadoresDisponibles(); track t.idTrabajador) {
-                          <option [value]="t.idTrabajador">{{ t.nombreCompleto }} ({{ t.rol }})</option>
-                        }
-                      </select>
-                      <button type="button" class="btn-pago" (click)="agregarTrabajador()"
-                        [disabled]="agregandoTrabajador() || !nuevoTrabajadorId()">
-                        {{ agregandoTrabajador() ? 'Asignando…' : 'Agregar' }}
-                      </button>
-                    </div>
+                  <!-- Alta de trabajadores nuevos + permisos iniciales: solo Propietario
+                      en la etapa actual y fuera de "Instalado" (7.1: en estado
+                      Instalado ya no se agregan trabajadores). -->
+                  @if (!esTrabajador() && clas === 'actual' && etapaActualBarra()?.id !== 5) {
+                    <button type="button" class="btn-pago btn-pago--primary" (click)="abrirModalTrabajadores()"
+                      [disabled]="guardandoLoteTrabajadores()">
+                      {{ guardandoLoteTrabajadores() ? 'Guardando…' : 'Agregar trabajadores' }}
+                    </button>
                   }
                 </div>
                 @if (trabajadoresDeEtapa(idEstadoSel).length === 0) {
@@ -486,7 +587,11 @@
                           <a class="tablar-tel" [href]="'tel:' + t.telefono">{{ t.telefono }}</a>
                         }
                         <time class="muted">{{ formatearFecha(t.fechaAsignacion) }}</time>
-                        @if (!esTrabajador() && clas === 'actual') {
+                        @if (!esTrabajador() && clas === 'actual' && etapaActualBarra()?.id !== 5) {
+                          <button type="button" class="btn-pago" (click)="abrirEditarPermisos(t)"
+                            [disabled]="guardandoPermisosEdit()">
+                            Editar permisos
+                          </button>
                           <button type="button" class="btn-pago btn-pago--remover" (click)="quitarTrabajador(t)">Quitar</button>
                         }
                       </div>
@@ -498,6 +603,57 @@
               <!-- Notas y fotos de esta etapa, agrupadas por trabajador -->
               <section class="detalle-obra__card">
                 <h2 class="detalle-obra__card-title">Actividad de la etapa &middot; {{ nombreEstado(idEstadoSel) }}</h2>
+
+                <!-- Formularios del Propietario (independientes, 4.1): nota por un lado,
+                    fotos por otro. Solo en la etapa actual. -->
+                @if (!esTrabajador() && clas === 'actual') {
+                  <div class="detalle-obra__form">
+                    <label class="detalle-obra__form-field detalle-obra__form-field--wide">
+                      <span class="modal-pago__label">Nueva nota</span>
+                      <textarea
+                        class="modal-pago__input detalle-obra__nota-input"
+                        [value]="nuevaNota()"
+                        (input)="setNuevaNota($any($event.target).value)"
+                        rows="3"
+                        placeholder="Comentario del Propietario para esta etapa…"
+                      ></textarea>
+                    </label>
+                    <div class="detalle-obra__form-actions">
+                      <button type="button" class="btn-pago btn-pago--primary"
+                        (click)="agregarNotaAdmin()"
+                        [disabled]="guardandoNota() || !nuevaNota().trim()">
+                        {{ guardandoNota() ? 'Guardando…' : 'Registrar nota' }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="detalle-obra__form">
+                    <label class="detalle-obra__form-field detalle-obra__form-field--wide">
+                      <span class="modal-pago__label">Adjuntar fotos</span>
+                      <input type="file" accept="image/*" multiple class="modal-pago__input"
+                        (change)="onFotosAdmin($event)" />
+                      @if (fotosNuevas().length > 0) {
+                        <ul class="detalle-obra__fotos-pendientes">
+                          @for (f of fotosNuevas(); track f.hash; let i = $index) {
+                            <li>
+                              <img class="detalle-obra__foto-thumb" [src]="f.preview" alt="Vista previa de la foto" />
+                              <span class="detalle-obra__foto-nombre">{{ f.file.name }}</span>
+                              <button type="button" class="btn-pago btn-pago--remover" (click)="quitarFotoAdmin(i)">Quitar</button>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </label>
+                    <div class="detalle-obra__form-actions">
+                      <button type="button" class="btn-pago"
+                        (click)="subirFotosAdmin()"
+                        [disabled]="subiendoFoto() || fotosNuevas().length === 0">
+                        {{ subiendoFoto() ? 'Subiendo…' : 'Subir fotos (' + fotosNuevas().length + ')' }}
+                      </button>
+                    </div>
+                  </div>
+                }
+
                 @if (etapaSelVacia()) {
                   <p class="muted">No hay notas ni fotos registradas en esta etapa.</p>
                 } @else {
@@ -532,8 +688,31 @@
                           <ul class="detalle-obra__notas">
                             @for (n of g.notas; track n.id) {
                               <li class="detalle-obra__nota">
-                                <p class="detalle-obra__nota-texto">{{ n.nota }}</p>
-                                <time class="detalle-obra__nota-fecha">{{ formatearFecha(n.fecha) }}</time>
+                                @if (esNotaEnEdicion(n)) {
+                                  <textarea
+                                    class="modal-pago__input detalle-obra__nota-input"
+                                    [value]="notaEditTexto()"
+                                    (input)="setNotaEditTexto($any($event.target).value)"
+                                    rows="3"
+                                  ></textarea>
+                                  <div class="detalle-obra__nota-acciones">
+                                    <button type="button" class="btn-pago" (click)="cancelarEditarNota()"
+                                      [disabled]="guardandoNotaEdit()">Cancelar</button>
+                                    <button type="button" class="btn-pago btn-pago--primary" (click)="guardarEditarNota()"
+                                      [disabled]="guardandoNotaEdit() || !notaEditTexto().trim()">
+                                      {{ guardandoNotaEdit() ? 'Guardando…' : 'Guardar' }}
+                                    </button>
+                                  </div>
+                                } @else {
+                                  <p class="detalle-obra__nota-texto">{{ n.nota }}</p>
+                                  <time class="detalle-obra__nota-fecha">{{ formatearFecha(n.fecha) }}</time>
+                                  @if (!esTrabajador()) {
+                                    <div class="detalle-obra__nota-acciones">
+                                      <button type="button" class="btn-pago" (click)="iniciarEditarNota(n)">Editar</button>
+                                      <button type="button" class="btn-pago btn-pago--remover" (click)="eliminarNota(n)">Eliminar</button>
+                                    </div>
+                                  }
+                                }
                               </li>
                             }
                           </ul>
@@ -665,24 +844,6 @@
             </fieldset>
 
             <label class="modal-pago__field">
-              <span class="modal-pago__label">Quién lo recibió *</span>
-              <select
-                class="modal-pago__input modal-pago__input--select"
-                [value]="formPago().idTrabajadorReceptor ?? ''"
-                (change)="setPagoReceptor(num($any($event.target).value))"
-              >
-                @if (!formPago().idTrabajadorReceptor) {
-                  <option value="" disabled>Selecciona una persona</option>
-                }
-                @for (t of trabajadoresLista(); track t.idTrabajador) {
-                  <option [value]="t.idTrabajador">
-                    {{ t.nombreCompleto }} ({{ t.rol }})
-                  </option>
-                }
-              </select>
-            </label>
-
-            <label class="modal-pago__field">
               <span class="modal-pago__label">Fecha del pago *</span>
               <input
                 type="date"
@@ -701,6 +862,122 @@
             <button type="button" class="btn-pago" (click)="cerrarModalPago()" [disabled]="formPago().guardando">Cancelar</button>
             <button type="button" class="btn-pago btn-pago--primary" (click)="guardarPago()" [disabled]="formPago().guardando">
               {{ formPago().guardando ? 'Guardando…' : 'Registrar pago' }}
+            </button>
+          </footer>
+        </div>
+      }
+
+      <!-- ═════════ MODAL DE ASIGNACIÓN DE TRABAJADORES (lote + permisos) ═════════ -->
+      @if (modalTrabajadoresAbierto()) {
+        <div class="modal-backdrop" (click)="cerrarModalTrabajadores()" aria-hidden="true"></div>
+        <div class="modal-pago modal-pago--trabajadores" role="dialog" aria-modal="true" aria-label="Asignar trabajadores">
+          <header class="modal-pago__header">
+            <h2>Agregar trabajadores &middot; {{ nombreEstado(etapaActualBarra()?.id ?? 0) }}</h2>
+            <button type="button" class="modal-pago__close" (click)="cerrarModalTrabajadores()" aria-label="Cerrar">&times;</button>
+          </header>
+
+          <div class="modal-pago__body">
+            <label class="modal-pago__field">
+              <span class="modal-pago__label">Buscar trabajador</span>
+              <input type="search" class="modal-pago__input"
+                [value]="busquedaTrabajador()"
+                (input)="setBusquedaTrabajador($any($event.target).value)"
+                placeholder="Nombre del trabajador…"
+              />
+            </label>
+
+            <p class="muted modal-trabajadores__hint">
+              Marca los trabajadores NUEVOS a dar de alta en esta etapa y sus permisos iniciales.
+              Los trabajadores ya asignados se editan con el botón «Editar permisos» de la etapa.
+              Todo se guarda en un solo lote.
+            </p>
+
+            @if (trabajadoresAsignables().length === 0) {
+              <p class="muted">No hay trabajadores disponibles para asignar (todos están asignados o no hay activos).</p>
+            } @else {
+              <div class="modal-trabajadores__lista">
+                @for (t of trabajadoresModalFiltrados(); track t.idTrabajador) {
+                  <div class="modal-trabajadores__row">
+                    <div class="modal-trabajadores__row-head">
+                      <label class="modal-trabajadores__check">
+                        <input type="checkbox"
+                          [checked]="estaSeleccionadoNuevo(t.idTrabajador)"
+                          (change)="toggleTrabajadorNuevo(t.idTrabajador)" />
+                        <span>{{ t.nombreCompleto }}</span>
+                      </label>
+                      <span class="pago-tag pago-tag--muted">{{ t.rol }}</span>
+                    </div>
+                    @if (estaSeleccionadoNuevo(t.idTrabajador)) {
+                      @if (camposPermisoCatalogo().length > 0) {
+                        <div class="modal-trabajadores__permisos">
+                          <button type="button" class="btn-pago btn-pago--mini" (click)="toggleTodosPermisos(t.idTrabajador)">
+                            {{ todosPermisosMarcados(t.idTrabajador) ? 'Deseleccionar todos' : 'Seleccionar todos' }}
+                          </button>
+                          @for (c of camposPermisoCatalogo(); track c.id) {
+                            <label class="modal-trabajadores__permiso">
+                              <input type="checkbox"
+                                [checked]="tienePermisoMarcado(t.idTrabajador, c.id)"
+                                (change)="togglePermisoMarcado(t.idTrabajador, c.id)" />
+                              <span title="{{ c.descripcion }}">{{ c.nombre }}</span>
+                            </label>
+                          }
+                        </div>
+                      } @else {
+                        <p class="muted modal-trabajadores__hint">No hay permisos granulares configurados.</p>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <footer class="modal-pago__footer">
+            <button type="button" class="btn-pago" (click)="cerrarModalTrabajadores()" [disabled]="guardandoLoteTrabajadores()">Cancelar</button>
+            <button type="button" class="btn-pago btn-pago--primary" (click)="guardarLoteTrabajadores()" [disabled]="guardandoLoteTrabajadores()">
+              {{ guardandoLoteTrabajadores() ? 'Guardando…' : 'Guardar lote' }}
+            </button>
+          </footer>
+        </div>
+      }
+
+      <!-- ═════════ MODAL "EDITAR PERMISOS" (por trabajador ya asignado) ═════════ -->
+      @if (modalPermisosEditAbierto()) {
+        <div class="modal-backdrop" (click)="cerrarEditarPermisos()" aria-hidden="true"></div>
+        <div class="modal-pago modal-pago--trabajadores" role="dialog" aria-modal="true" aria-label="Editar permisos">
+          <header class="modal-pago__header">
+            <h2>Editar permisos &middot; {{ trabajadorPermisosEdit()?.nombre }}</h2>
+            <button type="button" class="modal-pago__close" (click)="cerrarEditarPermisos()" aria-label="Cerrar">&times;</button>
+          </header>
+
+          <div class="modal-pago__body">
+            @if (camposPermisoCatalogo().length > 0) {
+              <div class="modal-trabajadores__permisos">
+                <button type="button" class="btn-pago btn-pago--mini" (click)="toggleTodosPermisosEdit()">
+                  {{ todosPermisosEditMarcados() ? 'Deseleccionar todos' : 'Seleccionar todos' }}
+                </button>
+                @for (c of camposPermisoCatalogo(); track c.id) {
+                  <label class="modal-trabajadores__permiso">
+                    <input type="checkbox"
+                      [checked]="tienePermisoEdit(c.id)"
+                      (change)="togglePermisoEdit(c.id)" />
+                    <span title="{{ c.descripcion }}">{{ c.nombre }}</span>
+                  </label>
+                }
+              </div>
+            } @else {
+              <p class="muted">No hay permisos granulares configurados.</p>
+            }
+
+            @if (errorPermisosEdit()) {
+              <p class="modal-pago__error" role="alert">{{ errorPermisosEdit() }}</p>
+            }
+          </div>
+
+          <footer class="modal-pago__footer">
+            <button type="button" class="btn-pago" (click)="cerrarEditarPermisos()" [disabled]="guardandoPermisosEdit()">Cancelar</button>
+            <button type="button" class="btn-pago btn-pago--primary" (click)="guardarPermisosEdit()" [disabled]="guardandoPermisosEdit()">
+              {{ guardandoPermisosEdit() ? 'Guardando…' : 'Guardar permisos' }}
             </button>
           </footer>
         </div>

@@ -1,5 +1,17 @@
 import { getConnection } from "../config/db.js";
 
+// Extrae de forma segura el valor devuelto por una sentencia INSERT...RETURNING,
+// independientemente de si el driver la entrega como valor escalar, objeto o array.
+// query() abre un cursor (inválido para INSERT...RETURNING), por eso estos
+// INSERT usan executeReturning y este extractor.
+const extractReturningValue = (rows, alias) => {
+    let raw = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
+    if (raw != null && typeof raw === 'object') {
+        return raw[alias];
+    }
+    return raw;
+};
+
 // ─── GET kit asignado a una obra (incluye checklist) ─────────────────────────
 const getKitByObra = async (idObra) => {
     const db = await getConnection();
@@ -37,6 +49,10 @@ const getKitByObra = async (idObra) => {
 };
 
 // ─── POST: asignar kit a obra + crear checklist ──────────────────────────────
+// Si la obra ya tiene un kit asignado, se REEMPLAZA de forma transaccional:
+// se eliminan el checklist y la asignación previa y se asigna el nuevo kit.
+// Así el Detalle de Obra permite "editar/cambiar el kit" sin errores de
+// duplicado (requisito de edición de kit en obra-detalle).
 const asignarKit = async ({ idObra, idKit, idTrabajadorCtx = 1 }) => {
     const db = await getConnection();
     const tx = await db.transaction();
@@ -47,24 +63,31 @@ const asignarKit = async ({ idObra, idKit, idTrabajadorCtx = 1 }) => {
             [String(idTrabajadorCtx)]
         );
 
+        // Reemplazo: quita el kit actual (checklist + asignación) si existe.
         const existing = await tx.query(
             "SELECT idObraKit FROM Obras_has_Kits WHERE Obras_idObra = ?",
             [idObra]
         );
-
         if (existing && existing.length > 0) {
-            await tx.rollback();
-            return { duplicado: true };
+            const idObraKitAnterior = existing[0]?.IDOBRAKIT ?? existing[0]?.idObraKit;
+            await tx.execute(
+                "DELETE FROM Obras_Kits_Checklist WHERE Obras_has_Kits_idObraKit = ?",
+                [idObraKitAnterior]
+            );
+            await tx.execute(
+                "DELETE FROM Obras_has_Kits WHERE idObraKit = ?",
+                [idObraKitAnterior]
+            );
         }
 
-        const rows = await tx.query(
+        const rows = await tx.executeReturning(
             `INSERT INTO Obras_has_Kits (Obras_idObra, Kits_Instalacion_idKit, Trabajadores_idTrabajador)
              VALUES (?, ?, ?)
              RETURNING idObraKit`,
             [idObra, idKit, idTrabajadorCtx]
         );
 
-        const idObraKit = rows[0]?.IDOBRAKIT;
+        const idObraKit = extractReturningValue(rows, 'IDOBRAKIT');
 
         const materiales = await tx.query(
             "SELECT Materiales_idMaterial FROM Kits_has_Materiales WHERE Kits_Instalacion_idKit = ?",

@@ -141,7 +141,9 @@ const getDetalleObra = async (id) => {
     // FechaLevantamiento, FechaFabricacion, FechaInstalacion): se fusionan desde
     // la tabla Obras para que el Detalle de Obra las muestre/edite por etapa.
     const fechas = await db.query(
-        `SELECT FechaInicio, FechaLevantamiento, FechaFabricacion, FechaInstalacion
+        `SELECT FechaInicio, FechaLevantamiento, FechaFabricacion, FechaInstalacion,
+                MedidasEnviadas, MedidasResponsableIdTrabajador,
+                MedidasEnviadasPor, MedidasEnviadasFecha
          FROM Obras WHERE idObra = ?`,
         [id]
     );
@@ -429,7 +431,8 @@ const completarEtapa = async (id, {
     try {
         // 0. Leer la obra y su estado actual
         const obras = await tx.query(
-            `SELECT o.EstadosObra_idEstadoObra AS EstadoActual
+            `SELECT o.EstadosObra_idEstadoObra AS EstadoActual,
+                    o.MedidasResponsableIdTrabajador AS MedidasResponsable
              FROM Obras o WHERE o.idObra = ? AND o.Activo = TRUE`,
             [id]
         );
@@ -558,16 +561,51 @@ const completarEtapa = async (id, {
             }
         };
 
+        // Estado real de medidas (RF: Pendiente / Enviada). Solo se marca como
+        // "Enviada" cuando la obra está en la etapa de Levantamiento (2) y el
+        // trabajador aporta al menos una medida. El responsable único se fija
+        // con COALESCE (el primero que envía); quién/cuándo siempre reflejan el
+        // último envío.
+        const medidasPresentes =
+            (Ancho != null && String(Ancho).trim() !== '') ||
+            (Alto != null && String(Alto).trim() !== '') ||
+            (Profundidad != null && String(Profundidad).trim() !== '');
+        const esLevantamiento =
+            (finalizacion && finalizacion.etapa === 2) || Number(estadoActual) === 2;
+
         agregar('Nombre', Nombre);
         agregar('Direccion', Direccion != null ? Buffer.from(String(Direccion), "utf8") : null);
         agregar('Ancho', Ancho);
         agregar('Alto', Alto);
         agregar('Profundidad', Profundidad);
 
+        if (medidasPresentes && esLevantamiento) {
+            // 6.4 Responsable único: una vez designado (primer envío), solo ese
+            // trabajador puede enviar/actualizar las medidas del levantamiento.
+            const responsable = obras[0].MEDIDASRESPONSABLE ?? obras[0].MedidasResponsable;
+            if (responsable != null && Number(responsable) !== Number(idTrabajadorCtx)) {
+                await tx.rollback();
+                return { error: 'Solo el trabajador responsable puede enviar las medidas de la obra' };
+            }
+            agregar('MedidasEnviadas', true);
+            agregar('MedidasEnviadasPor', idTrabajadorCtx);
+            agregar('MedidasEnviadasFecha', new Date());
+        }
+
         if (campos.length > 0) {
             await tx.execute(
                 `UPDATE Obras SET ${campos.map(c => `${c} = ?`).join(', ')} WHERE idObra = ?`,
                 [...valores, id]
+            );
+        }
+
+        // Responsable único de las medidas: se conserva el primer trabajador
+        // que las envió (nunca se sobreescribe por envíos posteriores).
+        if (medidasPresentes && esLevantamiento) {
+            await tx.execute(
+                `UPDATE Obras SET MedidasResponsableIdTrabajador = COALESCE(MedidasResponsableIdTrabajador, ?)
+                 WHERE idObra = ? AND MedidasResponsableIdTrabajador IS NULL`,
+                [idTrabajadorCtx, id]
             );
         }
 
@@ -578,10 +616,12 @@ const completarEtapa = async (id, {
             const idEstadoNota = finalizacion
                 ? finalizacion.etapa
                 : (resolverEstadoObra(estado) ?? Number(estadoActual)) || 1;
+            // Nota es BLOB SUB_TYPE TEXT: el driver exige Buffer, no string.
+            const notaBuffer = Buffer.from(String(nota), 'utf8');
             await tx.execute(
                 `INSERT INTO NotasObras (Obras_idObra, EstadosObra_idEstadoObra, Trabajadores_idTrabajador, Nota)
                  VALUES (?, ?, ?, ?)`,
-                [id, idEstadoNota, idTrabajadorCtx, String(nota)]
+                [id, idEstadoNota, idTrabajadorCtx, notaBuffer]
             );
         }
 
