@@ -30,3 +30,4 @@ export class ButtonComponent {
     ].filter(Boolean).join(' ');
   }
 }
+
