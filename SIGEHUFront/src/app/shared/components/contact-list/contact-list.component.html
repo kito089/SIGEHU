@@ -1,6 +1,11 @@
 <div class="cl">
   <div class="cl__header">
-    <span class="cl__title">Contactos ({{ contactos.length }})</span>
+    <div class="cl__header-left">
+      <span class="cl__title">Contactos ({{ contactos.length }})</span>
+      @if (hayContactoSinMedio()) {
+        <span class="cl__hint">Requiere al menos un teléfono o un correo</span>
+      }
+    </div>
     <app-button variant="ghost" (buttonClick)="agregar()">
       <ion-icon name="add"></ion-icon> Agregar
     </app-button>
@@ -18,79 +23,175 @@
             <th class="cl__col-actions" aria-label="Acciones"></th>
           </tr>
         </thead>
-        <tbody>
-          @for (c of contactos; track $index; let i = $index) {
-            <tr [class.cl__row-invalid]="sinMedio(c)">
-              <td data-label="Nombre">
-                <input
-                  class="cl__input"
-                  type="text"
-                  name="c-nombre-{{ i }}"
-                  [ngModelOptions]="{ standalone: true }"
-                  [(ngModel)]="c.nombreCompleto"
-                  (ngModelChange)="emitirCambios()"
-                  placeholder="Nombre y apellido">
-              </td>
-              <td data-label="Teléfono">
-                <input
-                  class="cl__input"
-                  type="tel"
-                  name="c-telefono-{{ i }}"
-                  [ngModelOptions]="{ standalone: true }"
-                  [(ngModel)]="c.telefono"
-                  (ngModelChange)="emitirCambios()"
-                  inputmode="tel"
-                  maxlength="16"
-                  placeholder="+52 449 000000"
-                  title="Máximo 16 caracteres incluyendo espacios: +52 y el número"
-                  (input)="onTelefonoInput($event, i)"
-                  (blur)="marcarTelTocado(i)"
-                  [class.invalid]="mostrarErrorTel(i, c)">
-                @if (mostrarErrorTel(i, c)) {
-                  <span class="cl__tel-error">Teléfono inválido: usa "+52" y el número (máx. 16 incluyendo espacios)</span>
-                }
-                @if (sinMedio(c)) {
-                  <span class="cl__medio-error">Requiere al menos un teléfono o un correo</span>
-                }
-              </td>
-              <td data-label="Correo">
-                <input
-                  class="cl__input"
-                  type="email"
-                  name="c-correo-{{ i }}"
-                  [ngModelOptions]="{ standalone: true }"
-                  [(ngModel)]="c.correo"
-                  (ngModelChange)="emitirCambios()"
-                  placeholder="correo@ejemplo.com">
-              </td>
-              <td data-label="Notas">
-                <input
-                  class="cl__input"
-                  type="text"
-                  name="c-notas-{{ i }}"
-                  [ngModelOptions]="{ standalone: true }"
-                  [(ngModel)]="c.observaciones"
-                  (ngModelChange)="emitirCambios()"
-                  placeholder="Notas opcionales">
-              </td>
-              <td class="cl__col-actions" data-label="Acciones">
-                <button
-                  class="cl__remove"
-                  (click)="solicitarEliminar(i)"
-                  [attr.aria-label]="'Eliminar contacto ' + (c.nombreCompleto || (i + 1))"
-                  title="Eliminar contacto">
-                  <ion-icon name="trash-outline"></ion-icon>
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
+
+        @if (edicionPorFila) {
+          <tbody>
+            @for (c of contactos; track $index; let i = $index) {
+              @if (filaEnEdicion === i) {
+                <tr [class.cl__row-invalid]="sinMedio(c)">
+                  <td data-label="Nombre">
+                    <input
+                      class="cl__input"
+                      type="text"
+                      name="c-nombre-{{ i }}"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="c.nombreCompleto"
+                      (ngModelChange)="emitirCambios()"
+                      placeholder="Nombre y apellido">
+                  </td>
+                  <td data-label="Teléfono">
+                    <input
+                      class="cl__input"
+                      type="tel"
+                      name="c-telefono-{{ i }}"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="c.telefono"
+                      (ngModelChange)="emitirCambios()"
+                      inputmode="tel"
+                      maxlength="16"
+                      placeholder="+52 449 000000"
+                      title="Máximo 16 caracteres incluyendo espacios: +52 y el número"
+                      (input)="onTelefonoInput($event, i)"
+                      (blur)="marcarTelTocado(i)"
+                      [class.invalid]="mostrarErrorTel(i, c)">
+                    @if (mostrarErrorTel(i, c)) {
+                      <span class="cl__tel-error">Teléfono inválido: usa "+52" y el número (máx. 16 incluyendo espacios)</span>
+                    }
+                  </td>
+                  <td data-label="Correo">
+                    <input
+                      class="cl__input"
+                      type="email"
+                      name="c-correo-{{ i }}"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="c.correo"
+                      (ngModelChange)="emitirCambios()"
+                      placeholder="correo@ejemplo.com">
+                  </td>
+                  <td data-label="Notas">
+                    <input
+                      class="cl__input"
+                      type="text"
+                      name="c-notas-{{ i }}"
+                      [ngModelOptions]="{ standalone: true }"
+                      [(ngModel)]="c.observaciones"
+                      (ngModelChange)="emitirCambios()"
+                      placeholder="Notas opcionales">
+                  </td>
+                  <td class="cl__col-actions" data-label="Acciones">
+                    <button
+                      type="button"
+                      class="cl__edit"
+                      (click)="guardarFila(i)"
+                      title="Guardar cambios del contacto">
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      class="cl__edit cl__edit-cancel"
+                      (click)="cancelarFila(i)"
+                      title="Cancelar edición">
+                      Cancelar
+                    </button>
+                  </td>
+                </tr>
+              } @else {
+                <tr [class.cl__row-invalid]="sinMedio(c)">
+                  <td data-label="Nombre"><span class="cl__readonly">{{ c.nombreCompleto || '—' }}</span></td>
+                  <td data-label="Teléfono"><span class="cl__readonly">{{ c.telefono || '—' }}</span></td>
+                  <td data-label="Correo"><span class="cl__readonly">{{ c.correo || '—' }}</span></td>
+                  <td data-label="Notas"><span class="cl__readonly">{{ c.observaciones || '—' }}</span></td>
+                  <td class="cl__col-actions" data-label="Acciones">
+                    <button
+                      type="button"
+                      class="cl__edit"
+                      (click)="editarFila(i)"
+                      [attr.aria-label]="'Editar contacto ' + (c.nombreCompleto || (i + 1))"
+                      title="Editar contacto">
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      class="cl__remove"
+                      (click)="solicitarEliminar(i)"
+                      [attr.aria-label]="'Eliminar contacto ' + (c.nombreCompleto || (i + 1))"
+                      title="Eliminar contacto">
+                      <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        } @else {
+          <tbody>
+            @for (c of contactos; track $index; let i = $index) {
+              <tr [class.cl__row-invalid]="sinMedio(c)">
+                <td data-label="Nombre">
+                  <input
+                    class="cl__input"
+                    type="text"
+                    name="c-nombre-{{ i }}"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="c.nombreCompleto"
+                    (ngModelChange)="emitirCambios()"
+                    placeholder="Nombre y apellido">
+                </td>
+                <td data-label="Teléfono">
+                  <input
+                    class="cl__input"
+                    type="tel"
+                    name="c-telefono-{{ i }}"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="c.telefono"
+                    (ngModelChange)="emitirCambios()"
+                    inputmode="tel"
+                    maxlength="16"
+                    placeholder="+52 449 000000"
+                    title="Máximo 16 caracteres incluyendo espacios: +52 y el número"
+                    (input)="onTelefonoInput($event, i)"
+                    (blur)="marcarTelTocado(i)"
+                    [class.invalid]="mostrarErrorTel(i, c)">
+                  @if (mostrarErrorTel(i, c)) {
+                    <span class="cl__tel-error">Teléfono inválido: usa "+52" y el número (máx. 16 incluyendo espacios)</span>
+                  }
+                </td>
+                <td data-label="Correo">
+                  <input
+                    class="cl__input"
+                    type="email"
+                    name="c-correo-{{ i }}"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="c.correo"
+                    (ngModelChange)="emitirCambios()"
+                    placeholder="correo@ejemplo.com">
+                </td>
+                <td data-label="Notas">
+                  <input
+                    class="cl__input"
+                    type="text"
+                    name="c-notas-{{ i }}"
+                    [ngModelOptions]="{ standalone: true }"
+                    [(ngModel)]="c.observaciones"
+                    (ngModelChange)="emitirCambios()"
+                    placeholder="Notas opcionales">
+                </td>
+                <td class="cl__col-actions" data-label="Acciones">
+                  <button
+                    type="button"
+                    class="cl__remove"
+                    (click)="solicitarEliminar(i)"
+                    [attr.aria-label]="'Eliminar contacto ' + (c.nombreCompleto || (i + 1))"
+                    title="Eliminar contacto">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        }
       </table>
     </div>
-
-    <button type="button" class="cl__add-row" (click)="agregar()">
-      <ion-icon name="add"></ion-icon> Agregar contacto
-    </button>
   } @else {
     <p class="cl__empty">No hay contactos registrados</p>
   }

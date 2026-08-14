@@ -47,11 +47,22 @@
         </div>
 
         <div class="maps-block" *ngIf="c.PROVEEDOR_DIRECCION">
-          <button type="button" class="maps-toggle" (click)="toggleMaps(c)">
-            <ion-icon name="map-outline"></ion-icon>
-            <span>{{ mapasVisible(c) ? 'Ocultar mapa' : 'Ver mapa' }}</span>
-            <ion-icon [name]="mapasVisible(c) ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
-          </button>
+          <div class="maps-row">
+            <button type="button" class="maps-toggle" (click)="toggleMaps(c)">
+              <ion-icon name="map-outline"></ion-icon>
+              <span>{{ mapasVisible(c) ? 'Ocultar mapa' : 'Ver mapa' }}</span>
+              <ion-icon [name]="mapasVisible(c) ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+            </button>
+            <ion-button
+              size="small"
+              fill="outline"
+              color="primary"
+              class="maps-open-btn"
+              (click)="abrirGoogleMaps(c)">
+              <ion-icon name="navigate-outline" slot="start"></ion-icon>
+              Abrir en Google Maps
+            </ion-button>
+          </div>
           <div class="maps-preview" *ngIf="mapasVisible(c)">
             <iframe
               [src]="mapsEmbedUrl(c)"
@@ -60,15 +71,6 @@
               referrerpolicy="no-referrer-when-downgrade"
               allowfullscreen></iframe>
           </div>
-          <ion-button
-            size="small"
-            fill="outline"
-            color="primary"
-            class="maps-open-btn"
-            (click)="abrirGoogleMaps(c)">
-            <ion-icon name="navigate-outline" slot="start"></ion-icon>
-            Abrir en Google Maps
-          </ion-button>
         </div>
 
         <!-- Checklist de materiales + progreso -->

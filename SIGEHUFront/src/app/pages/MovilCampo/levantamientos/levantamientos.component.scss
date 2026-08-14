@@ -147,12 +147,17 @@
     border-radius: 8px;
     overflow: hidden;
     background: #0f172a;
+    // El iframe de Google Maps debe recibir los gestos (pan/zoom): se anula el
+    // desplazamiento del contenedor al tocar el mapa para que no lo capture
+    // el scroll del ion-content y el mapa quede "muerto".
+    touch-action: none;
     iframe {
       display: block;
       width: 100%;
       height: 180px;
       border: 0;
       min-height: 160px;
+      pointer-events: auto;
     }
   }
   .maps-open-btn {

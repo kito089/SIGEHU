@@ -17,6 +17,7 @@ import {
   OBSERVACIONES_MAX,
   RAZON_SOCIAL_MAX,
   telefonoOcorreoRequired,
+  contactoVacio,
 } from '../../../../shared/validators/custom-validators';
 import {
   TELEFONO_REACTIVO_PATTERN,
@@ -307,6 +308,14 @@ export class ClienteFormComponent implements OnInit {
 
     // Teléfono de los contactos de una empresa: misma regla por contacto.
     if (this.tipo() === 'empresa') {
+      // Una fila de contacto completamente vacía bloquea el guardado:
+      // no se insertan contactos sin datos (regla RF-03).
+      const conFilaVacia = this.contactos().some(c => contactoVacio(c));
+      if (conFilaVacia) {
+        this.toast.warning('Completa o elimina las filas de contacto vacías antes de guardar.');
+        return;
+      }
+
       const conTelefonoInvalido = this.contactos().some(
         c => (c.telefono ?? '').trim() !== '' && sanitizarTelefono(c.telefono ?? '') === null
       );
@@ -401,13 +410,18 @@ export class ClienteFormComponent implements OnInit {
       tipo: 'empresa',
     };
 
+    // Defensa en profundidad: mismo bloqueo que onSubmit. Nunca se descartan
+    // filas vacías en silencio (eso permitía crear el cliente y ocultar el
+    // problema); si alguna llegara hasta aquí, la operación se detiene.
+    if (this.contactos().some(c => contactoVacio(c))) {
+      this.toast.warning('Completa o elimina las filas de contacto vacías antes de guardar.');
+      return;
+    }
+
     // Se envían también los idContactoCliente para que el backend pueda
     // distinguir un contacto editado (UPDATE) de uno nuevo (INSERT), y así
-    // el historial registra correctamente la operación. Las filas que quedaron
-    // vacías (añadidas y sin datos) se descartan.
-    const contactos = this.contactos()
-      .filter(c => (c.nombreCompleto ?? '').trim() !== '' || (c.telefono ?? '').trim() !== '' || (c.correo ?? '').trim() !== '')
-      .map(c => ({
+    // el historial registra correctamente la operación.
+    const contactos = this.contactos().map(c => ({
       idContactoCliente: c.id ?? null,
       NombreCompleto: c.nombreCompleto,
       Telefono: c.telefono ? sanitizarTelefono(c.telefono) : null,

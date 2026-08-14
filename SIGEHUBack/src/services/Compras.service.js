@@ -360,7 +360,9 @@ const idAudit = auditRows?.[0]?.ID ?? null;
 // la tabla Compras no tiene columnas de precio/monto. Devuelve el shape que
 // consume la página móvil /movil/compras: una tarjeta por proveedor/dirección
 // (agrupando los detalles que comparten el mismo proveedor y dirección), con
-// claves en MAYÚSCULAS como Firebird.
+// claves en MAYÚSCULAS como Firebird. NO se agrega una tarjeta "resumen" por
+// compra: cada compra solo aparece en la lista una vez por cada
+// proveedor/dirección (evita duplicados en Compras y en Actividades).
 const getComprasChoferList = async (idTrabajador) => {
     const db = await getConnection();
 
@@ -425,26 +427,6 @@ const getComprasChoferList = async (idTrabajador) => {
             grupo.ESTADO = grupo.RECIBIDA ? 'Surtida en Proveedor' : 'Pendiente de Surtir';
             resultados.push(grupo);
         }
-        
-        const materiales = (detalles ?? []).map(d => ({
-            MATERIAL_NOMBRE: d.NOMBREMATERIAL,
-            CANTIDAD: d.CANTIDAD,
-            UNIDAD: d.MEDIDA ?? d.UNIDADMEDIDA ?? null
-        }));
-        const direcciones = new Set((detalles ?? []).map(d => d.IDPROVEEDOR ?? d.idProveedor));
-        const proveedor = (detalles ?? [])[0] ?? {};
-
-        resultados.push({
-            ID: Number(idCompra),
-            PROVEEDOR_NOMBRE: proveedor.NOMBREPROVEEDOR ?? null,
-            PROVEEDOR_DIRECCION: proveedor.DIRECCIONPROVEDOR ?? null,
-            PROVEEDOR_TELEFONO: proveedor.TELEFONOPROVEDOR ?? null,
-            FECHA_ORDEN: normalizeDate(c.FECHACOMPRA ?? c.FechaCompra ?? null),
-            ESTADO: c.RECIBIDA ? 'Surtida en Proveedor' : 'Pendiente de Surtir',
-            MATERIALES: materiales,
-            NUMERO_DIRECCIONES: direcciones.size,
-            NUMERO_MATERIALES: materiales.length
-        });
     }
 
     return resultados;

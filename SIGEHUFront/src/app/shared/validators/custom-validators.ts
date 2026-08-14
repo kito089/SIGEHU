@@ -29,3 +29,11 @@ export function contactoRequiereMedio(c: { telefono?: string | null; correo?: st
   if (!conDatos) return false;
   return !String(c.telefono ?? '').trim() && !String(c.correo ?? '').trim();
 }
+
+export function contactoVacio(c: { telefono?: string | null; correo?: string | null; nombreCompleto?: string; observaciones?: string } | null): boolean {
+  if (!c) return true;
+  return String(c.nombreCompleto ?? '').trim() === ''
+    && String(c.telefono ?? '').trim() === ''
+    && String(c.correo ?? '').trim() === ''
+    && String(c.observaciones ?? '').trim() === '';
+}

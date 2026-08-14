@@ -160,7 +160,10 @@
             <h2>Contactos</h2>
             <app-contact-list
               [contactos]="contactos()"
-              (contactosChange)="onContactosChange($event)">
+              [edicionPorFila]="true"
+              [version]="contactosVersion()"
+              (contactosChange)="onContactosChange($event)"
+              (persistirContactos)="persistirContactos($event)">
             </app-contact-list>
           </section>
         }

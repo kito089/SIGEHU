@@ -27,6 +27,7 @@ interface ObraLevantamiento {
   ESTADO?: string;
   ESTADOBRA?: string;
   IDESTADOOBRA?: number;
+  IDESTADOASIGNACION?: number;
 }
 
 interface FotoPendiente {
@@ -117,13 +118,26 @@ export class LevantamientosComponent implements OnInit, OnDestroy {
           DIRECCION: o.DIRECCIONOBRA ?? o.DIRECCION ?? o.DireccionObra,
           TELEFONO: o.TELEFONOCLIENTE ?? o.TELEFONO,
           ESTADO: o.ESTADOBRA ?? o.ESTADO ?? o.EstadoObra,
-          IDESTADOOBRA: Number(o.IDESTADOOBRA ?? o.idEstadoObra ?? 0)
+          IDESTADOOBRA: Number(o.IDESTADOOBRA ?? o.idEstadoObra ?? 0),
+          IDESTADOASIGNACION: Number(o.IDESTADOASIGNACION ?? o.idEstadoAsignacion ?? 0)
         }));
-        // Solo obras en etapa de Levantamiento (2). Una vez en "Pendiente de
-        // aceptación" (8) ya no son accionables para el trabajador.
-        this.obras = normalizadas.filter(o =>
-          o.ESTADO?.toLowerCase().includes('levantamiento')
+        // Etapa de campo "pendiente" del trabajador determinada por el estado
+        // de SU asignación (IDESTADOASIGNACION=2, Levantamiento pendiente), la
+        // MISMA señal que usa "Actividades" (RF-22..RF-24). Fallback defensivo
+        // al texto del estado cuando la vista no trae la asignación.
+        let accionables = normalizadas.filter(o =>
+          o.IDESTADOASIGNACION === 2 ||
+          (!o.IDESTADOASIGNACION &&
+            String(o.ESTADO ?? '').toLowerCase().includes('levantamiento') &&
+            !String(o.ESTADO ?? '').toLowerCase().includes('pendiente de acept'))
         );
+        // Navegación robusta desde "Actividades": si la obra tocada no pasó el
+        // filtro (divergencia de datos), se incluye para preseleccionarla.
+        if (this.obraDestinoId != null && !accionables.some(o => o.ID === this.obraDestinoId)) {
+          const destino = normalizadas.find(o => o.ID === this.obraDestinoId);
+          if (destino) accionables = [...accionables, destino];
+        }
+        this.obras = accionables;
         if (this.obras.length > 0) {
           const objetivo = this.obraDestinoId != null
             ? this.obras.find(o => o.ID === this.obraDestinoId)

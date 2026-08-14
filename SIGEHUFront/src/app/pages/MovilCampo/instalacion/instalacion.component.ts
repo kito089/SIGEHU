@@ -20,6 +20,7 @@ interface ObraInstalacion {
   TELEFONO?: string;
   DIRECCION?: string;
   ESTADO?: string;
+  IDESTADOASIGNACION?: number;
 }
 
 interface KitItem {
@@ -122,14 +123,26 @@ export class InstalacionComponent implements OnInit, OnDestroy {
           NOMBRECLIENTE: o.NOMBRECLIENTE,
           TELEFONO: o.TELEFONOCLIENTE ?? o.TELEFONO,
           DIRECCION: o.DIRECCIONOBRA ?? o.DIRECCION,
-          ESTADO: o.ESTADOBRA ?? o.ESTADO ?? ''
+          ESTADO: o.ESTADOBRA ?? o.ESTADO ?? '',
+          IDESTADOASIGNACION: Number(o.IDESTADOASIGNACION ?? o.idEstadoAsignacion ?? 0)
         }));
-        // Instalación programada (4). Si ya está en "Pendiente de aceptación"
-        // (8) no es accionable.
-        this.obrasInstalacion = normalizadas.filter(o =>
-          o.ESTADO?.toLowerCase().includes('instalaci') &&
-          !o.ESTADO?.toLowerCase().includes('pendiente de acept')
+        // Etapa de campo "pendiente" del trabajador determinada por el estado
+        // de SU asignación (IDESTADOASIGNACION=4, Instalación programada), la
+        // MISMA señal que usa "Actividades" (RF-22..RF-24). Fallback defensivo
+        // al texto del estado cuando la vista no trae la asignación.
+        let accionables = normalizadas.filter(o =>
+          o.IDESTADOASIGNACION === 4 ||
+          (!o.IDESTADOASIGNACION &&
+            String(o.ESTADO ?? '').toLowerCase().includes('instalaci') &&
+            !String(o.ESTADO ?? '').toLowerCase().includes('pendiente de acept'))
         );
+        // Navegación robusta desde "Actividades": si la obra tocada no pasó el
+        // filtro (divergencia de datos), se incluye para preseleccionarla.
+        if (this.obraDestinoId != null && !accionables.some(o => o.ID === this.obraDestinoId)) {
+          const destino = normalizadas.find(o => o.ID === this.obraDestinoId);
+          if (destino) accionables = [...accionables, destino];
+        }
+        this.obrasInstalacion = accionables;
         if (this.obrasInstalacion.length > 0) {
           const objetivo = this.obraDestinoId != null
             ? this.obrasInstalacion.find(o => o.ID === this.obraDestinoId)

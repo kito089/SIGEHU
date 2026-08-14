@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -43,6 +44,7 @@ export class ComprasComponent implements OnInit {
   private env = inject(EnvService);
   private layout = inject(WorkerLayoutService);
   private router = inject(Router);
+  private sanitizer = inject(DomSanitizer);
 
   compras: OrdenCompraChofer[] = [];
   loading = false;
@@ -84,11 +86,15 @@ export class ComprasComponent implements OnInit {
         // no envía datos financieros. Se inicializa el checklist local para que
         // el trabajador marque la recolección ítem por ítem (la validación final
         // ocurriá en backend al marcar la orden como Surtida).
-        this.compras = (data || []).map(c => ({
-          ...c,
-          ID: Number(c.ID),
-          MATERIALES: (c.MATERIALES || []).map(m => ({ ...m, COMPLETADO: false }))
-        }));
+        this.compras = (data || [])
+          .map(c => ({
+            ...c,
+            ID: Number(c.ID),
+            MATERIALES: (c.MATERIALES || []).map(m => ({ ...m, COMPLETADO: false }))
+          }))
+          // Al llegar desde "Actividades" (RF-18) la vista se enfoca SOLO en la
+          // compra tocada: sus tarjetas por proveedor/dirección.
+          .filter(c => this.compraDestinoId == null || c.ID === this.compraDestinoId);
         this.desplazarADestino();
       },
       error: () => {
@@ -143,9 +149,10 @@ export class ComprasComponent implements OnInit {
     }
   }
 
-  mapsEmbedUrl(compra: OrdenCompraChofer): string {
+  mapsEmbedUrl(compra: OrdenCompraChofer): SafeResourceUrl {
     const q = encodeURIComponent((compra.PROVEEDOR_DIRECCION || compra.PROVEEDOR_NOMBRE || '').trim());
-    return `https://www.google.com/maps?q=${q}&output=embed`;
+    // URL confiada para el iframe: garantiza que Angular no descarte el src.
+    return this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.google.com/maps?q=${q}&output=embed`);
   }
 
   abrirGoogleMaps(compra: OrdenCompraChofer): void {

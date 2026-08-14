@@ -112,10 +112,19 @@ export class ClienteDetailComponent implements OnInit {
   // Registro inicial de datos fiscales (cliente aún sin datos fiscales).
   agregandoFiscales = signal(false);
   guardandoFiscales = signal(false);
+  // Indica si el cliente tiene datos fiscales PERSISTIDOS (cargados desde BD).
+  // Determina si se muestra el switch "Agregar Datos Fiscales" o el listado de
+  // campos ya guardados. NO depende del formulario en vivo: así un borrador
+  // (switch ON + campos en edición) no se interpreta como datos guardados y no
+  // se "auto-guarda" al escribir (BUG: guardado prematuro de Datos Fiscales).
   // Confirmación modal para eliminar todos los datos fiscales.
   confirmarEliminarFiscales = signal(false);
 
   contactos = signal<Contacto[]>([]);
+
+  // Recarga canónica de contactos: avanza tras cada persistencia exitosa para
+  // que `contact-list` (modo edición por fila) abandone la edición en curso.
+  contactosVersion = signal(0);
 
   // Trabajos / Obras (pestaña 2)
   trabajos = signal<TrabajoDetalle[]>([]);
@@ -202,10 +211,13 @@ export class ClienteDetailComponent implements OnInit {
   }
 
   // Datos fiscales del cliente (RFC y relación SAT). Se muestran si hay
-  // al menos un valor guardado, en personas y empresas.
+  // al menos un valor GUARDADO (persistido). No se deriva del formulario en
+  // vivo: el borrador de "Agregar Datos Fiscales" (switch ON) no cuenta como
+  // datos guardados, evitando que teclear una letra dispare persistencia.
+  fiscalesGuardados = signal(false);
+
   tieneDatosFiscales(): boolean {
-    return ['rfc', 'razonSocial', 'regimenFiscal', 'usoCFDI', 'codigoPostal', 'direccionFiscal']
-      .some((campo) => String(this.valor(campo as CampoEditable) ?? '').trim() !== '');
+    return this.fiscalesGuardados();
   }
 
   // --- Construcción del formulario (misma estructura que cliente-form) ----
@@ -358,6 +370,19 @@ export class ClienteDetailComponent implements OnInit {
         direccionFiscal: raw.DIRECCIONFISCAL ?? raw.DireccionFiscal ?? raw.direccionFiscal ?? '',
       },
     });
+
+    // ¿Hay datos fiscales PERSISTIDOS? (los del borrador "Agregar Datos
+    // Fiscales" NO cuentan). Controla la rama del template: switch "Agregar"
+    // vs. edición campo por campo.
+    const fiscalPersistido = [
+      raw.RFC ?? raw.rfc ?? '',
+      raw.RAZONSOCIAL ?? raw.RazonSocial ?? raw.razonSocial ?? '',
+      raw.IDREGIMENFISCAL != null ? String(raw.IDREGIMENFISCAL ?? raw.idRegimenFiscal) : '',
+      raw.IDUSOCFDI != null ? String(raw.IDUSOCFDI ?? raw.idUsoCFDI) : '',
+      raw.CODIGOPOSTAL ?? raw.codigoPostal ?? '',
+      raw.DIRECCIONFISCAL ?? raw.DireccionFiscal ?? raw.direccionFiscal ?? '',
+    ];
+    this.fiscalesGuardados.set(fiscalPersistido.some((v) => String(v ?? '').trim() !== ''));
 
     this.contactos.set(
       Array.isArray(raw.contactos)
@@ -526,7 +551,19 @@ export class ClienteDetailComponent implements OnInit {
 
     this.guardandoFiscales.set(true);
     try {
-      await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, this.buildPayload()));
+      // El borrador fiscal se agrega EXPLÍCITAMENTE al payload (buildPayload
+      // lo excluye mientras agregandoFiscales() está activo para que el
+      // guardado de otros campos no persista el borrador).
+      const payload = this.buildPayload();
+      const fiscal = this.form.getRawValue().fiscal;
+      payload['RazonSocial'] = fiscal.razonSocial || null;
+      payload['RFC'] = fiscal.rfc || null;
+      payload['idRegimenFiscal'] = fiscal.regimenFiscal ? Number(fiscal.regimenFiscal) : null;
+      payload['idUsoCFDI'] = fiscal.usoCFDI ? Number(fiscal.usoCFDI) : null;
+      payload['CodigoPostal'] = fiscal.codigoPostal || null;
+      payload['DireccionFiscal'] = fiscal.direccionFiscal || null;
+
+      await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, payload));
       CAMPOS_FISCALES.forEach((campo) => this.control(campo).disable());
       this.agregandoFiscales.set(false);
       await this.cargarDetalle();
@@ -572,21 +609,19 @@ export class ClienteDetailComponent implements OnInit {
     }
   }
 
-  // --- Contactos (empresa): edición en línea con autoguardado -----------------
-
-  private _debounceContactos: ReturnType<typeof setTimeout> | null = null;
+  // --- Contactos (empresa): estado en memoria. Persistencia SOLO por acción
+  // explícita del usuario (Guardar/Cancelar/Eliminar por fila). No hay
+  // autoguardado: escribir en un campo jamás dispara HTTP.
 
   onContactosChange(lista: Contacto[]): void {
     this.contactos.set(lista);
-    if (this.guardando() || this.guardandoFiscales()) return;
-    if (this._debounceContactos) clearTimeout(this._debounceContactos);
-    this._debounceContactos = setTimeout(() => void this.guardarContactos(), 900);
   }
 
-  private async guardarContactos(): Promise<void> {
+  // Persistencia explícita de la lista de contactos (modo edición por fila).
+  // Se invoca únicamente desde `persistirContactos` (Guardar/Eliminar por
+  // fila), nunca al escribir en los campos.
+  async persistirContactos(lista: Contacto[]): Promise<void> {
     if (this.guardando() || this.guardandoFiscales()) return;
-
-    const lista = this.contactos();
 
     // Regla de negocio (backend): una empresa requiere al menos un contacto.
     if (lista.length === 0) {
@@ -595,39 +630,13 @@ export class ClienteDetailComponent implements OnInit {
       return;
     }
 
-    // Validación del medio de contacto: un contacto con datos requiere
-    // al menos un teléfono o un correo (misma regla que el alta).
-    for (const c of lista) {
-      const conDatos =
-        String(c.nombreCompleto ?? '').trim() !== '' ||
-        String(c.observaciones ?? '').trim() !== '';
-      if (conDatos && !String(c.telefono ?? '').trim() && !String(c.correo ?? '').trim()) {
-        this.toast.warning(`El contacto "${c.nombreCompleto || 'sin nombre'}" requiere al menos un teléfono o un correo.`);
-        await this.cargarDetalle();
-        return;
-      }
-    }
-
-    // Filas vacías (añadidas y sin datos) se descartan, igual que en cliente-form.
-    const contactosPayload = lista
-      .filter((c) =>
-        String(c.nombreCompleto ?? '').trim() !== '' ||
-        String(c.telefono ?? '').trim() !== '' ||
-        String(c.correo ?? '').trim() !== ''
-      )
-      .map((c) => ({
-        idContactoCliente: c.id ?? null,
-        NombreCompleto: c.nombreCompleto,
-        Telefono: c.telefono ? sanitizarTelefono(c.telefono) : null,
-        Correo: c.correo || null,
-        Observaciones: c.observaciones || null,
-      }));
-
-    if (contactosPayload.length === 0) {
-      this.toast.warning('Para una empresa se requiere al menos un contacto.');
-      await this.cargarDetalle();
-      return;
-    }
+    const contactosPayload = lista.map((c) => ({
+      idContactoCliente: c.id ?? null,
+      NombreCompleto: c.nombreCompleto,
+      Telefono: c.telefono ? sanitizarTelefono(c.telefono) : null,
+      Correo: c.correo || null,
+      Observaciones: c.observaciones || null,
+    }));
 
     this.guardando.set(true);
     try {
@@ -635,6 +644,8 @@ export class ClienteDetailComponent implements OnInit {
       payload['contactos'] = contactosPayload;
       await firstValueFrom(this.api.put('/Clientes/' + this.clienteId, payload));
       await this.cargarDetalle();
+      this.contactosVersion.update((v) => v + 1);
+      this.toast.success('Contactos actualizados correctamente');
     } catch {
       // El interceptor de errores ya notifica el fallo vía toast.
     } finally {
@@ -644,7 +655,13 @@ export class ClienteDetailComponent implements OnInit {
 
   private buildPayload(): Record<string, unknown> {
     const raw = this.form.getRawValue();
-    const fiscal = raw.fiscal;
+
+    // Mientras se está en "Agregar Datos Fiscales" (borrador), el guardado de
+    // OTROS campos NO debe incluir el borrador fiscal: eso evita persistir
+    // datos incompletos al guardar un campo de información general.
+    const fiscal = this.agregandoFiscales()
+      ? { rfc: '', razonSocial: '', regimenFiscal: '', usoCFDI: '', codigoPostal: '', direccionFiscal: '' }
+      : raw.fiscal;
 
     const base: Record<string, unknown> = {
       Nombre: raw.nombre,
@@ -669,8 +686,10 @@ export class ClienteDetailComponent implements OnInit {
       };
     }
 
-    // Empresa: no se gestiona la lista de contactos desde esta pantalla, por
-    // lo que NO se envía `contactos` (el backend conserva los existentes).
+    // Empresa: la lista de contactos se gestiona por fila desde esta pantalla
+    // (Guardar/Eliminar explícitos); `persistirContactos` agrega `contactos`
+    // al payload. Aquí no se envían para no alterar la lista en operaciones
+    // de otros campos.
     return {
       ...base,
       Direccion: raw.direccion || null,

@@ -46,6 +46,7 @@ interface ObraFabricacion {
   NOMBRECLIENTE?: string;
   DIRECCION?: string;
   ESTADO: string;
+  IDESTADOASIGNACION?: number;
   ANCHO?: number;
   ALTO?: number;
   PROFUNDIDAD?: number;
@@ -136,6 +137,7 @@ export class FabricacionComponent implements OnInit, OnDestroy {
           NOMBRECLIENTE: o.NOMBRECLIENTE,
           DIRECCION: o.DIRECCIONOBRA ?? o.DIRECCION,
           ESTADO: o.ESTADOBRA ?? o.ESTADO ?? '',
+          IDESTADOASIGNACION: Number(o.IDESTADOASIGNACION ?? o.idEstadoAsignacion ?? 0),
           ANCHO: o.ANCHO ?? o.Ancho,
           ALTO: o.ALTO ?? o.Alto,
           PROFUNDIDAD: o.PROFUNDIDAD ?? o.Profundidad,
@@ -143,12 +145,23 @@ export class FabricacionComponent implements OnInit, OnDestroy {
           FECHAENTREGA: o.FECHAENTREGA ?? o.FechaEntrega,
           ESPECIFICACIONES: o.ESPECIFICACIONES ?? o.Especificaciones
         }));
-        // Solo obras en etapa En fabricación (3); si ya están en
-        // "Pendiente de aceptación" (8) no son accionables.
-        this.obras = normalizadas.filter(o =>
-          o.ESTADO?.toLowerCase().includes('fabric') &&
-          !o.ESTADO?.toLowerCase().includes('pendiente de acept')
+        // Etapa de campo "pendiente" del trabajador determinada por el estado
+        // de SU asignación (IDESTADOASIGNACION=3, En fabricación), la MISMA
+        // señal que usa "Actividades" (RF-22..RF-24). Fallback defensivo al
+        // texto del estado cuando la vista no trae la asignación.
+        let accionables = normalizadas.filter(o =>
+          o.IDESTADOASIGNACION === 3 ||
+          (!o.IDESTADOASIGNACION &&
+            String(o.ESTADO ?? '').toLowerCase().includes('fabric') &&
+            !String(o.ESTADO ?? '').toLowerCase().includes('pendiente de acept'))
         );
+        // Navegación robusta desde "Actividades": si la obra tocada no pasó el
+        // filtro (divergencia de datos), se incluye para preseleccionarla.
+        if (this.obraDestinoId != null && !accionables.some(o => o.ID === this.obraDestinoId)) {
+          const destino = normalizadas.find(o => o.ID === this.obraDestinoId);
+          if (destino) accionables = [...accionables, destino];
+        }
+        this.obras = accionables;
         if (this.obras.length > 0) {
           const objetivo = this.obraDestinoId != null
             ? this.obras.find(o => o.ID === this.obraDestinoId)
