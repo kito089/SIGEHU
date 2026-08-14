@@ -81,7 +81,9 @@ const getFotosByObra = async (idObra) => {
     const db = await getConnection();
 
     return await db.query(
-        `SELECT f.*, t.NombreCompleto AS SubioNombre, tu.Nombre AS RolSubio
+        `SELECT f.idFotoObra, f.Obras_idObra, f.EstadosObra_idEstadoObra,
+                f.Trabajadores_idTrabajador, f.RutaArchivo, f.ContentType,
+                f.FechaCreacion, t.NombreCompleto AS SubioNombre, tu.Nombre AS RolSubio
          FROM FotosObras f
          JOIN Trabajadores t ON t.idTrabajador = f.Trabajadores_idTrabajador
          LEFT JOIN TiposUsuarios tu ON tu.idTipoUsuario = t.TiposUsuarios_idTipoUsuario

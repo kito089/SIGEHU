@@ -1,5 +1,17 @@
 import { getConnection } from "../config/db.js";
 
+// Extrae de forma segura el valor devuelto por una sentencia INSERT...RETURNING,
+// independientemente de si el driver la entrega como valor escalar, objeto o array.
+// query() abre un cursor (inválido para INSERT...RETURNING), por eso estos
+// INSERT usan executeReturning y este extractor.
+const extractReturningValue = (rows, alias) => {
+    let raw = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
+    if (raw != null && typeof raw === 'object') {
+        return raw[alias];
+    }
+    return raw;
+};
+
 // ─── CREATE: asignar trabajador a obra ───────────────────────────────────────
 // Evita duplicados por (Obra, Trabajador, Etapa) y valida que el trabajador
 // exista, esté activo y NO sea Propietario (el admin jamás se asigna como
@@ -24,14 +36,14 @@ const asignarTrabajador = async ({ idObra, idTrabajador, idEstadoObra }) => {
     );
     if (!trabajador || trabajador.length === 0) return { invalido: true };
 
-    const rows = await db.query(
+    const rows = await db.executeReturning(
         `INSERT INTO Obras_has_Trabajadores (Obras_idObra, Trabajadores_idTrabajador, EstadosObra_idEstadoObra)
          VALUES (?, ?, ?)
          RETURNING idDetalleAsignacion`,
         [idObra, idTrabajador, idEstadoObra]
     );
 
-    return rows[0]?.IDDETALLEASIGNACION;
+    return extractReturningValue(rows, 'IDDETALLEASIGNACION');
 };
 
 // ─── CREATE (lote): asignar varios trabajadores con sus permisos granulares ──
@@ -75,12 +87,12 @@ const asignarTrabajadoresBatch = async ({ idObra, idEstadoObra, trabajadores, id
                     continue;
                 }
 
-                const rows = await tx.query(
+                const rows = await tx.executeReturning(
                     `INSERT INTO Obras_has_Trabajadores (Obras_idObra, Trabajadores_idTrabajador, EstadosObra_idEstadoObra)
                      VALUES (?, ?, ?) RETURNING idDetalleAsignacion`,
                     [idObra, idTrabajador, idEstadoObra]
                 );
-                resultados.push({ idTrabajador, asignado: true, yaAsignado: false, idDetalleAsignacion: rows[0]?.IDDETALLEASIGNACION });
+                resultados.push({ idTrabajador, asignado: true, yaAsignado: false, idDetalleAsignacion: extractReturningValue(rows, 'IDDETALLEASIGNACION') });
             } else {
                 resultados.push({ idTrabajador, asignado: false, yaAsignado: true });
             }
@@ -208,7 +220,7 @@ const revocarPermisos = async ({ idObra, idTrabajador, camposPermiso }) => {
 const registrarPago = async ({ idObra, idTipoPago, idTrabajador, idEstadoObra, monto, idFormaPago }) => {
     const db = await getConnection();
 
-    const rows = await db.query(
+    const rows = await db.executeReturning(
         `INSERT INTO DetallesPagos
             (Obras_idObra, TiposPago_idTipoPago, Trabajadores_idTrabajador, EstadosObra_idEstadoObra, Monto, FormasPago_idFormaPago)
          VALUES (?, ?, ?, ?, ?, ?)
@@ -216,7 +228,7 @@ const registrarPago = async ({ idObra, idTipoPago, idTrabajador, idEstadoObra, m
         [idObra, idTipoPago, idTrabajador, idEstadoObra, monto, idFormaPago]
     );
 
-    return rows[0]?.IDDETALLEPAGO;
+    return extractReturningValue(rows, 'IDDETALLEPAGO');
 };
 
 // ─── GET pagos de una obra ───────────────────────────────────────────────────

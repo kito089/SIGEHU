@@ -1,5 +1,17 @@
 import { getConnection } from "../config/db.js";
 
+// Extrae de forma segura el valor devuelto por una sentencia INSERT...RETURNING,
+// independientemente de si el driver la entrega como valor escalar, objeto o array.
+// query() abre un cursor (inválido para INSERT...RETURNING), por eso estos
+// INSERT usan executeReturning y este extractor.
+const extractReturningValue = (rows, alias) => {
+    let raw = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
+    if (raw != null && typeof raw === 'object') {
+        return raw[alias];
+    }
+    return raw;
+};
+
 // ─── GET kit asignado a una obra (incluye checklist) ─────────────────────────
 const getKitByObra = async (idObra) => {
     const db = await getConnection();
@@ -68,14 +80,14 @@ const asignarKit = async ({ idObra, idKit, idTrabajadorCtx = 1 }) => {
             );
         }
 
-        const rows = await tx.query(
+        const rows = await tx.executeReturning(
             `INSERT INTO Obras_has_Kits (Obras_idObra, Kits_Instalacion_idKit, Trabajadores_idTrabajador)
              VALUES (?, ?, ?)
              RETURNING idObraKit`,
             [idObra, idKit, idTrabajadorCtx]
         );
 
-        const idObraKit = rows[0]?.IDOBRAKIT;
+        const idObraKit = extractReturningValue(rows, 'IDOBRAKIT');
 
         const materiales = await tx.query(
             "SELECT Materiales_idMaterial FROM Kits_has_Materiales WHERE Kits_Instalacion_idKit = ?",

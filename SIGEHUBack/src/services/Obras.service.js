@@ -431,7 +431,8 @@ const completarEtapa = async (id, {
     try {
         // 0. Leer la obra y su estado actual
         const obras = await tx.query(
-            `SELECT o.EstadosObra_idEstadoObra AS EstadoActual
+            `SELECT o.EstadosObra_idEstadoObra AS EstadoActual,
+                    o.MedidasResponsableIdTrabajador AS MedidasResponsable
              FROM Obras o WHERE o.idObra = ? AND o.Activo = TRUE`,
             [id]
         );
@@ -579,6 +580,13 @@ const completarEtapa = async (id, {
         agregar('Profundidad', Profundidad);
 
         if (medidasPresentes && esLevantamiento) {
+            // 6.4 Responsable único: una vez designado (primer envío), solo ese
+            // trabajador puede enviar/actualizar las medidas del levantamiento.
+            const responsable = obras[0].MEDIDASRESPONSABLE ?? obras[0].MedidasResponsable;
+            if (responsable != null && Number(responsable) !== Number(idTrabajadorCtx)) {
+                await tx.rollback();
+                return { error: 'Solo el trabajador responsable puede enviar las medidas de la obra' };
+            }
             agregar('MedidasEnviadas', true);
             agregar('MedidasEnviadasPor', idTrabajadorCtx);
             agregar('MedidasEnviadasFecha', new Date());
@@ -608,10 +616,12 @@ const completarEtapa = async (id, {
             const idEstadoNota = finalizacion
                 ? finalizacion.etapa
                 : (resolverEstadoObra(estado) ?? Number(estadoActual)) || 1;
+            // Nota es BLOB SUB_TYPE TEXT: el driver exige Buffer, no string.
+            const notaBuffer = Buffer.from(String(nota), 'utf8');
             await tx.execute(
                 `INSERT INTO NotasObras (Obras_idObra, EstadosObra_idEstadoObra, Trabajadores_idTrabajador, Nota)
                  VALUES (?, ?, ?, ?)`,
-                [id, idEstadoNota, idTrabajadorCtx, String(nota)]
+                [id, idEstadoNota, idTrabajadorCtx, notaBuffer]
             );
         }
 

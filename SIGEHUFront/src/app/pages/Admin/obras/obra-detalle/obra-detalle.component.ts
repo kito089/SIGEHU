@@ -80,6 +80,13 @@ interface TrabajadorAsignado {
   fechaAsignacion?: string;
 }
 
+// Foto pendiente de subir con vista previa local y hash (deduplicación 3.2).
+interface FotoNueva {
+  file: File;
+  preview: string;
+  hash: string;
+}
+
 interface PagoDetalle {
   id: number;
   monto: number;
@@ -229,8 +236,13 @@ export class ObraDetalleComponent implements OnInit {
   // ── Notas y fotos del administrador (por etapa) ──────────────────────────
   nuevaNota = signal('');
   guardandoNota = signal(false);
-  fotosNuevas = signal<File[]>([]);
+  fotosNuevas = signal<FotoNueva[]>([]);
   subiendoFoto = signal(false);
+
+  // Edición/eliminación de notas (4.2).
+  notaEditId = signal<number | null>(null);
+  notaEditTexto = signal('');
+  guardandoNotaEdit = signal(false);
 
   // ── Modal de asignación de trabajadores (lote + permisos granulares) ─────
   modalTrabajadoresAbierto = signal(false);
@@ -244,6 +256,13 @@ export class ObraDetalleComponent implements OnInit {
   trabajadoresSel = signal<Set<number>>(new Set());
   // Permisos granulares marcados por trabajador (id → Set de idCampoPermiso).
   permisosSel = signal<Map<number, Set<number>>>(new Map());
+
+  // ── Modal "Editar permisos" (por trabajador, independiente de "Agregar") ──
+  modalPermisosEditAbierto = signal(false);
+  trabajadorPermisosEdit = signal<TrabajadorAsignado | null>(null);
+  permisosEditSel = signal<Set<number>>(new Set());
+  guardandoPermisosEdit = signal(false);
+  errorPermisosEdit = signal<string | null>(null);
 
   // ── Materiales: edición por lote antes de guardar ────────────────────────
   materialesPendientesAgregar = signal<MaterialObraItem[]>([]);
@@ -356,6 +375,13 @@ export class ObraDetalleComponent implements OnInit {
   // pestañas de etapas (no existe pestaña "Finalizado").
   esFinalizada = computed(() => this.estadoActual()?.id === 7);
 
+  // Estado REAL de la obra en BD (sin resolver): necesario para distinguir el
+  // estado intermedio 8 ("Pendiente de aceptación") del flujo de doble
+  // validación.
+  estadoObraRaw = computed(() =>
+    Number(this.obra()?.IDESTADOOBRA ?? this.obra()?.idEstadoObra ?? 0)
+  );
+
   // La barra muestra TODAS las etapas oficiales (pasadas y futuras), para
   // poder bloquear con mensaje las que aún no se han alcanzado.
   etapasVisibles = computed<EstadoDetalle[]>(() => this.etapasOficiales());
@@ -374,13 +400,15 @@ export class ObraDetalleComponent implements OnInit {
     return siguientes.length > 0 ? siguientes[0] : null;
   });
 
-  // El botón "Avanzar etapa" solo aplica mientras la obra no esté en la etapa
-  // terminal de operación (Instalado/Garantía): ahí el cierre se hace con
-  // "Finalizar Obra", no avanzando a Garantía.
+  // El botón "Avanzar etapa" (6.2) solo aparece cuando la obra está en
+  // "Solicitud recibida" (1, arranque del propietario → Levantamiento) o en
+  // "Pendiente de aceptación" (8, el trabajador ya marcó la actividad como
+  // completada y el propietario la valida). En las etapas de trabajo (2/3/4)
+  // el avance lo dispara el trabajador desde la app móvil.
   mostrarBotonAvanzar = computed(() =>
     !this.esTrabajador() &&
     !!this.siguienteEtapa() &&
-    this.etapaActualBarra()?.id !== 5 &&
+    (this.estadoObraRaw() === 1 || this.estadoObraRaw() === 8) &&
     !this.esFinalizada()
   );
 
@@ -810,10 +838,14 @@ export class ObraDetalleComponent implements OnInit {
     const actual = this.estadoActual();
     const siguiente = this.siguienteEtapa();
     if (!actual || !siguiente) return;
-    if (!confirm(
-      `¿Avanzar la obra "${this.obra()?.NOMBREOBRA ?? ''}" de "${actual.nombre}" a "${siguiente.nombre}"?\n` +
-      `La transición se registrará en auditoría y no se puede deshacer.`
-    )) return;
+    const nombreObra = this.obra()?.NOMBREOBRA ?? '';
+    const confirmMsg = this.estadoObraRaw() === 8
+      ? `El trabajador marcó la etapa como completada y la obra está «Pendiente de aceptación».\n` +
+        `¿Aceptar y avanzar "${nombreObra}" a "${siguiente.nombre}"?\n` +
+        `La transición se registrará en auditoría y no se puede deshacer.`
+      : `¿Avanzar la obra "${nombreObra}" de "${actual.nombre}" a "${siguiente.nombre}"?\n` +
+        `La transición se registrará en auditoría y no se puede deshacer.`;
+    if (!confirm(confirmMsg)) return;
 
     try {
       await firstValueFrom(this.api.patch<any>(`/Obras/${this.idObra}/estado`, {
@@ -847,6 +879,29 @@ export class ObraDetalleComponent implements OnInit {
       this.tab.set(null); // la vista consolidada no usa pestañas
     } catch (e: any) {
       const msg = e?.error?.error || e?.message || 'No se pudo finalizar la obra.';
+      this.toast.error(msg);
+    } finally {
+      this.finalizandoObra.set(false);
+    }
+  }
+
+  // Registra la garantía de la obra (7.2): transición 5 → 6 vía
+  // SP_CAMBIAR_ESTADO_OBRA (solo la transición; el módulo de garantías no se
+  // implementa en esta iteración).
+  async registrarGarantia(): Promise<void> {
+    if (this.auth.isWorker() || this.finalizandoObra()) return;
+    const confirmado = window.confirm(
+      'La obra pasará al estado «Garantía». ¿Registrar la garantía?'
+    );
+    if (!confirmado) return;
+
+    this.finalizandoObra.set(true);
+    try {
+      await firstValueFrom(this.api.patch<any>(`/Obras/${this.idObra}/estado`, { idEstado: 6 }));
+      this.toast.success('Obra en garantía.');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo registrar la garantía.';
       this.toast.error(msg);
     } finally {
       this.finalizandoObra.set(false);
@@ -1090,16 +1145,46 @@ export class ObraDetalleComponent implements OnInit {
     }
   }
 
-  // Selección múltiple de fotos (cola de archivos pendientes de subir).
-  onFotosAdmin(event: Event): void {
+  // Selección múltiple de fotos (cola de archivos pendientes de subir) con
+  // preview local y deduplicación por hash (3.2).
+  async onFotosAdmin(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const files = input.files;
     if (!files || files.length === 0) return;
-    this.fotosNuevas.update((lista) => [...lista, ...Array.from(files)]);
+
+    const ya = new Set(this.fotosNuevas().map((f) => f.hash));
+    const nuevos: FotoNueva[] = [];
+    for (const file of Array.from(files)) {
+      const hash = await this.hashFile(file);
+      if (ya.has(hash) || nuevos.some((n) => n.hash === hash)) {
+        this.toast.warning(`«${file.name}» es una foto duplicada y no se agregó.`);
+        continue;
+      }
+      ya.add(hash);
+      nuevos.push({ file, preview: URL.createObjectURL(file), hash });
+    }
+    if (nuevos.length > 0) {
+      this.fotosNuevas.update((lista) => [...lista, ...nuevos]);
+    }
     input.value = '';
   }
 
+  // Hash SHA-256 del archivo para deduplicar subidas (con fallback por identidad).
+  private async hashFile(file: File): Promise<string> {
+    try {
+      const buf = await file.arrayBuffer();
+      const digest = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+    } catch {
+      return `${file.name}-${file.size}-${file.lastModified}`;
+    }
+  }
+
   quitarFotoAdmin(idx: number): void {
+    const f = this.fotosNuevas()[idx];
+    if (f) URL.revokeObjectURL(f.preview);
     this.fotosNuevas.update((lista) => lista.filter((_, i) => i !== idx));
   }
 
@@ -1115,14 +1200,15 @@ export class ObraDetalleComponent implements OnInit {
 
     this.subiendoFoto.set(true);
     try {
-      for (const file of this.fotosNuevas()) {
+      for (const f of this.fotosNuevas()) {
         const fd = new FormData();
-        fd.append('foto', file);
+        fd.append('foto', f.file);
         fd.append('idEstadoObra', String(idEstadoObra));
         fd.append('idTrabajador', String(u.idTrabajador));
         await firstValueFrom(this.api.uploadFile(`/Obras/${this.idObra}/fotos`, fd));
       }
       this.toast.success('Fotos subidas correctamente.');
+      this.fotosNuevas().forEach((f) => URL.revokeObjectURL(f.preview));
       this.fotosNuevas.set([]);
       await this.cargarTodo();
     } catch (e: any) {
@@ -1130,6 +1216,58 @@ export class ObraDetalleComponent implements OnInit {
       this.toast.error(msg);
     } finally {
       this.subiendoFoto.set(false);
+    }
+  }
+
+  // ---- Edición y eliminación de notas (4.2) --------------------------------
+
+  iniciarEditarNota(n: NotaDetalle): void {
+    if (this.auth.isWorker()) return;
+    this.notaEditId.set(n.id);
+    this.notaEditTexto.set(n.nota);
+  }
+
+  cancelarEditarNota(): void {
+    this.notaEditId.set(null);
+    this.notaEditTexto.set('');
+  }
+
+  setNotaEditTexto(v: string): void { this.notaEditTexto.set(v); }
+
+  esNotaEnEdicion(n: NotaDetalle): boolean {
+    return this.notaEditId() === n.id;
+  }
+
+  async guardarEditarNota(): Promise<void> {
+    const id = this.notaEditId();
+    const texto = this.notaEditTexto().trim();
+    if (this.auth.isWorker() || id == null || !texto || this.guardandoNotaEdit()) return;
+
+    this.guardandoNotaEdit.set(true);
+    try {
+      await firstValueFrom(this.api.put<any>(`/Obras/notas/${id}`, { nota: texto }));
+      this.toast.success('Nota actualizada.');
+      this.notaEditId.set(null);
+      this.notaEditTexto.set('');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo actualizar la nota.';
+      this.toast.error(msg);
+    } finally {
+      this.guardandoNotaEdit.set(false);
+    }
+  }
+
+  async eliminarNota(n: NotaDetalle): Promise<void> {
+    if (this.auth.isWorker()) return;
+    if (!window.confirm('¿Eliminar esta nota? Esta acción no se puede deshacer.')) return;
+    try {
+      await firstValueFrom(this.api.delete<any>(`/Obras/notas/${n.id}`));
+      this.toast.success('Nota eliminada.');
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudo eliminar la nota.';
+      this.toast.error(msg);
     }
   }
 
@@ -1166,25 +1304,12 @@ export class ObraDetalleComponent implements OnInit {
       this.trabajadoresAsignables.set([]);
     }
 
-    // Estado previo: ya asignados a la etapa (fijos) + sus permisos actuales.
-    const yaAsignados = new Set<number>();
-    const permisos = new Map<number, Set<number>>();
-    for (const t of this.trabajadoresDeEtapa(etapa.id)) {
-      yaAsignados.add(t.idTrabajador);
-      try {
-        const perms = await firstValueFrom(this.api.get<any[]>(`/Obras/${this.idObra}/trabajadores/${t.idTrabajador}/permisos`));
-        permisos.set(
-          t.idTrabajador,
-          new Set((perms ?? []).map((p) => Number(p.IDCAMPOPERMISO ?? p.idCampoPermiso)).filter(Boolean))
-        );
-      } catch {
-        permisos.set(t.idTrabajador, new Set());
-      }
-    }
-
-    this.trabajadoresEtapaSel.set(yaAsignados);
+    // Modal de ALTA (1.1): solo lista trabajadores NO asignados a la etapa
+    // actual, cada uno con sus permisos iniciales. Los ya asignados se editan
+    // con el botón "Editar permisos" individual (modal separado).
+    this.trabajadoresEtapaSel.set(new Set());
     this.trabajadoresSel.set(new Set());
-    this.permisosSel.set(permisos);
+    this.permisosSel.set(new Map());
     this.busquedaTrabajador.set('');
     this.modalTrabajadoresAbierto.set(true);
   }
@@ -1196,11 +1321,18 @@ export class ObraDetalleComponent implements OnInit {
 
   setBusquedaTrabajador(v: string): void { this.busquedaTrabajador.set(v); }
 
-  // Trabajadores asignables filtrados por la búsqueda del modal.
+  // Trabajadores asignables filtrados por la búsqueda del modal, EXCLUYENDO a
+  // los ya asignados a la etapa actual (el modal de alta solo lista nuevos).
   trabajadoresModalFiltrados(): TrabajadorListItem[] {
     const q = this.busquedaTrabajador().trim().toLowerCase();
+    const etapa = this.etapaActualBarra();
+    const asignados = new Set(
+      etapa ? this.trabajadoresDeEtapa(etapa.id).map((t) => t.idTrabajador) : []
+    );
     return this.trabajadoresAsignables().filter(
-      (t) => !q || t.nombreCompleto.toLowerCase().includes(q)
+      (t) =>
+        !asignados.has(t.idTrabajador) &&
+        (!q || t.nombreCompleto.toLowerCase().includes(q))
     );
   }
 
@@ -1228,6 +1360,12 @@ export class ObraDetalleComponent implements OnInit {
     return this.permisosSel().get(idTrabajador)?.has(idCampoPermiso) ?? false;
   }
 
+  todosPermisosMarcados(idTrabajador: number): boolean {
+    const cat = this.camposPermisoCatalogo();
+    const actual = this.permisosSel().get(idTrabajador) ?? new Set<number>();
+    return cat.length > 0 && cat.every((c) => actual.has(c.id));
+  }
+
   togglePermisoMarcado(idTrabajador: number, idCampoPermiso: number): void {
     this.permisosSel.update((map) => {
       const m = new Map(map);
@@ -1238,6 +1376,19 @@ export class ObraDetalleComponent implements OnInit {
         actual.add(idCampoPermiso);
       }
       m.set(idTrabajador, actual);
+      return m;
+    });
+  }
+
+  // "Seleccionar todos" de permisos de un trabajador (1.3): si ya están todos
+  // marcados, los desmarca; si no, los marca todos.
+  toggleTodosPermisos(idTrabajador: number): void {
+    const cat = this.camposPermisoCatalogo();
+    const actual = this.permisosSel().get(idTrabajador) ?? new Set<number>();
+    const todos = cat.length > 0 && cat.every((c) => actual.has(c.id));
+    this.permisosSel.update((map) => {
+      const m = new Map(map);
+      m.set(idTrabajador, todos ? new Set() : new Set(cat.map((c) => c.id)));
       return m;
     });
   }
@@ -1272,6 +1423,105 @@ export class ObraDetalleComponent implements OnInit {
       this.toast.error(msg);
     } finally {
       this.guardandoLoteTrabajadores.set(false);
+    }
+  }
+
+  // ── Modal "Editar permisos" de un trabajador ya asignado (1.1/1.2) ────────
+
+  async abrirEditarPermisos(t: TrabajadorAsignado): Promise<void> {
+    if (this.auth.isWorker() || this.guardandoPermisosEdit()) return;
+    this.errorPermisosEdit.set(null);
+    this.trabajadorPermisosEdit.set(t);
+
+    // Asegura el catálogo de permisos granulares.
+    if (this.camposPermisoCatalogo().length === 0) {
+      try {
+        const campos = await firstValueFrom(this.api.get<any[]>('/Obras/campos-permiso'));
+        this.camposPermisoCatalogo.set(
+          ((campos as any[]) ?? []).map((c) => ({
+            id: Number(c.IDCAMPOPERMISO ?? c.idCampoPermiso),
+            nombre: String(c.NOMBRECAMPO ?? c.NombreCampo ?? c.nombre ?? ''),
+            descripcion: c.DESCRIPCION ?? c.Descripcion ?? '',
+          })).filter((c) => c.id)
+        );
+      } catch {
+        this.camposPermisoCatalogo.set([]);
+      }
+    }
+
+    // Precarga de permisos actuales. FIX 1.2: el backend entrega la clave
+    // CAMPOSPERMISO_IDCAMPOPERMISO (no IDCAMPOPERMISO), que era lo que
+    // causaba que el modal abriera con todos los permisos desmarcados.
+    try {
+      const perms = await firstValueFrom(this.api.get<any[]>(`/Obras/${this.idObra}/trabajadores/${t.idTrabajador}/permisos`));
+      this.permisosEditSel.set(
+        new Set((perms ?? []).map((p) => Number(p.CAMPOSPERMISO_IDCAMPOPERMISO ?? p.IDCAMPOPERMISO ?? p.idCampoPermiso)).filter(Boolean))
+      );
+    } catch {
+      this.permisosEditSel.set(new Set());
+    }
+
+    this.modalPermisosEditAbierto.set(true);
+  }
+
+  cerrarEditarPermisos(): void {
+    if (this.guardandoPermisosEdit()) return;
+    this.modalPermisosEditAbierto.set(false);
+    this.trabajadorPermisosEdit.set(null);
+    this.errorPermisosEdit.set(null);
+  }
+
+  tienePermisoEdit(idCampoPermiso: number): boolean {
+    return this.permisosEditSel().has(idCampoPermiso);
+  }
+
+  togglePermisoEdit(idCampoPermiso: number): void {
+    this.permisosEditSel.update((s) => {
+      const n = new Set(s);
+      if (n.has(idCampoPermiso)) {
+        n.delete(idCampoPermiso);
+      } else {
+        n.add(idCampoPermiso);
+      }
+      return n;
+    });
+  }
+
+  // "Seleccionar todos" en el modal de edición (1.3).
+  todosPermisosEditMarcados(): boolean {
+    const cat = this.camposPermisoCatalogo();
+    return cat.length > 0 && cat.every((c) => this.permisosEditSel().has(c.id));
+  }
+
+  toggleTodosPermisosEdit(): void {
+    const cat = this.camposPermisoCatalogo();
+    const todos = cat.length > 0 && cat.every((c) => this.permisosEditSel().has(c.id));
+    this.permisosEditSel.set(todos ? new Set() : new Set(cat.map((c) => c.id)));
+  }
+
+  async guardarPermisosEdit(): Promise<void> {
+    if (this.guardandoPermisosEdit()) return;
+    const t = this.trabajadorPermisosEdit();
+    const etapa = this.etapaActualBarra();
+    const idEstadoObra = etapa?.id ?? this.tab();
+    if (!t || idEstadoObra == null) return;
+
+    this.guardandoPermisosEdit.set(true);
+    this.errorPermisosEdit.set(null);
+    try {
+      await firstValueFrom(this.api.post<any>(`/Obras/${this.idObra}/trabajadores/batch`, {
+        idEstadoObra,
+        trabajadores: [{ idTrabajador: t.idTrabajador, permisos: Array.from(this.permisosEditSel()) }],
+      }));
+      this.toast.success('Permisos actualizados.');
+      this.modalPermisosEditAbierto.set(false);
+      this.trabajadorPermisosEdit.set(null);
+      await this.cargarTodo();
+    } catch (e: any) {
+      const msg = e?.error?.error || e?.message || 'No se pudieron actualizar los permisos.';
+      this.errorPermisosEdit.set(msg);
+    } finally {
+      this.guardandoPermisosEdit.set(false);
     }
   }
 
